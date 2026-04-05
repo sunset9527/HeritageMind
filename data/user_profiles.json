@@ -1,0 +1,98 @@
+{
+  "profiles": [
+    {
+      "id": "curious",
+      "name": "好奇者",
+      "description": "对非遗技艺有初步兴趣，想要了解基本情况",
+      "depth": "浅层",
+      "characteristics": [
+        "刚开始接触非遗领域",
+        "对传统文化有好奇心",
+        "希望获得简单易懂的介绍",
+        "不追求过于专业的细节"
+      ],
+      "content_preferences": {
+        "length": "short",
+        "style": "narrative",
+        "technical_detail": "low",
+        "include_examples": true,
+        "include_stories": true
+      },
+      "interaction_patterns": [
+        "快速浏览",
+        "容易被有趣的内容吸引",
+        "可能转化为学习者"
+      ],
+      "example_questions": [
+        "景泰蓝是什么？",
+        "苏绣有什么特点？",
+        "龙泉青瓷为什么有名？"
+      ]
+    },
+    {
+      "id": "learner",
+      "name": "学习者",
+      "description": "想要深入学习非遗技艺，具备一定基础",
+      "depth": "中层",
+      "characteristics": [
+        "有一定非遗知识基础",
+        "希望系统学习某项技艺",
+        "愿意投入时间深入了解",
+        "关注实践性和可操作性"
+      ],
+      "content_preferences": {
+        "length": "medium",
+        "style": "structured",
+        "technical_detail": "medium",
+        "include_examples": true,
+        "include_practices": true,
+        "include_resources": true
+      },
+      "interaction_patterns": [
+        "仔细阅读",
+        "做笔记",
+        "寻找学习路径"
+      ],
+      "example_questions": [
+        "景泰蓝的制作流程是什么？",
+        "苏绣有哪些基本针法？",
+        "如何开始学习龙泉青瓷？"
+      ]
+    },
+    {
+      "id": "researcher",
+      "name": "研究者",
+      "description": "需要深度资料用于学术研究或专业创作",
+      "depth": "深层",
+      "characteristics": [
+        "具有专业背景或研究方向",
+        "需要准确的数据和来源",
+        "关注技艺的完整性和系统性",
+        "可能用于学术发表或项目研究"
+      ],
+      "content_preferences": {
+        "length": "long",
+        "style": "academic",
+        "technical_detail": "high",
+        "include_references": true,
+        "include_data": true,
+        "include_sources": true
+      },
+      "interaction_patterns": [
+        "精读和标注",
+        "引用和参考",
+        "深入分析和讨论"
+      ],
+      "example_questions": [
+        "景泰蓝工艺的历史演变是怎样的？",
+        "苏绣技艺的濒危程度和保护措施有哪些研究？",
+        "龙泉青瓷的工艺创新和发展趋势如何？"
+      ]
+    }
+  ],
+  "metadata": {
+    "version": "1.0",
+    "last_updated": "2024-01-01",
+    "description": "非遗知识问答系统用户画像配置"
+  }
+}
