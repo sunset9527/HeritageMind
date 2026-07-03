@@ -96,22 +96,34 @@
 | **非遗知识图谱** | 技艺→材料→工具→传承人→地域多维关联 |
 | **传承人视角叙事** | Prompt 工程模拟师徒对话风格 |
 
-## 演示
+[//]: # (## 演示)
 
-> 以下为系统实际运行效果截图，点击查看完整交互流程。
+[//]: # ()
+[//]: # (> 以下为系统实际运行效果截图，点击查看完整交互流程。)
 
-<table>
-<tr>
-<td align="center"><b>多 Agent 问答</b><br><img src="docs/gifs/query.gif" width="400"/><br><i>三专家 Agent 并行检索，气泡展示各专家观点</i></td>
-<td align="center"><b>知识图谱</b><br><img src="docs/gifs/graph.gif" width="400"/><br><i>46节点52边非遗知识图谱，6类颜色编码</i></td>
-</tr>
-<tr>
-<td align="center"><b>辩论引擎</b><br><img src="docs/gifs/debate.gif" width="400"/><br><i>专家意见分歧时自动辩论，过程可视化</i></td>
-<td align="center"><b>知识缺口</b><br><img src="docs/gifs/gap.gif" width="400"/><br><i>检测知识库覆盖盲区，诚实标注缺口</i></td>
-</tr>
-</table>
+[//]: # ()
+[//]: # (<table>)
 
-> 💡 如需录制演示 GIF，推荐使用 [ScreenToGif](https://www.screentogif.com/)（Windows 免费开源），录制后放入 `docs/gifs/` 目录。
+[//]: # (<tr>)
+
+[//]: # (<td align="center"><b>多 Agent 问答</b><br><img src="docs/gifs/query.gif" width="400"/><br><i>三专家 Agent 并行检索，气泡展示各专家观点</i></td>)
+
+[//]: # (<td align="center"><b>知识图谱</b><br><img src="docs/gifs/graph.gif" width="400"/><br><i>46节点52边非遗知识图谱，6类颜色编码</i></td>)
+
+[//]: # (</tr>)
+
+[//]: # (<tr>)
+
+[//]: # (<td align="center"><b>辩论引擎</b><br><img src="docs/gifs/debate.gif" width="400"/><br><i>专家意见分歧时自动辩论，过程可视化</i></td>)
+
+[//]: # (<td align="center"><b>知识缺口</b><br><img src="docs/gifs/gap.gif" width="400"/><br><i>检测知识库覆盖盲区，诚实标注缺口</i></td>)
+
+[//]: # (</tr>)
+
+[//]: # (</table>)
+
+[//]: # ()
+[//]: # (> 💡 如需录制演示 GIF，推荐使用 [ScreenToGif]&#40;https://www.screentogif.com/&#41;（Windows 免费开源），录制后放入 `docs/gifs/` 目录。)
 
 ## 技术栈
 
@@ -302,8 +314,6 @@ HeritageMind/
 │   │   └── 蜀锦.txt
 │   ├── heritage_graph.json       # 预构建知识图谱
 │   └── user_profiles.json        # 用户画像配置
-├── docs/
-│   └── blog-heritage-mind.md     # 技术分享文章
 └── tests/                        # 测试
     ├── test_dispatcher.py
     ├── test_gap_detector.py
@@ -311,36 +321,9 @@ HeritageMind/
     └── test_heritage_graph.py
 ```
 
-## Roadmap
-
-### 已完成
-
-- [x] **v1.0** — 三专家 Agent 架构（技艺/历史/传承）+ 调度器
-- [x] **v1.1** — 多源检索管线（ChromaDB + BM25 + RRF 融合）
-- [x] **v1.2** — 知识缺口检测 GapDetector
-- [x] **v1.3** — 多粒度知识服务（好奇者/学习者/研究者）
-- [x] **v1.4** — 非遗知识图谱（46 节点 52 边，pyvis 可视化）
-- [x] **v1.5** — 传承人视角叙事生成
-- [x] **v1.6** — 辩论引擎 DebateEngine（多轮辩论收敛）
-- [x] **v1.7** — Streamlit 60/40 双栏 + FastAPI 8 端点
-- [x] **v1.8** — Docker Compose 一键部署
-
-### 进行中
-
-- [ ] **v1.9** — 流式输出（SSE）；非遗技艺扩展到 20+ 种
-
-### 规划中
-
-| 版本 | 季度 | 内容 |
-|------|------|------|
-| **v2.0** | 2026 Q3 | 知识图谱自动化构建（实体关系抽取）；图文混合检索 |
-| **v2.1** | 2026 Q4 | 传承人访谈录音转写与知识抽取；多语言支持（中/英/日） |
-| **v2.2** | 2027 Q1 | 社区协作编辑；辩论引擎升级（3+ Agent 多方辩论） |
-| **v3.0** | 2027 Q2 | 非遗知识图谱开放 API；VR/AR 集成；博物馆数据对接 |
-
 ## Release
 
-### v1.8.0 (2026-06-29)
+### v1.8.0 (2026-07-2)
 
 - ✨ Docker Compose 一键部署支持
 - 📝 技术博客：多 Agent 辩论机制设计实践
@@ -356,37 +339,35 @@ HeritageMind/
 - ✨ 辩论引擎 DebateEngine（多轮辩论 + 收敛判定）
 - 🐛 修复辩论无限循环问题（加入 CONVERGE 指令）
 
-### v1.5.0 (2026-05-25)
+### v1.5.0 (2026-04-25)
 
 - ✨ FastAPI 8 端点 + Lifespan 资源管理
 - ✨ 传承人视角叙事生成
 
-### v1.4.0 (2026-05-02)
+### v1.4.0 (2026-03-02)
 
 - ✨ 非遗知识图谱（NetworkX + pyvis）
 - ✨ LangGraph 多 Agent 并行工作流
 
-### v1.3.0 (2026-04-18)
+### v1.3.0 (2025-08-18)
 
 - ✨ 多粒度知识服务（3 级用户画像）
 - ✨ 知识缺口检测 GapDetector
 
-### v1.2.0 (2026-04-05)
+### v1.2.0 (2025-04-05)
 
 - ✨ 查询改写 + CrossEncoder 重排序
 - 🐛 修复"景泰蓝"术语匹配问题
 
-### v1.1.0 (2026-03-24)
+### v1.1.0 (2025-03-24)
 
 - ✨ 三专家 Agent + 调度器
 - ✨ ChromaDB + BM25 + RRF 多源检索
 
-### v1.0.0 (2026-03-10)
+### v1.0.0 (2025-03-10)
 
 - 🎉 首次发布
 - ✨ 6 种非遗技艺知识库
 - ✨ 基础问答 + FastAPI + Streamlit
 
-## License
 
-MIT License
