@@ -17,7 +17,7 @@
 | 叙事风格 | 标准学术口吻 | 可选传承人视角（老匠人口吻） |
 | 知识图谱 | 无 | 技艺→材料→工具→传承人→地域多维关联 |
 
-系统以 6 种国家级非遗技艺（景泰蓝、苏绣、龙泉青瓷、宜兴紫砂、芜湖铁画、蜀锦）为示例知识库。
+系统以 23 种国家级非遗技艺为知识库，涵盖陶瓷、丝织、雕刻、印染、纸艺、金属、戏曲 7 大门类。
 
 ## 系统架构
 
@@ -82,9 +82,11 @@
 | **多 Agent 问答** | 三领域专家并行检索，调度 Agent 融合多视角结果 |
 | **知识缺口检测** | 主动识别知识库覆盖盲区，告知用户"哪里信息不足" |
 | **多粒度输出** | 同一问题根据用户画像输出不同深度（300~5000字） |
-| **非遗知识图谱** | 46 节点 52 边，6 类节点颜色编码，交互式可视化 |
+| **非遗知识图谱** | 65 节点 39 边，全中文标签，交互式可视化 |
 | **辩论引擎** | 专家意见不一时自动触发辩论，过程可追溯 |
 | **传承人叙事** | 可选"老匠人"口吻的技艺讲述风格 |
+| **用户系统** | 注册 / 登录 / JWT 鉴权，登录后问答记录自动存档、分页回看 |
+| **LLM 可观测性** | Langfuse 全链路追踪，每次 Agent 调用可回放分析 |
 
 ### 五大技术深度
 
@@ -135,8 +137,14 @@
 | 向量数据库 | ChromaDB | 非遗知识向量存储与语义检索 |
 | 关键词检索 | BM25 + jieba | 术语精确匹配 |
 | 知识图谱 | NetworkX + pyvis | 图谱建模与交互式可视化 |
-| 后端 | FastAPI | RESTful API，8 个端点 |
-| 前端 | Streamlit | 60/40 双栏布局，Agent 气泡 |
+| 后端 | FastAPI | RESTful API，18 个端点 |
+| 前端 | Vue 3 + TypeScript + Element Plus + Tailwind | SPA 应用，Streamlit 保留可回退 |
+| 状态管理 | Pinia | auth / chat / graph / settings 四模块 |
+| 路由 | Vue Router 4 | 首页 / 问答 / 图谱 / 设置 / 登录 / 注册 |
+| 数据库 | SQLAlchemy 2.0 + Alembic | ORM 建模与版本化迁移 |
+| 数据存储 | SQLite / PostgreSQL 16 | 开发用 SQLite，生产用 PostgreSQL |
+| 认证 | python-jose + passlib[bcrypt] | JWT 签发校验与密码哈希 |
+| 可观测性 | Langfuse | LLM 调用全链路追踪 |
 | 配置 | Pydantic Settings | 集中配置管理 |
 | 测试 | pytest | 核心模块测试 |
 
@@ -161,19 +169,27 @@ python -m venv .venv
 # 3. 安装依赖
 pip install -r requirements.txt
 
-# 4. 配置 API Key
+# 4. 配置环境变量
 cp .env.example .env
-# 编辑 .env 填入 DEEPSEEK_API_KEY=sk-xxx
+# 必填：DEEPSEEK_API_KEY=sk-xxx
+# 可选：DATABASE_URL（默认 SQLite）/ JWT_SECRET_KEY / LANGFUSE_*（详见 .env.example）
 
-# 5. 启动服务
+# 5. 初始化数据库（可选）
+# 开发环境启动 API 时会自动建表；生产环境建议用 Alembic 迁移
+alembic upgrade head
+
+# 6. 启动服务
 # 终端1：启动 API
 uvicorn api:app --host 0.0.0.0 --port 8000 --reload
 
-# 终端2：启动前端
+# 终端2：启动 Vue 3 前端（推荐）
+cd frontend && npm install && npx vite --host 0.0.0.0
+
+# 或启动 Streamlit 前端（保留）
 streamlit run main.py
 ```
 
-访问 http://localhost:8501 进入 Web 界面。
+访问 http://localhost:5173 进入 Vue 3 界面（Streamlit：http://localhost:8501）。
 
 ## Docker 部署
 
@@ -182,7 +198,7 @@ streamlit run main.py
 cp .env.example .env
 # 编辑 .env 填入 DEEPSEEK_API_KEY=sk-xxx
 
-# 2. 一键启动
+# 2. 一键启动（PostgreSQL 16 + API + Web 三个服务）
 docker compose up -d
 
 # 3. 查看日志
@@ -190,8 +206,10 @@ docker compose logs -f
 ```
 
 访问：
-- Web 界面：http://localhost:8501
+- Vue 3 界面：http://localhost:5173（`docker compose --profile vue up`）
+- Streamlit 界面：http://localhost:8501（默认）
 - API 文档：http://localhost:8000/docs
+- PostgreSQL：localhost:5432（用户/库名均为 heritagemind）
 
 ## API 文档
 
@@ -201,14 +219,24 @@ docker compose logs -f
 |------|------|------|
 | GET | `/` | 根路径 |
 | GET | `/health` | 健康检查 |
-| POST | `/query` | 非遗知识问答 |
+| POST | `/query` | 非遗知识问答（登录后自动存档历史） |
+| POST | `/query/simple` | 简化版问答（表单提交） |
 | POST | `/upload` | 上传非遗文档 |
 | GET | `/graph/stats` | 知识图谱统计 |
-| POST | `/graph/query` | 图谱查询 |
+| GET | `/graph/visualize` | 交互式图谱 HTML |
+| GET | `/graph/subgraph/{craft_name}` | 技艺子图查询 |
 | GET | `/gap-report` | 知识缺口报告 |
 | POST | `/switch-profile` | 切换用户画像 |
 | GET | `/crafts` | 支持的技艺列表 |
 | GET | `/profiles` | 用户画像列表 |
+| GET | `/documents/summary` | 文档库摘要 |
+| POST | `/auth/register` | 用户注册（返回 JWT） |
+| POST | `/auth/login` | 用户登录（OAuth2 密码流） |
+| GET | `/auth/me` | 当前用户信息 🔒 |
+| GET | `/chat/history` | 聊天历史列表（分页） 🔒 |
+| GET | `/chat/history/{chat_id}` | 单条聊天详情 🔒 |
+
+> 🔒 需在请求头携带 `Authorization: Bearer <access_token>`
 
 ### `/query` — 非遗知识问答
 
@@ -217,23 +245,24 @@ docker compose logs -f
 {
   "question": "景泰蓝的制作流程是什么？",
   "user_profile": "learner",
-  "enable_narrative": false,
-  "enable_debate": true
+  "include_narrative": false,
+  "craft_filter": null
 }
 ```
+
+> 携带 `Authorization: Bearer <token>` 调用时，问答记录会自动存档到聊天历史。
 
 响应：
 ```json
 {
-  "query_id": "uuid",
+  "question": "景泰蓝的制作流程是什么？",
   "answer": "景泰蓝的制作主要包含以下步骤...",
-  "agents_used": ["craft_expert", "history_expert"],
-  "debate_log": [...],
-  "gap_report": {
-    "coverage": "good",
-    "missing_areas": []
-  },
-  "knowledge_graph_nodes": 46
+  "user_profile": "learner",
+  "source_agents": [{"id": "craft_expert"}, {"id": "history_expert"}],
+  "has_gaps": false,
+  "gap_report": "",
+  "reading_time": 3,
+  "metadata": {}
 }
 ```
 
@@ -242,16 +271,42 @@ docker compose logs -f
 响应：
 ```json
 {
+  "coverage_level": "partial",
+  "relevant_documents": 3,
+  "coverage_score": 0.62,
   "gaps": [
     {
-      "entity": "龙泉宝剑锻打工艺",
-      "current_coverage": "shallow",
-      "suggestion": "建议补充锻打工艺的详细技术资料"
+      "aspect": "工艺细节",
+      "description": "锻打工艺的详细技术资料覆盖不足",
+      "suggestion": "建议补充相关技术文档"
     }
   ],
-  "overall_coverage": "72%"
+  "can_answer": true,
+  "suggestions": ["龙泉宝剑 锻打 工序"],
+  "report": "本次回答基于 3 篇相关文档..."
 }
 ```
+
+### `/auth/*` 与 `/chat/*` — 认证与聊天历史
+
+```bash
+# 注册（返回 JWT access_token）
+curl -X POST http://localhost:8000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username": "alice", "email": "alice@example.com", "password": "secret123"}'
+
+# 登录（OAuth2 密码流，表单提交）
+curl -X POST http://localhost:8000/auth/login \
+  -d "username=alice&password=secret123"
+
+# 携带 token 查询聊天历史
+curl "http://localhost:8000/chat/history?limit=20&offset=0" \
+  -H "Authorization: Bearer <access_token>"
+```
+
+- JWT 默认 60 分钟过期（`JWT_EXPIRE_MINUTES` 可配置），签名算法 HS256
+- 密码使用 bcrypt 哈希存储，登录失败返回 401
+- 聊天历史按 user_id 隔离，仅本人可见
 
 ### 用户画像
 
@@ -268,13 +323,43 @@ HeritageMind/
 ├── README.md                     # 项目文档
 ├── requirements.txt              # Python 依赖
 ├── config.py                     # Pydantic Settings 配置
-├── api.py                        # FastAPI 后端 (8 端点)
-├── main.py                       # Streamlit 前端 (60/40 双栏)
+├── api.py                        # FastAPI 后端 (18 端点)
+├── main.py                       # Streamlit 首页 Dashboard
+├── ui_components.py              # Streamlit 公共组件（CSS/会话/API 客户端）
+├── pages/                        # Streamlit 多页面
+│   ├── 1_Chat.py                 #   问答页（登录/注册 + 历史记录）
+│   ├── 2_Graph.py                #   知识图谱页
+│   └── 3_Settings.py             #   设置页
+├── alembic.ini                   # Alembic 迁移配置
+├── migrations/                   # 数据库迁移脚本
+│   └── versions/
+│       └── 001_init_users_chat.py  # users + chat_history 建表
 ├── Dockerfile                    # Docker 多阶段构建
-├── docker-compose.yml            # Docker Compose 一键部署
+├── docker-compose.yml            # Docker Compose（PostgreSQL + API + Streamlit + Vue + Nginx）
 ├── .dockerignore                 # Docker 构建排除
 ├── .env.example                  # 环境变量模板
+├── frontend/                     # Vue 3 前端（v1.0.3+）
+│   ├── package.json
+│   ├── vite.config.ts
+│   ├── Dockerfile                # Node build → Nginx serve
+│   ├── nginx.conf
+│   └── src/
+│       ├── main.ts, App.vue
+│       ├── router/, stores/, api/, types/
+│       ├── views/                # Dashboard/Chat/Graph/Settings/Login/Register
+│       └── components/           # layout/chat/dashboard/graph/settings
 ├── src/
+│   ├── database.py               # SQLAlchemy 引擎与会话管理
+│   ├── deps.py                   # FastAPI 依赖注入（get_db / get_current_user）
+│   ├── models/                   # ORM 模型
+│   │   ├── user.py               #   用户表
+│   │   └── chat.py               #   聊天历史表
+│   ├── schemas/                  # Pydantic 请求/响应模型
+│   │   ├── user.py               #   注册/登录/Token
+│   │   └── chat.py               #   聊天历史
+│   ├── services/                 # 业务服务层
+│   │   ├── auth.py               #   注册/登录/JWT 签发
+│   │   └── chat.py               #   聊天历史存取
 │   ├── agents/                   # Agent 模块
 │   │   ├── dispatcher.py         #   调度 Agent（意图分析+专家分配）
 │   │   ├── craft_expert.py       #   技艺知识 Agent
@@ -303,15 +388,14 @@ HeritageMind/
 │   │   ├── nodes.py              #   工作流节点
 │   │   └── state.py              #   状态定义
 │   └── utils/
+│       ├── llm.py                #   LLM 统一工厂（Langfuse 追踪注入）
 │       └── prompts.py            #   Prompt 模板管理
 ├── data/
-│   ├── crafts/                   # 6 种非遗技艺文档
-│   │   ├── 景泰蓝.txt
-│   │   ├── 苏绣.txt
-│   │   ├── 龙泉青瓷.txt
-│   │   ├── 宜兴紫砂.txt
-│   │   ├── 芜湖铁画.txt
-│   │   └── 蜀锦.txt
+│   ├── crafts/                   # 23 种非遗技艺文档（55,000 字）
+│   │   ├── 景泰蓝.txt ... 蜀锦.txt       # 6 种原始技艺
+│   │   ├── 剪纸.txt ... 壮锦.txt         # 11 种新增技艺
+│   │   └── 景德镇瓷器.txt ... 京剧.txt   # 6 种新增技艺
+│   ├── heritage.db               # SQLite 数据库（开发环境）
 │   ├── heritage_graph.json       # 预构建知识图谱
 │   └── user_profiles.json        # 用户画像配置
 └── tests/                        # 测试
@@ -322,6 +406,33 @@ HeritageMind/
 ```
 
 ## Release
+
+### v1.11.0 (2026-07-25)
+
+- ✨ 知识图谱全中文化：节点标签、悬浮提示、属性键值全部中文化
+- 🐛 修复图谱筛选 500 错误
+- 🐛 修复 pyvis `add_node`/`add_edge` 参数名兼容 + Jinja2 tojson Unicode 转义
+- ✨ 图谱节点属性键值英转中（region→产地，period→时期 等）
+
+### v1.10.0 (2026-07-22~23)
+
+- ✨ 知识库从 6 种扩展到 23 种非遗技艺（55,000 字）
+- ✨ Vue 3 前端全栈重写（Vite + TypeScript + Pinia + Element Plus + Tailwind）
+- ✨ 百度真实图片轮播 + 马山正行楷毛笔字体
+- 🐛 修复中文分词检索 bug（空格切分→jieba 分词）
+- ⚡ 缺口检测快速路径（90%+ 场景跳过 LLM 调用）
+- ⚡ 占位符 API Key 503 立即返回（不再超时卡住）
+- 🐛 缺口报告优化（部分覆盖时仅显示一行提示）
+- ✨ 文档加载器改为自动扫描目录
+
+### v1.9.0 (2026-07-17)
+
+- ✨ 用户系统：注册 / 登录 / JWT 认证（OAuth2 密码流 + bcrypt 密码哈希）
+- ✨ 聊天历史持久化：登录用户问答自动存档，支持分页查询与详情回看
+- ✨ 数据库层：SQLAlchemy 2.0 + Alembic 迁移，SQLite（开发）/ PostgreSQL（生产）双支持
+- ✨ Langfuse LLM 可观测性：统一 LLM 工厂 `create_llm()`，Agent 调用全链路追踪
+- ♻️ Streamlit 多页面重构：首页 Dashboard + Chat / Graph / Settings 三页面，公共组件抽离 ui_components.py
+- 🐳 docker-compose 新增 PostgreSQL 16 服务（健康检查 + 启动依赖编排）
 
 ### v1.8.0 (2026-07-2)
 

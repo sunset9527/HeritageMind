@@ -1,110 +1,792 @@
 {
   "nodes": [
-    {"id": "jingtailan", "name": "景泰蓝", "type": "craft", "properties": {"region": "北京市", "protection_level": "国家级非遗"}},
-    {"id": "suxiu", "name": "苏绣", "type": "craft", "properties": {"region": "苏州市", "protection_level": "国家级非遗"}},
-    {"id": "longquan_ci", "name": "龙泉青瓷", "type": "craft", "properties": {"region": "龙泉市", "protection_level": "国家级非遗"}},
-    {"id": "yixing_zisha", "name": "宜兴紫砂", "type": "craft", "properties": {"region": "宜兴市", "protection_level": "国家级非遗"}},
-    {"id": "wuhu_tiehua", "name": "芜湖铁画", "type": "craft", "properties": {"region": "芜湖市", "protection_level": "国家级非遗"}},
-    {"id": "shujin", "name": "蜀锦", "type": "craft", "properties": {"region": "成都市", "protection_level": "国家级非遗"}},
-    
-    {"id": "tongsi", "name": "铜丝", "type": "material", "properties": {"description": "景泰蓝的主要材料"}},
-    {"id": "flame_glaze", "name": "珐琅釉料", "type": "material", "properties": {"description": "景泰蓝的釉料"}},
-    {"id": "zijin", "name": "紫铜", "type": "material", "properties": {"description": "景泰蓝的胎料"}},
-    {"id": "sichou", "name": "蚕丝线", "type": "material", "properties": {"description": "苏绣的主要材料"}},
-    {"id": "si_duan", "name": "丝绸缎", "type": "material", "properties": {"description": "苏绣的底料"}},
-    {"id": "ci_tu", "name": "瓷土", "type": "material", "properties": {"description": "龙泉青瓷的原料"}},
-    {"id": "zijin_tu", "name": "紫金土", "type": "material", "properties": {"description": "龙泉青瓷的着色剂"}},
-    {"id": "zisha_ni", "name": "紫砂泥", "type": "material", "properties": {"description": "紫砂壶的原料"}},
-    {"id": "duan_ni", "name": "段泥", "type": "material", "properties": {"description": "紫砂壶的泥料"}},
-    {"id": "shu_tie", "name": "熟铁", "type": "material", "properties": {"description": "芜湖铁画的材料"}},
-    {"id": "canye_si", "name": "蚕丝", "type": "material", "properties": {"description": "蜀锦的原料"}},
-    {"id": "jinyin_xian", "name": "金银线", "type": "material", "properties": {"description": "蜀锦的装饰线"}},
-    
-    {"id": "cas_tool", "name": "掐丝工具", "type": "tool", "properties": {"description": "景泰蓝掐丝专用"}},
-    {"id": "hanqiang", "name": "焊枪", "type": "tool", "properties": {"description": "焊接工具"}},
-    {"id": "lanqiang", "name": "蓝枪", "type": "tool", "properties": {"description": "点蓝工具"}},
-    {"id": "moshi", "name": "磨石", "type": "tool", "properties": {"description": "打磨工具"}},
-    {"id": "xiu_zhen", "name": "绣针", "type": "tool", "properties": {"description": "刺绣工具"}},
-    {"id": "xiu_peng", "name": "绣绷", "type": "tool", "properties": {"description": "刺绣辅助工具"}},
-    {"id": "ladder_loom", "name": "花楼织机", "type": "tool", "properties": {"description": "蜀锦织造工具"}},
-    {"id": "lathe", "name": "拉坯机", "type": "tool", "properties": {"description": "瓷器成型工具"}},
-    {"id": "tiewan", "name": "铁锤", "type": "tool", "properties": {"description": "铁画锻造工具"}},
-    {"id": "zhu_zi", "name": "砧子", "type": "tool", "properties": {"description": "铁画锻造工具"}},
-    
-    {"id": "qian_meihua", "name": "钱美华", "type": "inheritor", "properties": {"main_craft": "景泰蓝", "level": "国家级传承人"}},
-    {"id": "zhang_luqi", "name": "张禄祺", "type": "inheritor", "properties": {"main_craft": "景泰蓝", "level": "国家级传承人"}},
-    {"id": "yao_jianping", "name": "姚建萍", "type": "inheritor", "properties": {"main_craft": "苏绣", "level": "国家级传承人"}},
-    {"id": "xu_chaoxing", "name": "徐朝兴", "type": "inheritor", "properties": {"main_craft": "龙泉青瓷", "level": "国家级传承人"}},
-    {"id": "wang_yinxian", "name": "汪寅仙", "type": "inheritor", "properties": {"main_craft": "宜兴紫砂", "level": "国家级传承人"}},
-    {"id": "yang_guanghui", "name": "杨光辉", "type": "inheritor", "properties": {"main_craft": "芜湖铁画", "level": "国家级传承人"}},
-    {"id": "liu_chenxia", "name": "刘晨霞", "type": "inheritor", "properties": {"main_craft": "蜀锦", "level": "国家级传承人"}},
-    
-    {"id": "beijing", "name": "北京市", "type": "region", "properties": {"location": "华北地区"}},
-    {"id": "suzhou", "name": "苏州市", "type": "region", "properties": {"location": "江苏省"}},
-    {"id": "longquan", "name": "龙泉市", "type": "region", "properties": {"location": "浙江省"}},
-    {"id": "yixing", "name": "宜兴市", "type": "region", "properties": {"location": "江苏省"}},
-    {"id": "wuhu", "name": "芜湖市", "type": "region", "properties": {"location": "安徽省"}},
-    {"id": "chengdu", "name": "成都市", "type": "region", "properties": {"location": "四川省"}},
-    
-    {"id": "yuan", "name": "元代", "type": "dynasty", "properties": {"period": "1271-1368"}},
-    {"id": "ming", "name": "明代", "type": "dynasty", "properties": {"period": "1368-1644"}},
-    {"id": "qing", "name": "清代", "type": "dynasty", "properties": {"period": "1644-1912"}},
-    {"id": "han", "name": "汉代", "type": "dynasty", "properties": {"period": "前202-220"}},
-    {"id": "song", "name": "宋代", "type": "dynasty", "properties": {"period": "960-1279"}},
-    {"id": "spring_autumn", "name": "春秋时期", "type": "dynasty", "properties": {"period": "前770-前476"}}
+    {
+      "id": "jingtailan",
+      "name": "景泰蓝",
+      "type": "craft",
+      "properties": {
+        "产地": "北京市",
+        "保护级别": "国家级非遗"
+      }
+    },
+    {
+      "id": "suxiu",
+      "name": "苏绣",
+      "type": "craft",
+      "properties": {
+        "产地": "苏州市",
+        "保护级别": "国家级非遗"
+      }
+    },
+    {
+      "id": "longquan_ci",
+      "name": "龙泉青瓷",
+      "type": "craft",
+      "properties": {
+        "产地": "龙泉市",
+        "保护级别": "国家级非遗"
+      }
+    },
+    {
+      "id": "yixing_zisha",
+      "name": "宜兴紫砂",
+      "type": "craft",
+      "properties": {
+        "产地": "宜兴市",
+        "保护级别": "国家级非遗"
+      }
+    },
+    {
+      "id": "wuhu_tiehua",
+      "name": "芜湖铁画",
+      "type": "craft",
+      "properties": {
+        "产地": "芜湖市",
+        "保护级别": "国家级非遗"
+      }
+    },
+    {
+      "id": "shujin",
+      "name": "蜀锦",
+      "type": "craft",
+      "properties": {
+        "产地": "成都市",
+        "保护级别": "国家级非遗"
+      }
+    },
+    {
+      "id": "jianzhi",
+      "name": "剪纸",
+      "type": "craft",
+      "properties": {
+        "产地": "全国",
+        "保护级别": "人类非遗代表作"
+      }
+    },
+    {
+      "id": "jingdezhen_ciqi",
+      "name": "景德镇瓷器",
+      "type": "craft",
+      "properties": {
+        "产地": "景德镇市",
+        "保护级别": "国家级非遗"
+      }
+    },
+    {
+      "id": "nanjing_yunjin",
+      "name": "南京云锦",
+      "type": "craft",
+      "properties": {
+        "产地": "南京市",
+        "保护级别": "人类非遗代表作"
+      }
+    },
+    {
+      "id": "dongyang_mudiao",
+      "name": "东阳木雕",
+      "type": "craft",
+      "properties": {
+        "产地": "东阳市",
+        "保护级别": "国家级非遗"
+      }
+    },
+    {
+      "id": "miaozu_laran",
+      "name": "苗族蜡染",
+      "type": "craft",
+      "properties": {
+        "产地": "贵州省",
+        "保护级别": "国家级非遗"
+      }
+    },
+    {
+      "id": "muban_nianhua",
+      "name": "木版年画",
+      "type": "craft",
+      "properties": {
+        "产地": "全国",
+        "保护级别": "国家级非遗"
+      }
+    },
+    {
+      "id": "kesi",
+      "name": "缂丝",
+      "type": "craft",
+      "properties": {
+        "产地": "苏州市",
+        "保护级别": "人类非遗代表作"
+      }
+    },
+    {
+      "id": "zhubian",
+      "name": "竹编",
+      "type": "craft",
+      "properties": {
+        "产地": "全国",
+        "保护级别": "国家级非遗"
+      }
+    },
+    {
+      "id": "yudiao",
+      "name": "玉雕",
+      "type": "craft",
+      "properties": {
+        "产地": "全国",
+        "保护级别": "国家级非遗"
+      }
+    },
+    {
+      "id": "qiqi",
+      "name": "漆器",
+      "type": "craft",
+      "properties": {
+        "产地": "全国",
+        "保护级别": "国家级非遗"
+      }
+    },
+    {
+      "id": "tangsancai",
+      "name": "唐三彩",
+      "type": "craft",
+      "properties": {
+        "产地": "洛阳市",
+        "保护级别": "国家级非遗"
+      }
+    },
+    {
+      "id": "junci",
+      "name": "钧瓷",
+      "type": "craft",
+      "properties": {
+        "产地": "禹州市",
+        "保护级别": "国家级非遗"
+      }
+    },
+    {
+      "id": "ruci",
+      "name": "汝瓷",
+      "type": "craft",
+      "properties": {
+        "产地": "汝州市",
+        "保护级别": "国家级非遗"
+      }
+    },
+    {
+      "id": "nirenzhang",
+      "name": "泥人张",
+      "type": "craft",
+      "properties": {
+        "产地": "天津市",
+        "保护级别": "国家级非遗"
+      }
+    },
+    {
+      "id": "piyingxi",
+      "name": "皮影戏",
+      "type": "craft",
+      "properties": {
+        "产地": "全国",
+        "保护级别": "人类非遗代表作"
+      }
+    },
+    {
+      "id": "zhuangjin",
+      "name": "壮锦",
+      "type": "craft",
+      "properties": {
+        "产地": "广西",
+        "保护级别": "国家级非遗"
+      }
+    },
+    {
+      "id": "jingju",
+      "name": "京剧",
+      "type": "craft",
+      "properties": {
+        "产地": "北京市",
+        "保护级别": "人类非遗代表作"
+      }
+    },
+    {
+      "id": "tongsi",
+      "name": "铜丝",
+      "type": "material",
+      "properties": {
+        "描述": "景泰蓝的主要材料"
+      }
+    },
+    {
+      "id": "flame_glaze",
+      "name": "珐琅釉料",
+      "type": "material",
+      "properties": {
+        "描述": "景泰蓝的釉料"
+      }
+    },
+    {
+      "id": "zijin",
+      "name": "紫铜",
+      "type": "material",
+      "properties": {
+        "描述": "景泰蓝的胎料"
+      }
+    },
+    {
+      "id": "sichou",
+      "name": "蚕丝线",
+      "type": "material",
+      "properties": {
+        "描述": "苏绣的主要材料"
+      }
+    },
+    {
+      "id": "si_duan",
+      "name": "丝绸缎",
+      "type": "material",
+      "properties": {
+        "描述": "苏绣的底料"
+      }
+    },
+    {
+      "id": "ci_tu",
+      "name": "瓷土",
+      "type": "material",
+      "properties": {
+        "描述": "龙泉青瓷的原料"
+      }
+    },
+    {
+      "id": "zijin_tu",
+      "name": "紫金土",
+      "type": "material",
+      "properties": {
+        "描述": "龙泉青瓷的着色剂"
+      }
+    },
+    {
+      "id": "zisha_ni",
+      "name": "紫砂泥",
+      "type": "material",
+      "properties": {
+        "描述": "紫砂壶的原料"
+      }
+    },
+    {
+      "id": "duan_ni",
+      "name": "段泥",
+      "type": "material",
+      "properties": {
+        "描述": "紫砂壶的泥料"
+      }
+    },
+    {
+      "id": "shu_tie",
+      "name": "熟铁",
+      "type": "material",
+      "properties": {
+        "描述": "芜湖铁画的材料"
+      }
+    },
+    {
+      "id": "canye_si",
+      "name": "蚕丝",
+      "type": "material",
+      "properties": {
+        "描述": "蜀锦的原料"
+      }
+    },
+    {
+      "id": "jinyin_xian",
+      "name": "金银线",
+      "type": "material",
+      "properties": {
+        "描述": "蜀锦的装饰线"
+      }
+    },
+    {
+      "id": "cas_tool",
+      "name": "掐丝工具",
+      "type": "tool",
+      "properties": {
+        "描述": "景泰蓝掐丝专用"
+      }
+    },
+    {
+      "id": "hanqiang",
+      "name": "焊枪",
+      "type": "tool",
+      "properties": {
+        "描述": "焊接工具"
+      }
+    },
+    {
+      "id": "lanqiang",
+      "name": "蓝枪",
+      "type": "tool",
+      "properties": {
+        "描述": "点蓝工具"
+      }
+    },
+    {
+      "id": "moshi",
+      "name": "磨石",
+      "type": "tool",
+      "properties": {
+        "描述": "打磨工具"
+      }
+    },
+    {
+      "id": "xiu_zhen",
+      "name": "绣针",
+      "type": "tool",
+      "properties": {
+        "描述": "刺绣工具"
+      }
+    },
+    {
+      "id": "xiu_peng",
+      "name": "绣绷",
+      "type": "tool",
+      "properties": {
+        "描述": "刺绣辅助工具"
+      }
+    },
+    {
+      "id": "ladder_loom",
+      "name": "花楼织机",
+      "type": "tool",
+      "properties": {
+        "描述": "蜀锦织造工具"
+      }
+    },
+    {
+      "id": "lathe",
+      "name": "拉坯机",
+      "type": "tool",
+      "properties": {
+        "描述": "瓷器成型工具"
+      }
+    },
+    {
+      "id": "tiewan",
+      "name": "铁锤",
+      "type": "tool",
+      "properties": {
+        "描述": "铁画锻造工具"
+      }
+    },
+    {
+      "id": "zhu_zi",
+      "name": "砧子",
+      "type": "tool",
+      "properties": {
+        "描述": "铁画锻造工具"
+      }
+    },
+    {
+      "id": "qian_meihua",
+      "name": "钱美华",
+      "type": "inheritor",
+      "properties": {
+        "所属技艺": "景泰蓝",
+        "传承级别": "国家级传承人"
+      }
+    },
+    {
+      "id": "zhang_luqi",
+      "name": "张禄祺",
+      "type": "inheritor",
+      "properties": {
+        "所属技艺": "景泰蓝",
+        "传承级别": "国家级传承人"
+      }
+    },
+    {
+      "id": "yao_jianping",
+      "name": "姚建萍",
+      "type": "inheritor",
+      "properties": {
+        "所属技艺": "苏绣",
+        "传承级别": "国家级传承人"
+      }
+    },
+    {
+      "id": "xu_chaoxing",
+      "name": "徐朝兴",
+      "type": "inheritor",
+      "properties": {
+        "所属技艺": "龙泉青瓷",
+        "传承级别": "国家级传承人"
+      }
+    },
+    {
+      "id": "wang_yinxian",
+      "name": "汪寅仙",
+      "type": "inheritor",
+      "properties": {
+        "所属技艺": "宜兴紫砂",
+        "传承级别": "国家级传承人"
+      }
+    },
+    {
+      "id": "yang_guanghui",
+      "name": "杨光辉",
+      "type": "inheritor",
+      "properties": {
+        "所属技艺": "芜湖铁画",
+        "传承级别": "国家级传承人"
+      }
+    },
+    {
+      "id": "liu_chenxia",
+      "name": "刘晨霞",
+      "type": "inheritor",
+      "properties": {
+        "所属技艺": "蜀锦",
+        "传承级别": "国家级传承人"
+      }
+    },
+    {
+      "id": "beijing",
+      "name": "北京市",
+      "type": "region",
+      "properties": {
+        "所属地区": "华北地区"
+      }
+    },
+    {
+      "id": "suzhou",
+      "name": "苏州市",
+      "type": "region",
+      "properties": {
+        "所属地区": "江苏省"
+      }
+    },
+    {
+      "id": "longquan",
+      "name": "龙泉市",
+      "type": "region",
+      "properties": {
+        "所属地区": "浙江省"
+      }
+    },
+    {
+      "id": "yixing",
+      "name": "宜兴市",
+      "type": "region",
+      "properties": {
+        "所属地区": "江苏省"
+      }
+    },
+    {
+      "id": "wuhu",
+      "name": "芜湖市",
+      "type": "region",
+      "properties": {
+        "所属地区": "安徽省"
+      }
+    },
+    {
+      "id": "chengdu",
+      "name": "成都市",
+      "type": "region",
+      "properties": {
+        "所属地区": "四川省"
+      }
+    },
+    {
+      "id": "yuan",
+      "name": "元代",
+      "type": "dynasty",
+      "properties": {
+        "时期": "1271-1368"
+      }
+    },
+    {
+      "id": "ming",
+      "name": "明代",
+      "type": "dynasty",
+      "properties": {
+        "时期": "1368-1644"
+      }
+    },
+    {
+      "id": "qing",
+      "name": "清代",
+      "type": "dynasty",
+      "properties": {
+        "时期": "1644-1912"
+      }
+    },
+    {
+      "id": "modern",
+      "name": "近代",
+      "type": "dynasty",
+      "properties": {
+        "时期": "1840-1949"
+      }
+    },
+    {
+      "id": "contemporary",
+      "name": "当代",
+      "type": "dynasty",
+      "properties": {
+        "时期": "1949-至今"
+      }
+    },
+    {
+      "id": "song",
+      "name": "宋代",
+      "type": "dynasty",
+      "properties": {
+        "时期": "960-1279"
+      }
+    },
+    {
+      "id": "han",
+      "name": "han",
+      "type": "unknown",
+      "properties": {}
+    }
   ],
   "edges": [
-    {"source": "jingtailan", "target": "tongsi", "relation": "uses_material"},
-    {"source": "jingtailan", "target": "flame_glaze", "relation": "uses_material"},
-    {"source": "jingtailan", "target": "zijin", "relation": "uses_material"},
-    {"source": "jingtailan", "target": "cas_tool", "relation": "uses_tool"},
-    {"source": "jingtailan", "target": "hanqiang", "relation": "uses_tool"},
-    {"source": "jingtailan", "target": "beijing", "relation": "originates_from"},
-    {"source": "jingtailan", "target": "yuan", "relation": "originated_in"},
-    {"source": "jingtailan", "target": "ming", "relation": "originated_in"},
-    {"source": "qian_meihua", "target": "jingtailan", "relation": "mastered_by"},
-    {"source": "zhang_luqi", "target": "jingtailan", "relation": "mastered_by"},
-    
-    {"source": "suxiu", "target": "sichou", "relation": "uses_material"},
-    {"source": "suxiu", "target": "si_duan", "relation": "uses_material"},
-    {"source": "suxiu", "target": "xiu_zhen", "relation": "uses_tool"},
-    {"source": "suxiu", "target": "xiu_peng", "relation": "uses_tool"},
-    {"source": "suxiu", "target": "suzhou", "relation": "originates_from"},
-    {"source": "suxiu", "target": "spring_autumn", "relation": "originated_in"},
-    {"source": "suxiu", "target": "ming", "relation": "originated_in"},
-    {"source": "yao_jianping", "target": "suxiu", "relation": "mastered_by"},
-    
-    {"source": "longquan_ci", "target": "ci_tu", "relation": "uses_material"},
-    {"source": "longquan_ci", "target": "zijin_tu", "relation": "uses_material"},
-    {"source": "longquan_ci", "target": "lathe", "relation": "uses_tool"},
-    {"source": "longquan_ci", "target": "longquan", "relation": "originates_from"},
-    {"source": "longquan_ci", "target": "song", "relation": "originated_in"},
-    {"source": "xu_chaoxing", "target": "longquan_ci", "relation": "mastered_by"},
-    
-    {"source": "yixing_zisha", "target": "zisha_ni", "relation": "uses_material"},
-    {"source": "yixing_zisha", "target": "duan_ni", "relation": "uses_material"},
-    {"source": "yixing_zisha", "target": "yixing", "relation": "originates_from"},
-    {"source": "yixing_zisha", "target": "ming", "relation": "originated_in"},
-    {"source": "wang_yinxian", "target": "yixing_zisha", "relation": "mastered_by"},
-    
-    {"source": "wuhu_tiehua", "target": "shu_tie", "relation": "uses_material"},
-    {"source": "wuhu_tiehua", "target": "tiewan", "relation": "uses_tool"},
-    {"source": "wuhu_tiehua", "target": "zhu_zi", "relation": "uses_tool"},
-    {"source": "wuhu_tiehua", "target": "wuhu", "relation": "originates_from"},
-    {"source": "wuhu_tiehua", "target": "qing", "relation": "originated_in"},
-    {"source": "yang_guanghui", "target": "wuhu_tiehua", "relation": "mastered_by"},
-    
-    {"source": "shujin", "target": "canye_si", "relation": "uses_material"},
-    {"source": "shujin", "target": "jinyin_xian", "relation": "uses_material"},
-    {"source": "shujin", "target": "ladder_loom", "relation": "uses_tool"},
-    {"source": "shujin", "target": "chengdu", "relation": "originates_from"},
-    {"source": "shujin", "target": "han", "relation": "originated_in"},
-    {"source": "liu_chenxia", "target": "shujin", "relation": "mastered_by"}
+    {
+      "source": "jingtailan",
+      "target": "tongsi",
+      "relation": "uses_material",
+      "properties": {}
+    },
+    {
+      "source": "jingtailan",
+      "target": "flame_glaze",
+      "relation": "uses_material",
+      "properties": {}
+    },
+    {
+      "source": "jingtailan",
+      "target": "zijin",
+      "relation": "uses_material",
+      "properties": {}
+    },
+    {
+      "source": "jingtailan",
+      "target": "cas_tool",
+      "relation": "uses_tool",
+      "properties": {}
+    },
+    {
+      "source": "jingtailan",
+      "target": "hanqiang",
+      "relation": "uses_tool",
+      "properties": {}
+    },
+    {
+      "source": "jingtailan",
+      "target": "beijing",
+      "relation": "originates_from",
+      "properties": {}
+    },
+    {
+      "source": "jingtailan",
+      "target": "ming",
+      "relation": "originated_in",
+      "properties": {}
+    },
+    {
+      "source": "suxiu",
+      "target": "sichou",
+      "relation": "uses_material",
+      "properties": {}
+    },
+    {
+      "source": "suxiu",
+      "target": "si_duan",
+      "relation": "uses_material",
+      "properties": {}
+    },
+    {
+      "source": "suxiu",
+      "target": "xiu_zhen",
+      "relation": "uses_tool",
+      "properties": {}
+    },
+    {
+      "source": "suxiu",
+      "target": "xiu_peng",
+      "relation": "uses_tool",
+      "properties": {}
+    },
+    {
+      "source": "suxiu",
+      "target": "suzhou",
+      "relation": "originates_from",
+      "properties": {}
+    },
+    {
+      "source": "suxiu",
+      "target": "ming",
+      "relation": "originated_in",
+      "properties": {}
+    },
+    {
+      "source": "longquan_ci",
+      "target": "ci_tu",
+      "relation": "uses_material",
+      "properties": {}
+    },
+    {
+      "source": "longquan_ci",
+      "target": "zijin_tu",
+      "relation": "uses_material",
+      "properties": {}
+    },
+    {
+      "source": "longquan_ci",
+      "target": "lathe",
+      "relation": "uses_tool",
+      "properties": {}
+    },
+    {
+      "source": "longquan_ci",
+      "target": "longquan",
+      "relation": "originates_from",
+      "properties": {}
+    },
+    {
+      "source": "longquan_ci",
+      "target": "song",
+      "relation": "originated_in",
+      "properties": {}
+    },
+    {
+      "source": "yixing_zisha",
+      "target": "zisha_ni",
+      "relation": "uses_material",
+      "properties": {}
+    },
+    {
+      "source": "yixing_zisha",
+      "target": "duan_ni",
+      "relation": "uses_material",
+      "properties": {}
+    },
+    {
+      "source": "yixing_zisha",
+      "target": "yixing",
+      "relation": "originates_from",
+      "properties": {}
+    },
+    {
+      "source": "yixing_zisha",
+      "target": "ming",
+      "relation": "originated_in",
+      "properties": {}
+    },
+    {
+      "source": "wuhu_tiehua",
+      "target": "shu_tie",
+      "relation": "uses_material",
+      "properties": {}
+    },
+    {
+      "source": "wuhu_tiehua",
+      "target": "tiewan",
+      "relation": "uses_tool",
+      "properties": {}
+    },
+    {
+      "source": "wuhu_tiehua",
+      "target": "zhu_zi",
+      "relation": "uses_tool",
+      "properties": {}
+    },
+    {
+      "source": "wuhu_tiehua",
+      "target": "wuhu",
+      "relation": "originates_from",
+      "properties": {}
+    },
+    {
+      "source": "wuhu_tiehua",
+      "target": "qing",
+      "relation": "originated_in",
+      "properties": {}
+    },
+    {
+      "source": "shujin",
+      "target": "canye_si",
+      "relation": "uses_material",
+      "properties": {}
+    },
+    {
+      "source": "shujin",
+      "target": "jinyin_xian",
+      "relation": "uses_material",
+      "properties": {}
+    },
+    {
+      "source": "shujin",
+      "target": "ladder_loom",
+      "relation": "uses_tool",
+      "properties": {}
+    },
+    {
+      "source": "shujin",
+      "target": "chengdu",
+      "relation": "originates_from",
+      "properties": {}
+    },
+    {
+      "source": "shujin",
+      "target": "han",
+      "relation": "originated_in",
+      "properties": {}
+    },
+    {
+      "source": "qian_meihua",
+      "target": "jingtailan",
+      "relation": "mastered_by",
+      "properties": {}
+    },
+    {
+      "source": "zhang_luqi",
+      "target": "jingtailan",
+      "relation": "mastered_by",
+      "properties": {}
+    },
+    {
+      "source": "yao_jianping",
+      "target": "suxiu",
+      "relation": "mastered_by",
+      "properties": {}
+    },
+    {
+      "source": "xu_chaoxing",
+      "target": "longquan_ci",
+      "relation": "mastered_by",
+      "properties": {}
+    },
+    {
+      "source": "wang_yinxian",
+      "target": "yixing_zisha",
+      "relation": "mastered_by",
+      "properties": {}
+    },
+    {
+      "source": "yang_guanghui",
+      "target": "wuhu_tiehua",
+      "relation": "mastered_by",
+      "properties": {}
+    },
+    {
+      "source": "liu_chenxia",
+      "target": "shujin",
+      "relation": "mastered_by",
+      "properties": {}
+    }
   ],
   "metadata": {
-    "node_count": 36,
-    "edge_count": 41,
-    "created_at": "2024-01-01",
-    "description": "非遗知识图谱初始版本"
+    "node_count": 65,
+    "edge_count": 39
   }
 }

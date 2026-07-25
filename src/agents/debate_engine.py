@@ -6,7 +6,7 @@ import json
 import logging
 from dataclasses import dataclass, field, asdict
 from typing import Dict, List, Optional, Any, Tuple
-from langchain_openai import ChatOpenAI
+from src.utils.llm import create_llm
 
 from config import settings, get_llm_config
 from src.utils.prompts import CRAFT_EXPERT_SYSTEM_PROMPT, HISTORY_EXPERT_SYSTEM_PROMPT, HERITAGE_EXPERT_SYSTEM_PROMPT
@@ -92,7 +92,7 @@ class DebateEngine:
     def __init__(
         self,
         agents: Dict[str, Any],
-        llm: Optional[ChatOpenAI] = None
+        llm: Optional[Any] = None
     ):
         """
         初始化辩论引擎
@@ -104,16 +104,7 @@ class DebateEngine:
         self.agents = agents
         
         if llm is None:
-            llm_config = get_llm_config()
-            self.llm = ChatOpenAI(
-                model=settings.deepseek_model,
-                base_url=settings.deepseek_base_url,
-                api_key=settings.deepseek_api_key,
-                temperature=llm_config["temperature"],
-                max_tokens=llm_config["max_tokens"],
-                request_timeout=120,
-                max_retries=1
-            )
+            self.llm = create_llm()
         else:
             self.llm = llm
         

@@ -11,7 +11,7 @@ from pydantic import Field, field_validator
 
 class Settings(BaseSettings):
     """系统配置类"""
-    
+
     # DeepSeek API配置
     deepseek_api_key: str = Field(
         default="",
@@ -25,19 +25,19 @@ class Settings(BaseSettings):
         default="deepseek-chat",
         description="DeepSeek模型名称"
     )
-    
+
     # 向量数据库配置
     vector_db_path: str = Field(
         default="./data/vector_db",
         description="Chroma向量数据库存储路径"
     )
-    
+
     # 知识图谱配置
     heritage_graph_path: str = Field(
         default="./data/heritage_graph.json",
         description="非遗知识图谱JSON文件路径"
     )
-    
+
     # 文档路径配置
     crafts_doc_path: str = Field(
         default="./data/crafts",
@@ -47,7 +47,7 @@ class Settings(BaseSettings):
         default="./data/user_profiles.json",
         description="用户画像配置文件路径"
     )
-    
+
     # LLM配置
     temperature: float = Field(
         default=0.7,
@@ -61,7 +61,7 @@ class Settings(BaseSettings):
         le=8000,
         description="LLM最大生成token数"
     )
-    
+
     # 检索配置
     top_k: int = Field(
         default=5,
@@ -75,7 +75,7 @@ class Settings(BaseSettings):
         le=1.0,
         description="相似度阈值"
     )
-    
+
     # 工作流配置
     max_expert_agents: int = Field(
         default=3,
@@ -88,32 +88,72 @@ class Settings(BaseSettings):
         ge=1,
         description="知识缺口检测阈值：文档数小于此值认为存在缺口"
     )
-    
+
     # 用户画像配置
     default_user_profile: str = Field(
         default="curious",
         description="默认用户画像：curious(好奇者)/learner(学习者)/researcher(研究者)"
     )
-    
+
     # API服务配置
     api_host: str = Field(default="0.0.0.0", description="API服务主机")
     api_port: int = Field(default=8000, description="API服务端口")
-    
+
     # Streamlit配置
     streamlit_port: int = Field(default=8501, description="Streamlit服务端口")
-    
+
     # 日志配置
     log_level: str = Field(
         default="INFO",
         description="日志级别"
     )
-    
+
+    # 数据库配置
+    database_url: str = Field(
+        default="sqlite:///./data/heritage.db",
+        description="数据库连接URL。本地开发: sqlite:///./data/heritage.db，生产: postgresql://user:pass@host:5432/heritagemind"
+    )
+
+    # JWT认证配置
+    jwt_secret_key: str = Field(
+        default="heritagemind-dev-secret-change-in-production",
+        description="JWT签名密钥，生产环境必须修改为强随机字符串"
+    )
+    jwt_algorithm: str = Field(
+        default="HS256",
+        description="JWT签名算法"
+    )
+    jwt_expire_minutes: int = Field(
+        default=60,
+        ge=1,
+        le=43200,
+        description="JWT过期时间（分钟），默认60分钟，最长30天"
+    )
+
+    # Langfuse可观测性配置
+    langfuse_public_key: str = Field(
+        default="",
+        description="Langfuse Public Key，用于LLM调用追踪"
+    )
+    langfuse_secret_key: str = Field(
+        default="",
+        description="Langfuse Secret Key"
+    )
+    langfuse_host: str = Field(
+        default="http://localhost:3000",
+        description="Langfuse服务地址"
+    )
+    langfuse_enabled: bool = Field(
+        default=False,
+        description="是否启用Langfuse LLM调用追踪"
+    )
+
     # 传承人视角配置
     enable_narrative_mode: bool = Field(
         default=True,
         description="是否启用传承人视角叙事模式"
     )
-    
+
     # Embedding配置
     embedding_model: str = Field(
         default="BAAI/bge-large-zh-v1.5",
@@ -123,13 +163,13 @@ class Settings(BaseSettings):
         default=1024,
         description="嵌入向量维度"
     )
-    
+
     # BM25配置
     bm25_enabled: bool = Field(
         default=True,
         description="是否启用BM25检索"
     )
-    
+
     # Reranker配置
     reranker_model: str = Field(
         default="BAAI/bge-reranker-base",
@@ -139,20 +179,20 @@ class Settings(BaseSettings):
         default=True,
         description="是否启用Reranker重排序"
     )
-    
+
     # 查询重写配置
     query_rewriting_enabled: bool = Field(
         default=True,
         description="是否启用查询重写"
     )
-    
+
     # RRF融合配置
     rrf_k: int = Field(
         default=60,
         ge=1,
         description="RRF融合算法参数k"
     )
-    
+
     @field_validator("deepseek_api_key", mode="before")
     @classmethod
     def get_api_key_from_env(cls, v: str) -> str:
@@ -173,7 +213,7 @@ class Settings(BaseSettings):
                         pass
                 return ""
         return v
-    
+
     class Config:
         """Pydantic配置"""
         env_file = ".env"

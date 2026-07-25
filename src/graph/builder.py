@@ -62,6 +62,23 @@ class KnowledgeGraphBuilder:
             ("yixing_zisha", "宜兴紫砂", "宜兴市", "国家级非遗"),
             ("wuhu_tiehua", "芜湖铁画", "芜湖市", "国家级非遗"),
             ("shujin", "蜀锦", "成都市", "国家级非遗"),
+            ("jianzhi", "剪纸", "全国", "人类非遗代表作"),
+            ("jingdezhen_ciqi", "景德镇瓷器", "景德镇市", "国家级非遗"),
+            ("nanjing_yunjin", "南京云锦", "南京市", "人类非遗代表作"),
+            ("dongyang_mudiao", "东阳木雕", "东阳市", "国家级非遗"),
+            ("miaozu_laran", "苗族蜡染", "贵州省", "国家级非遗"),
+            ("muban_nianhua", "木版年画", "全国", "国家级非遗"),
+            ("kesi", "缂丝", "苏州市", "人类非遗代表作"),
+            ("zhubian", "竹编", "全国", "国家级非遗"),
+            ("yudiao", "玉雕", "全国", "国家级非遗"),
+            ("qiqi", "漆器", "全国", "国家级非遗"),
+            ("tangsancai", "唐三彩", "洛阳市", "国家级非遗"),
+            ("junci", "钧瓷", "禹州市", "国家级非遗"),
+            ("ruci", "汝瓷", "汝州市", "国家级非遗"),
+            ("nirenzhang", "泥人张", "天津市", "国家级非遗"),
+            ("piyingxi", "皮影戏", "全国", "人类非遗代表作"),
+            ("zhuangjin", "壮锦", "广西", "国家级非遗"),
+            ("jingju", "京剧", "北京市", "人类非遗代表作"),
         ]
         
         for node_id, name, region, level in crafts:
@@ -70,8 +87,8 @@ class KnowledgeGraphBuilder:
                 node_type="craft",
                 name=name,
                 properties={
-                    "region": region,
-                    "protection_level": level
+                    "产地": region,
+                    "保护级别": level
                 }
             )
     
@@ -97,7 +114,7 @@ class KnowledgeGraphBuilder:
                 node_id=node_id,
                 node_type="material",
                 name=name,
-                properties={"description": description}
+                properties={"描述": description}
             )
     
     def _add_tool_nodes(self):
@@ -120,7 +137,7 @@ class KnowledgeGraphBuilder:
                 node_id=node_id,
                 node_type="tool",
                 name=name,
-                properties={"description": description}
+                properties={"描述": description}
             )
     
     def _add_inheritor_nodes(self):
@@ -141,8 +158,8 @@ class KnowledgeGraphBuilder:
                 node_type="inheritor",
                 name=name,
                 properties={
-                    "main_craft": craft,
-                    "level": level
+                    "所属技艺": craft,
+                    "传承级别": level
                 }
             )
     
@@ -162,7 +179,7 @@ class KnowledgeGraphBuilder:
                 node_id=node_id,
                 node_type="region",
                 name=name,
-                properties={"location": location}
+                properties={"所属地区": location}
             )
     
     def _add_dynasty_nodes(self):
@@ -180,7 +197,7 @@ class KnowledgeGraphBuilder:
                 node_id=node_id,
                 node_type="dynasty",
                 name=name,
-                properties={"period": period}
+                properties={"时期": period}
             )
     
     def _add_craft_relations(self):
@@ -237,7 +254,7 @@ class KnowledgeGraphBuilder:
         self.graph.add_edge("liu_chenxia", "shujin", "mastered_by")
         
         # 添加朝代朝代
-        self.graph.add_node("song", "dynasty", "宋代", {"period": "960-1279"})
+        self.graph.add_node("song", "dynasty", "宋代", {"时期": "960-1279"})
         self.graph.add_edge("longquan_ci", "song", "originated_in")
     
     def build_from_documents(

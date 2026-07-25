@@ -150,9 +150,13 @@ class HeritageGraphVisualizer:
             font_color="#333333",
             directed=True,
             notebook=False,
-            select_menu=True,
-            filter_menu=True
+            select_menu=False,
+            filter_menu=False
         )
+        # 修复 pyvis Jinja2 模板的 tojson 过滤器：默认 ensure_ascii=True
+        # 会把所有中文转义成 \uXXXX，导致图谱显示乱码
+        import json as _json
+        net.templateEnv.filters['tojson'] = lambda v: _json.dumps(v, ensure_ascii=False)
         
         # 设置物理引擎参数
         if layout == "force":
@@ -196,7 +200,7 @@ class HeritageGraphVisualizer:
                     hover_text += f"{key}: {value}<br>"
             
             nodes_to_add.append({
-                "id": node_id,
+                "n_id": node_id,
                 "label": node_name,
                 "title": hover_text,
                 "color": {
@@ -216,15 +220,15 @@ class HeritageGraphVisualizer:
                 "borderWidthSelected": 4
             })
         
+        # 收集已添加的节点 ID（用于过滤边）
+        added_node_ids = {n["n_id"] for n in nodes_to_add}
+
         # 添加边
         for source, target, attrs in self.graph.graph.edges(data=True):
-            # 类型过滤
-            if filter_type:
-                source_type = self.graph.graph.nodes[source].get("type", "unknown")
-                target_type = self.graph.graph.nodes[target].get("type", "unknown")
-                if source_type != filter_type and target_type != filter_type:
-                    continue
-            
+            # 跳过涉及未添加节点的边（例如筛选时）
+            if source not in added_node_ids or target not in added_node_ids:
+                continue
+
             relation = attrs.get("relation", "related_to")
             relation_name = self.EDGE_TYPE_NAMES.get(relation, relation)
             
@@ -233,7 +237,7 @@ class HeritageGraphVisualizer:
             target_name = self.graph.graph.nodes[target].get("name", target)
             
             edges_to_add.append({
-                "from": source,
+                "source": source,
                 "to": target,
                 "title": f"{source_name} → {relation_name} → {target_name}",
                 "label": relation_name,
@@ -251,8 +255,7 @@ class HeritageGraphVisualizer:
                 }
             })
         
-        # 添加到网络
-        net.add_nodes([n["id"] for n in nodes_to_add])
+        # 添加到网络 — 逐个添加以保留中文 label/title
         for node in nodes_to_add:
             net.add_node(**node)
         

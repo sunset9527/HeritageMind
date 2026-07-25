@@ -276,20 +276,36 @@ class MultiSourceRetriever:
     
     def _extract_keywords(self, text: str) -> List[str]:
         """
-        从文本中提取关键词
-        
+        从文本中提取关键词（中文使用 jieba 分词）
+
         Args:
             text: 文本
-        
+
         Returns:
             关键词列表
         """
-        # 简单实现：按空格分词，去除停用词
-        stopwords = {"的", "了", "是", "在", "和", "与", "或", "什么", "如何", "怎么", "哪个"}
-        
-        words = text.split()
-        keywords = [w for w in words if len(w) >= 2 and w not in stopwords]
-        
+        stopwords = {"的", "了", "是", "在", "和", "与", "或", "什么", "如何", "怎么", "哪个",
+                     "吗", "呢", "吧", "啊", "吗", "有", "被", "把", "从", "到", "对", "让", "请"}
+
+        # 尝试 jieba 分词（中文）
+        try:
+            import jieba
+            words = list(jieba.cut(text))
+        except ImportError:
+            words = text.split()
+
+        keywords = [w.strip() for w in words if len(w.strip()) >= 2 and w.strip() not in stopwords]
+
+        # 如果 jieba 也没分出有效词（极短输入），做 2-4 字滑动窗口兜底
+        if not keywords:
+            import re
+            cleaned = re.sub(r'[？?！!，,。.、\s]+', '', text)
+            for size in [4, 3, 2]:
+                for i in range(len(cleaned) - size + 1):
+                    kw = cleaned[i:i + size]
+                    if kw not in stopwords and kw not in keywords:
+                        keywords.append(kw)
+
         return keywords
     
     def _cosine_similarity(

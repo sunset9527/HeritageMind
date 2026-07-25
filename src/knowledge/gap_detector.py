@@ -6,7 +6,7 @@ import json
 import logging
 from typing import Dict, List, Optional, Any
 from pydantic import BaseModel, Field
-from langchain_openai import ChatOpenAI
+from src.utils.llm import create_llm
 
 from config import settings, get_llm_config
 from src.utils.prompts import GAP_DETECTION_PROMPT
@@ -43,7 +43,7 @@ class KnowledgeGapDetector:
     4. 为知识补充提供方向性建议
     """
     
-    def __init__(self, llm: Optional[ChatOpenAI] = None):
+    def __init__(self, llm: Optional[Any] = None):
         """
         初始化知识缺口检测器
         
@@ -51,14 +51,7 @@ class KnowledgeGapDetector:
             llm: 可选的语言模型实例
         """
         if llm is None:
-            llm_config = get_llm_config()
-            self.llm = ChatOpenAI(
-                model=settings.deepseek_model,
-                base_url=settings.deepseek_base_url,
-                api_key=settings.deepseek_api_key,
-                temperature=0.3,  # 缺口检测使用较低温度
-                max_tokens=1500,
-            )
+            self.llm = create_llm(temperature=0.3, max_tokens=1500)
         else:
             self.llm = llm
         
@@ -73,20 +66,50 @@ class KnowledgeGapDetector:
     ) -> GapDetectionResult:
         """
         检测知识缺口
-        
+
         Args:
             question: 用户问题
             retrieved_docs: 检索到的文档列表
             context: 可选的上下文信息
-        
+
         Returns:
             GapDetectionResult: 缺口检测结果
         """
-        # 基本评估
         doc_count = len(retrieved_docs)
         doc_contents = [doc.get("content", "")[:500] for doc in retrieved_docs if "content" in doc]
-        
-        # 使用LLM进行深度分析
+
+        # 计算文档平均相关度分数
+        scores = [doc.get("score", doc.get("relevance", 0)) for doc in retrieved_docs]
+        avg_score = sum(scores) / len(scores) if scores else 0
+
+        # === 快速路径：检索结果充足时跳过 LLM 调用，大幅提速 ===
+        if doc_count >= 3 and avg_score >= 0.5:
+            logger.info(f"快速路径：{doc_count}条文档，均分{avg_score:.2f}，跳过LLM缺口检测")
+            return GapDetectionResult(
+                coverage_level="sufficient",
+                relevant_documents=doc_count,
+                coverage_score=min(0.85, avg_score),
+                identified_gaps=[],
+                can_answer=True,
+                confidence=0.9,
+                reasoning=f"检索到{doc_count}条高相关文档，覆盖度良好"
+            )
+
+        # 中等情况：文档够但分数偏低，快速降级
+        if doc_count >= 2 and avg_score >= 0.4:
+            logger.info(f"中等覆盖：{doc_count}条文档，均分{avg_score:.2f}")
+            return GapDetectionResult(
+                coverage_level="partial",
+                relevant_documents=doc_count,
+                coverage_score=avg_score,
+                identified_gaps=[],
+                can_answer=True,
+                confidence=0.75,
+                reasoning=f"检索到{doc_count}条文档，基本可回答"
+            )
+
+        # === 仅边缘情况才调 LLM 做深度分析 ===
+        logger.info(f"边缘情况（{doc_count}条，均分{avg_score:.2f}），调用LLM深度分析")
         try:
             prompt = self._build_detection_prompt(question, doc_count, doc_contents)
             
@@ -119,7 +142,7 @@ class KnowledgeGapDetector:
                 relevant_documents=doc_count,
                 coverage_score=result.get("coverage_score", 0.5),
                 identified_gaps=gaps,
-                can_answer=result.get("can_answer", doc_count >= self.threshold),
+                can_answer=result.get("can_answer", doc_count >= 2),
                 confidence=result.get("confidence", 0.7),
                 reasoning=result.get("reasoning", "")
             )

@@ -38,31 +38,42 @@ class HeritageDocumentLoader:
     
     def load_craft_documents(self) -> List[Dict[str, Any]]:
         """
-        加载所有技艺文档
-        
+        加载所有技艺文档（自动扫描目录下所有 .txt 文件）
+
         Returns:
             文档列表，每项包含 id, content, metadata
         """
         documents = []
-        craft_files = {
-            "jingtailan": "景泰蓝.txt",
-            "suxiu": "苏绣.txt",
-            "longquan_ci": "龙泉青瓷.txt",
-            "yixing_zisha": "宜兴紫砂.txt",
-            "wuhu_tiehua": "芜湖铁画.txt",
-            "shujin": "蜀锦.txt",
-        }
-        
-        for craft_id, filename in craft_files.items():
-            file_path = self.base_path / filename
-            if file_path.exists():
-                doc = self._load_single_document(file_path, craft_id)
-                if doc:
-                    documents.append(doc)
-            else:
-                logger.warning(f"文档不存在：{file_path}")
-        
+        if not self.base_path.exists():
+            logger.warning(f"文档目录不存在：{self.base_path}")
+            return documents
+
+        # 自动扫描所有 .txt 文件
+        for file_path in sorted(self.base_path.glob("*.txt")):
+            # 从文件名提取 craft_id（去掉 .txt 后缀，拼音化作为 id）
+            craft_name = file_path.stem  # e.g. "景泰蓝"
+            craft_id = self._name_to_id(craft_name)
+            doc = self._load_single_document(file_path, craft_id)
+            if doc:
+                documents.append(doc)
+
+        logger.info(f"已加载{len(documents)}篇技艺文档")
         return documents
+
+    @staticmethod
+    def _name_to_id(name: str) -> str:
+        """中文名称转拼音 ID（简易映射）"""
+        name_map = {
+            "景泰蓝": "jingtailan", "苏绣": "suxiu", "龙泉青瓷": "longquan_ci",
+            "宜兴紫砂": "yixing_zisha", "芜湖铁画": "wuhu_tiehua", "蜀锦": "shujin",
+            "剪纸": "jianzhi", "景德镇瓷器": "jingdezhen_ciqi", "南京云锦": "nanjing_yunjin",
+            "东阳木雕": "dongyang_mudiao", "苗族蜡染": "miaozu_laran", "木版年画": "muban_nianhua",
+            "缂丝": "kesi", "竹编": "zhubian", "玉雕": "yudiao",
+            "漆器": "qiqi", "唐三彩": "tangsancai", "钧瓷": "junci",
+            "汝瓷": "ruci", "泥人张": "nirenzhang", "皮影戏": "piyingxi",
+            "壮锦": "zhuangjin", "京剧": "jingju",
+        }
+        return name_map.get(name, name.lower().replace(" ", "_"))
     
     def _load_single_document(
         self,

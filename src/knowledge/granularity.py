@@ -4,7 +4,7 @@
 
 import logging
 from typing import Dict, List, Optional, Any
-from langchain_openai import ChatOpenAI
+from src.utils.llm import create_llm
 
 from config import settings, get_llm_config
 from src.utils.prompts import GRANULARITY_PROMPTS, get_adaptive_prompt
@@ -53,7 +53,7 @@ class GranularityController:
         }
     }
     
-    def __init__(self, llm: Optional[ChatOpenAI] = None):
+    def __init__(self, llm: Optional[Any] = None):
         """
         初始化多粒度控制器
         
@@ -62,10 +62,7 @@ class GranularityController:
         """
         if llm is None:
             llm_config = get_llm_config()
-            self.llm = ChatOpenAI(
-                model=settings.deepseek_model,
-                base_url=settings.deepseek_base_url,
-                api_key=settings.deepseek_api_key,
+            self.llm = create_llm(
                 temperature=llm_config["temperature"],
                 max_tokens=llm_config["max_tokens"] * 2,  # 深度内容需要更多token
             )

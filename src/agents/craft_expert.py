@@ -4,7 +4,7 @@
 
 import logging
 from typing import Dict, List, Optional, Any
-from langchain_openai import ChatOpenAI
+from src.utils.llm import create_llm
 
 from config import settings, get_llm_config
 from src.utils.prompts import CRAFT_EXPERT_SYSTEM_PROMPT
@@ -26,7 +26,7 @@ class CraftExpertAgent:
     
     def __init__(
         self,
-        llm: Optional[ChatOpenAI] = None,
+        llm: Optional[Any] = None,
         retriever: Optional[MultiSourceRetriever] = None
     ):
         """
@@ -37,14 +37,7 @@ class CraftExpertAgent:
             retriever: 可选的检索器实例
         """
         if llm is None:
-            llm_config = get_llm_config()
-            self.llm = ChatOpenAI(
-                model=settings.deepseek_model,
-                base_url=settings.deepseek_base_url,
-                api_key=settings.deepseek_api_key,
-                temperature=llm_config["temperature"],
-                max_tokens=llm_config["max_tokens"],
-            )
+            self.llm = create_llm()
         else:
             self.llm = llm
         

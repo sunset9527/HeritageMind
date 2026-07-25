@@ -5,11 +5,11 @@
 import json
 import logging
 from typing import Dict, List, Optional, Any, Tuple
-from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
 
 from config import settings, get_llm_config
 from src.utils.prompts import DISPATCHER_SYSTEM_PROMPT, get_question_analysis_prompt, get_fusion_prompt
+from src.utils.llm import create_llm
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,7 @@ class DispatcherAgent:
         "heritage_expert": "传承现状Agent",
     }
     
-    def __init__(self, llm: Optional[ChatOpenAI] = None, debate_engine: Optional[Any] = None):
+    def __init__(self, llm: Optional[Any] = None, debate_engine: Optional[Any] = None):
         """
         初始化调度Agent
         
@@ -50,16 +50,7 @@ class DispatcherAgent:
             debate_engine: 可选的辩论引擎实例，用于多轮辩论融合
         """
         if llm is None:
-            llm_config = get_llm_config()
-            self.llm = ChatOpenAI(
-                model=settings.deepseek_model,
-                base_url=settings.deepseek_base_url,
-                api_key=settings.deepseek_api_key,
-                temperature=llm_config["temperature"],
-                max_tokens=llm_config["max_tokens"],
-                request_timeout=120,
-                max_retries=1
-            )
+            self.llm = create_llm()
         else:
             self.llm = llm
         

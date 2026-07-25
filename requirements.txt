@@ -30,6 +30,18 @@ python-multipart>=0.0.6
 pytest>=7.4.0
 pytest-asyncio>=0.23.0
 
+# 数据库
+sqlalchemy>=2.0
+alembic>=1.13
+psycopg2-binary>=2.9
+
+# 认证
+passlib[bcrypt]>=1.7
+python-jose[cryptography]>=3.3
+
+# LLM 可观测性
+langfuse>=2.0
+
 # 日志和工具
 python-dotenv>=1.0.0
 httpx>=0.26.0

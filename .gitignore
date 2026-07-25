@@ -24,6 +24,11 @@ data/chroma_db/
 .pytest_cache/
 htmlcov/
 
+# 前端
+frontend/node_modules/
+frontend/dist/
+.vite/
+
 # 系统
 .DS_Store
 Thumbs.db

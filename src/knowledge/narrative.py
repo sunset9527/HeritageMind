@@ -4,7 +4,7 @@
 
 import logging
 from typing import Dict, List, Optional, Any
-from langchain_openai import ChatOpenAI
+from src.utils.llm import create_llm
 
 from config import settings, get_llm_config
 from src.utils.prompts import NARRATIVE_GENERATION_PROMPT
@@ -70,7 +70,7 @@ class NarrativeGenerator:
         }
     }
     
-    def __init__(self, llm: Optional[ChatOpenAI] = None):
+    def __init__(self, llm: Optional[Any] = None):
         """
         初始化叙事生成器
         
@@ -78,14 +78,7 @@ class NarrativeGenerator:
             llm: 可选的语言模型实例
         """
         if llm is None:
-            llm_config = get_llm_config()
-            self.llm = ChatOpenAI(
-                model=settings.deepseek_model,
-                base_url=settings.deepseek_base_url,
-                api_key=settings.deepseek_api_key,
-                temperature=0.8,  # 叙事模式使用较高温度
-                max_tokens=1500,
-            )
+            self.llm = create_llm(temperature=0.8, max_tokens=1500)
         else:
             self.llm = llm
     

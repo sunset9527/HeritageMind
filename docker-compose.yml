@@ -1,4 +1,25 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: heritagemind-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=heritagemind
+      - POSTGRES_PASSWORD=heritagemind
+      - POSTGRES_DB=heritagemind
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - heritagemind-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U heritagemind"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   api:
     build:
       context: .
@@ -9,10 +30,16 @@ services:
       - "8000:8000"
     environment:
       - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-sk-your-key-here}
+      - DATABASE_URL=postgresql://heritagemind:heritagemind@postgres:5432/heritagemind
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-change-me-in-production}
       - LOG_LEVEL=INFO
     volumes:
       - chroma_data:/app/data/chroma_db
       - craft_data:/app/data
+      - sqlite_data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - heritagemind-network
     healthcheck:
@@ -22,6 +49,7 @@ services:
       retries: 3
       start_period: 15s
 
+  # === Streamlit frontend (existing, default) ===
   frontend:
     build:
       context: .
@@ -33,6 +61,8 @@ services:
     environment:
       - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-sk-your-key-here}
       - API_BASE_URL=http://api:8000
+      - DATABASE_URL=postgresql://heritagemind:heritagemind@postgres:5432/heritagemind
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-change-me-in-production}
       - LOG_LEVEL=INFO
     volumes:
       - chroma_data:/app/data/chroma_db
@@ -49,10 +79,54 @@ services:
       retries: 3
       start_period: 20s
 
+  # === Vue 3 frontend (opt-in via --profile vue) ===
+  vue-frontend:
+    build:
+      context: ./frontend
+      target: development
+    container_name: heritagemind-vue
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_PROXY_TARGET=http://api:8000
+      - VITE_API_BASE_URL=/api
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - heritagemind-network
+    profiles:
+      - vue
+
+  # === Nginx production (opt-in via --profile production) ===
+  vue-nginx:
+    build:
+      context: ./frontend
+      target: production
+    container_name: heritagemind-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - heritagemind-network
+    profiles:
+      - production
+
 volumes:
   chroma_data:
     driver: local
   craft_data:
+    driver: local
+  postgres_data:
+    driver: local
+  sqlite_data:
     driver: local
 
 networks:

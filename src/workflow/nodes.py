@@ -379,7 +379,13 @@ def generate_response_node(state: WorkflowState) -> WorkflowState:
         # 添加缺口报告
         gap_report = state.get("gap_report", "")
         if gap_report:
-            adapted_content = f"{adapted_content}\n\n{gap_report}"
+            has_gaps = state.get("has_gaps", False)
+            if has_gaps:
+                # 严重缺口：报告放后面
+                adapted_content = f"{adapted_content}\n\n---\n{gap_report}"
+            else:
+                # 轻度不足：只加一行提示，答案优先
+                adapted_content = f"{adapted_content}\n\n> 💡 当前知识库对此问题覆盖有限，回答可能不够详尽。"
         
         state["adapted_content"] = adapted_content
         state["final_response"] = adapted_content
