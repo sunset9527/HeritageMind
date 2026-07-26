@@ -8,14 +8,14 @@
 
 与通用问答系统的关键区别：
 
-| 对比维度 | 通用问答 | HeritageMind |
-|----------|---------|-------------|
+| 对比维度 | 通用问答               | HeritageMind                       |
+| -------- | ---------------------- | ---------------------------------- |
 | 知识边界 | 假装全知，不知道也硬答 | 主动检测知识缺口，诚实告知覆盖程度 |
-| 回答深度 | 一刀切 | 好奇者/学习者/研究者三种粒度 |
-| 知识整合 | 单一来源 | 三个领域专家Agent多视角融合 |
-| 分歧处理 | 无 | 辩论引擎，可视化分歧→达成共识 |
-| 叙事风格 | 标准学术口吻 | 可选传承人视角（老匠人口吻） |
-| 知识图谱 | 无 | 技艺→材料→工具→传承人→地域多维关联 |
+| 回答深度 | 一刀切                 | 好奇者/学习者/研究者三种粒度       |
+| 知识整合 | 单一来源               | 三个领域专家Agent多视角融合        |
+| 分歧处理 | 无                     | 辩论引擎，可视化分歧→达成共识      |
+| 叙事风格 | 标准学术口吻           | 可选传承人视角（老匠人口吻）       |
+| 知识图谱 | 无                     | 技艺→材料→工具→传承人→地域多维关联 |
 
 系统以 23 种国家级非遗技艺为知识库，涵盖陶瓷、丝织、雕刻、印染、纸艺、金属、戏曲 7 大门类。
 
@@ -77,33 +77,33 @@
 
 ### 核心功能
 
-| 功能 | 说明 |
-|------|------|
-| **多 Agent 问答** | 三领域专家并行检索，调度 Agent 融合多视角结果 |
-| **知识缺口检测** | 主动识别知识库覆盖盲区，告知用户"哪里信息不足" |
-| **多粒度输出** | 同一问题根据用户画像输出不同深度（300~5000字） |
-| **非遗知识图谱** | 65 节点 39 边，全中文标签，交互式可视化 |
-| **辩论引擎** | 专家意见不一时自动触发辩论，过程可追溯 |
-| **传承人叙事** | 可选"老匠人"口吻的技艺讲述风格 |
-| **用户系统** | 注册 / 登录 / JWT 鉴权，登录后问答记录自动存档、分页回看 |
-| **LLM 可观测性** | Langfuse 全链路追踪，每次 Agent 调用可回放分析 |
+| 功能              | 说明                                                     |
+| ----------------- | -------------------------------------------------------- |
+| **多 Agent 问答** | 三领域专家并行检索，调度 Agent 融合多视角结果            |
+| **知识缺口检测**  | 主动识别知识库覆盖盲区，告知用户"哪里信息不足"           |
+| **多粒度输出**    | 同一问题根据用户画像输出不同深度（300~5000字）           |
+| **非遗知识图谱**  | 65 节点 39 边，全中文标签，交互式可视化                  |
+| **辩论引擎**      | 专家意见不一时自动触发辩论，过程可追溯                   |
+| **传承人叙事**    | 可选"老匠人"口吻的技艺讲述风格                           |
+| **用户系统**      | 注册 / 登录 / JWT 鉴权，登录后问答记录自动存档、分页回看 |
+| **LLM 可观测性**  | Langfuse 全链路追踪，每次 Agent 调用可回放分析           |
 
 ### 五大技术深度
 
-| 深度点 | 说明 |
-|--------|------|
+| 深度点                | 说明                                        |
+| --------------------- | ------------------------------------------- |
 | **多专家 Agent 协作** | 各有知识边界，调度 Agent 按需分配，并行检索 |
-| **知识缺口检测** | 识别知识库空白领域，能回答"不知道什么" |
-| **多粒度知识服务** | 好奇者/学习者/研究者看到不同深度回答 |
-| **非遗知识图谱** | 技艺→材料→工具→传承人→地域多维关联 |
-| **传承人视角叙事** | Prompt 工程模拟师徒对话风格 |
+| **知识缺口检测**      | 识别知识库空白领域，能回答"不知道什么"      |
+| **多粒度知识服务**    | 好奇者/学习者/研究者看到不同深度回答        |
+| **非遗知识图谱**      | 技艺→材料→工具→传承人→地域多维关联          |
+| **传承人视角叙事**    | Prompt 工程模拟师徒对话风格                 |
 
 [//]: # (## 演示)
 
-[//]: # ()
+[//]: #
 [//]: # (> 以下为系统实际运行效果截图，点击查看完整交互流程。)
 
-[//]: # ()
+[//]: #
 [//]: # (<table>)
 
 [//]: # (<tr>)
@@ -124,33 +124,33 @@
 
 [//]: # (</table>)
 
-[//]: # ()
+[//]: #
 [//]: # (> 💡 如需录制演示 GIF，推荐使用 [ScreenToGif]&#40;https://www.screentogif.com/&#41;（Windows 免费开源），录制后放入 `docs/gifs/` 目录。)
 
 ## 技术栈
 
-| 类别 | 技术 | 用途 |
-|------|------|------|
-| LLM | DeepSeek API | 对话生成、意图分析、缺口检测 |
-| Embedding | 智谱 API (embedding-2) / BAAI BGE | 文档向量化，API优先+本地降级 |
-| Agent 编排 | LangGraph | 多 Agent 调度与工作流 |
-| 重排序 | BAAI/bge-reranker-base | CrossEncoder 逐对精排 |
-| 检索框架 | LangChain | 文档加载与检索链 |
-| 向量数据库 | ChromaDB | 非遗知识向量存储与语义检索 |
-| 关键词检索 | BM25 + jieba | 术语精确匹配 |
-| 知识图谱 | NetworkX + pyvis | 65 节点全中文可视化 |
-| 后端 | FastAPI | RESTful API，30+ 端点 |
-| 前端 | Vue 3 + TypeScript + Element Plus + Tailwind | SPA 应用 |
-| 状态管理 | Pinia | auth / chat / graph / settings 四模块 |
-| 路由 | Vue Router 4 | 首页 / 问答 / 图谱 / 媒体 / 设置 / 登录 / 注册 |
-| 数据库 | MySQL 8.4 + SQLAlchemy 2.0 + Alembic | 5 张表，utf8mb4 |
-| 多媒体 | 本地文件系统 | 图片/音频上传与存储 |
-| 音频转写 | Whisper (openai-whisper) | 语音转文字 |
-| 认证 | python-jose + passlib[bcrypt] | JWT 签发校验与密码哈希 |
-| 可观测性 | Langfuse | LLM 调用全链路追踪 |
-| 配置 | Pydantic Settings | 集中配置管理 |
-| CI/CD | GitHub Actions | ruff lint + pytest |
-| 测试 | pytest | 检索模块 7 用例 |
+| 类别       | 技术                                         | 用途                                           |
+| ---------- | -------------------------------------------- | ---------------------------------------------- |
+| LLM        | DeepSeek API                                 | 对话生成、意图分析、缺口检测                   |
+| Embedding  | 智谱 API (embedding-2) / BAAI BGE            | 文档向量化，API优先+本地降级                   |
+| Agent 编排 | LangGraph                                    | 多 Agent 调度与工作流                          |
+| 重排序     | BAAI/bge-reranker-base                       | CrossEncoder 逐对精排                          |
+| 检索框架   | LangChain                                    | 文档加载与检索链                               |
+| 向量数据库 | ChromaDB                                     | 非遗知识向量存储与语义检索                     |
+| 关键词检索 | BM25 + jieba                                 | 术语精确匹配                                   |
+| 知识图谱   | NetworkX + pyvis                             | 65 节点全中文可视化                            |
+| 后端       | FastAPI                                      | RESTful API，30+ 端点                          |
+| 前端       | Vue 3 + TypeScript + Element Plus + Tailwind | SPA 应用                                       |
+| 状态管理   | Pinia                                        | auth / chat / graph / settings 四模块          |
+| 路由       | Vue Router 4                                 | 首页 / 问答 / 图谱 / 媒体 / 设置 / 登录 / 注册 |
+| 数据库     | MySQL 8.4 + SQLAlchemy 2.0 + Alembic         | 5 张表，utf8mb4                                |
+| 多媒体     | 本地文件系统                                 | 图片/音频上传与存储                            |
+| 音频转写   | Whisper (openai-whisper)                     | 语音转文字                                     |
+| 认证       | python-jose + passlib[bcrypt]                | JWT 签发校验与密码哈希                         |
+| 可观测性   | Langfuse                                     | LLM 调用全链路追踪                             |
+| 配置       | Pydantic Settings                            | 集中配置管理                                   |
+| CI/CD      | GitHub Actions                               | ruff lint + pytest                             |
+| 测试       | pytest                                       | 检索模块 7 用例                                |
 
 ## 快速开始
 
@@ -210,6 +210,7 @@ docker compose logs -f
 ```
 
 访问：
+
 - Vue 3 界面：http://localhost:5173（`docker compose --profile vue up`）
 - Streamlit 界面：http://localhost:8501（默认）
 - API 文档：http://localhost:8000/docs
@@ -219,48 +220,49 @@ docker compose logs -f
 
 ### 接口列表
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/` | 根路径 |
-| GET | `/health` | 健康检查 |
-| POST | `/query` | 非遗知识问答（登录后自动存档历史） |
-| POST | `/query/simple` | 简化版问答（表单提交） |
-| POST | `/upload` | 上传非遗文档 |
-| GET | `/graph/stats` | 知识图谱统计 |
-| GET | `/graph/visualize` | 交互式图谱 HTML |
-| GET | `/graph/subgraph/{craft_name}` | 技艺子图查询 |
-| GET | `/gap-report` | 知识缺口报告 |
-| POST | `/switch-profile` | 切换用户画像 |
-| GET | `/crafts` | 支持的技艺列表 |
-| GET | `/profiles` | 用户画像列表 |
-| GET | `/documents/summary` | 文档库摘要 |
-| POST | `/auth/register` | 用户注册（返回 JWT） |
-| POST | `/auth/login` | 用户登录（OAuth2 密码流） |
-| GET | `/auth/me` | 当前用户信息 🔒 |
-| GET | `/chat/history` | 聊天历史列表（分页） 🔒 |
-| GET | `/chat/history/{chat_id}` | 单条聊天详情 🔒 |
-| GET | `/prompts` | Prompt 模板列表 |
-| POST | `/prompts` | 创建 Prompt 模板 |
-| GET | `/prompts/{id}` | 获取 Prompt 模板 |
-| PUT | `/prompts/{id}` | 更新 Prompt 模板（版本号+1） |
-| DELETE | `/prompts/{id}` | 删除 Prompt 模板 |
-| GET | `/config` | 服务器默认 LLM 配置 |
-| POST | `/media/upload` | 上传图片/音频 |
-| GET | `/media/list` | 媒体列表（可按技艺/类型筛选） |
-| DELETE | `/media/{id}` | 删除媒体文件 |
-| POST | `/favorites` | 添加收藏 🔒 |
-| GET | `/favorites` | 收藏列表 🔒 |
-| DELETE | `/favorites/{id}` | 删除收藏 🔒 |
-| GET | `/search/image` | 文搜图 |
-| POST | `/search/similar` | 以图搜图 |
-| GET | `/knowledge/categories` | 知识库分类 |
-| POST | `/documents/upload` | 上传文档（PDF/Word/MD 自动解析） |
+| 方法   | 路径                           | 说明                               |
+| ------ | ------------------------------ | ---------------------------------- |
+| GET    | `/`                            | 根路径                             |
+| GET    | `/health`                      | 健康检查                           |
+| POST   | `/query`                       | 非遗知识问答（登录后自动存档历史） |
+| POST   | `/query/simple`                | 简化版问答（表单提交）             |
+| POST   | `/upload`                      | 上传非遗文档                       |
+| GET    | `/graph/stats`                 | 知识图谱统计                       |
+| GET    | `/graph/visualize`             | 交互式图谱 HTML                    |
+| GET    | `/graph/subgraph/{craft_name}` | 技艺子图查询                       |
+| GET    | `/gap-report`                  | 知识缺口报告                       |
+| POST   | `/switch-profile`              | 切换用户画像                       |
+| GET    | `/crafts`                      | 支持的技艺列表                     |
+| GET    | `/profiles`                    | 用户画像列表                       |
+| GET    | `/documents/summary`           | 文档库摘要                         |
+| POST   | `/auth/register`               | 用户注册（返回 JWT）               |
+| POST   | `/auth/login`                  | 用户登录（OAuth2 密码流）          |
+| GET    | `/auth/me`                     | 当前用户信息 🔒                     |
+| GET    | `/chat/history`                | 聊天历史列表（分页） 🔒             |
+| GET    | `/chat/history/{chat_id}`      | 单条聊天详情 🔒                     |
+| GET    | `/prompts`                     | Prompt 模板列表                    |
+| POST   | `/prompts`                     | 创建 Prompt 模板                   |
+| GET    | `/prompts/{id}`                | 获取 Prompt 模板                   |
+| PUT    | `/prompts/{id}`                | 更新 Prompt 模板（版本号+1）       |
+| DELETE | `/prompts/{id}`                | 删除 Prompt 模板                   |
+| GET    | `/config`                      | 服务器默认 LLM 配置                |
+| POST   | `/media/upload`                | 上传图片/音频                      |
+| GET    | `/media/list`                  | 媒体列表（可按技艺/类型筛选）      |
+| DELETE | `/media/{id}`                  | 删除媒体文件                       |
+| POST   | `/favorites`                   | 添加收藏 🔒                         |
+| GET    | `/favorites`                   | 收藏列表 🔒                         |
+| DELETE | `/favorites/{id}`              | 删除收藏 🔒                         |
+| GET    | `/search/image`                | 文搜图                             |
+| POST   | `/search/similar`              | 以图搜图                           |
+| GET    | `/knowledge/categories`        | 知识库分类                         |
+| POST   | `/documents/upload`            | 上传文档（PDF/Word/MD 自动解析）   |
 
 > 🔒 需在请求头携带 `Authorization: Bearer <access_token>`
 
 ### `/query` — 非遗知识问答
 
 请求：
+
 ```json
 {
   "question": "景泰蓝的制作流程是什么？",
@@ -273,6 +275,7 @@ docker compose logs -f
 > 携带 `Authorization: Bearer <token>` 调用时，问答记录会自动存档到聊天历史。
 
 响应：
+
 ```json
 {
   "question": "景泰蓝的制作流程是什么？",
@@ -289,6 +292,7 @@ docker compose logs -f
 ### `/gap-report` — 知识缺口报告
 
 响应：
+
 ```json
 {
   "coverage_level": "partial",
@@ -330,11 +334,11 @@ curl "http://localhost:8000/chat/history?limit=20&offset=0" \
 
 ### 用户画像
 
-| 画像 | 说明 | 输出长度 | temperature |
-|------|------|---------|-------------|
-| curious | 对非遗有初步兴趣 | 300-500 字 | 0.8 |
-| learner | 想要系统学习 | 800-1500 字 | 0.4 |
-| researcher | 需要深度资料 | 2000+ 字 | 0.1 |
+| 画像       | 说明             | 输出长度    | temperature |
+| ---------- | ---------------- | ----------- | ----------- |
+| curious    | 对非遗有初步兴趣 | 300-500 字  | 0.8         |
+| learner    | 想要系统学习     | 800-1500 字 | 0.4         |
+| researcher | 需要深度资料     | 2000+ 字    | 0.1         |
 
 ## 项目目录
 
@@ -436,7 +440,7 @@ HeritageMind/
 
 > 以下为合并后的大版本。细碎小版本记录见 git history。
 
-### v2.2 — 多模态平台（2026-07-26~28）
+### v2.2 — 多模态平台（2026-07-26~28，自 v1.9 起合并入 v2.x）
 
 - ✨ 图片/音频上传：POST /media/upload，本地存储 + MySQL
 - ✨ 前端 MediaView：上传表单 + 画廊 + 筛选 + 删除
@@ -481,4 +485,41 @@ HeritageMind/
 - ✨ 检索管线：ChromaDB + BM25 + RRF
 - ✨ 6 种非遗技艺知识库（初始版本）
 
+### v1.8 (2026-07-02)
 
+- ✨ Docker Compose 一键部署支持
+- 📖 README 重构：架构图 / API 文档 / 项目目录
+
+### v1.7 (2026-06-20)
+
+- ✨ Streamlit 60/40 双栏布局 + Agent 气泡
+- 🐛 修复 pyvis 图谱在 Streamlit 中的渲染问题
+
+### v1.6 (2026-06-08)
+
+- ✨ 辩论引擎 DebateEngine（多轮辩论 + 收敛判定）
+
+### v1.5 (2026-04-25)
+
+- ✨ FastAPI 8 端点 + Lifespan 资源管理
+- ✨ 传承人视角叙事生成
+
+### v1.4 (2026-03-02)
+
+- ✨ 非遗知识图谱（NetworkX + pyvis）+ LangGraph 多 Agent 工作流
+
+### v1.3 (2025-08-18)
+
+- ✨ 多粒度知识服务（3 级用户画像）+ 知识缺口检测
+
+### v1.2 (2025-04-05)
+
+- ✨ 查询改写 + CrossEncoder 重排序
+
+### v1.1 (2025-03-24)
+
+- ✨ 三专家 Agent + 调度器 + ChromaDB + BM25 + RRF 多源检索
+
+### v1.0 (2025-03-10)
+
+- 🎉 首次发布：6 种非遗技艺知识库 + 基础问答 + FastAPI + Streamlit
