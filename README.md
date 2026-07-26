@@ -125,7 +125,6 @@
 [//]: # (</table>)
 
 [//]: #
-[//]: # (> 💡 如需录制演示 GIF，推荐使用 [ScreenToGif]&#40;https://www.screentogif.com/&#41;（Windows 免费开源），录制后放入 `docs/gifs/` 目录。)
 
 ## 技术栈
 
@@ -237,9 +236,9 @@ docker compose logs -f
 | GET    | `/documents/summary`           | 文档库摘要                         |
 | POST   | `/auth/register`               | 用户注册（返回 JWT）               |
 | POST   | `/auth/login`                  | 用户登录（OAuth2 密码流）          |
-| GET    | `/auth/me`                     | 当前用户信息 🔒                     |
-| GET    | `/chat/history`                | 聊天历史列表（分页） 🔒             |
-| GET    | `/chat/history/{chat_id}`      | 单条聊天详情 🔒                     |
+| GET    | `/auth/me`                     | 当前用户信息                      |
+| GET    | `/chat/history`                | 聊天历史列表（分页）               |
+| GET    | `/chat/history/{chat_id}`      | 单条聊天详情                      |
 | GET    | `/prompts`                     | Prompt 模板列表                    |
 | POST   | `/prompts`                     | 创建 Prompt 模板                   |
 | GET    | `/prompts/{id}`                | 获取 Prompt 模板                   |
@@ -249,15 +248,15 @@ docker compose logs -f
 | POST   | `/media/upload`                | 上传图片/音频                      |
 | GET    | `/media/list`                  | 媒体列表（可按技艺/类型筛选）      |
 | DELETE | `/media/{id}`                  | 删除媒体文件                       |
-| POST   | `/favorites`                   | 添加收藏 🔒                         |
-| GET    | `/favorites`                   | 收藏列表 🔒                         |
-| DELETE | `/favorites/{id}`              | 删除收藏 🔒                         |
+| POST   | `/favorites`                   | 添加收藏                          |
+| GET    | `/favorites`                   | 收藏列表                         |
+| DELETE | `/favorites/{id}`              | 删除收藏                        |
 | GET    | `/search/image`                | 文搜图                             |
 | POST   | `/search/similar`              | 以图搜图                           |
 | GET    | `/knowledge/categories`        | 知识库分类                         |
 | POST   | `/documents/upload`            | 上传文档（PDF/Word/MD 自动解析）   |
 
-> 🔒 需在请求头携带 `Authorization: Bearer <access_token>`
+>  需在请求头携带 `Authorization: Bearer <access_token>`
 
 ### `/query` — 非遗知识问答
 
@@ -440,7 +439,7 @@ HeritageMind/
 
 > 以下为合并后的大版本。细碎小版本记录见 git history。
 
-### v2.2 — 多模态平台（2026-07-26~28，自 v1.9 起合并入 v2.x）
+### v2.2 — 多模态平台（2026-07-26）
 
 - ✨ 图片/音频上传：POST /media/upload，本地存储 + MySQL
 - ✨ 前端 MediaView：上传表单 + 画廊 + 筛选 + 删除
@@ -456,7 +455,7 @@ HeritageMind/
 - ✨ Settings 保存按钮 + ElMessage 反馈
 - ✨ Embedding 升级：智谱 API (embedding-2) 优先 + 本地 BGE 降级
 
-### v2.1 — 前端现代化 + 知识平台（2026-07-22~26）
+### v2.1 — 前端现代化 + 知识平台（2026-07-02）
 
 - ✨ Vue 3 全栈：Vite + TypeScript + Pinia + Element Plus + Tailwind
 - ✨ Dashboard：马山正行楷毛笔标题 + 23 张本地图片轮播（左名右竖排）+ 模糊背景
@@ -472,7 +471,7 @@ HeritageMind/
 - ✨ Query Rewrite：规则 + LLM 双模式
 - ✨ CI/CD：GitHub Actions（ruff + pytest）
 
-### v2.0 — 产品地基 + 质量兜底（2026-07-17~25）
+### v2.0 — 产品地基 + 质量兜底（2026-06-17）
 
 - ✨ 用户系统：JWT 注册/登录（OAuth2 + bcrypt），users 表
 - ✨ 聊天历史：chat_history 表，分页查询
@@ -485,30 +484,30 @@ HeritageMind/
 - ✨ 检索管线：ChromaDB + BM25 + RRF
 - ✨ 6 种非遗技艺知识库（初始版本）
 
-### v1.8 (2026-07-02)
+### v1.8 (2026-05-02)
 
 - ✨ Docker Compose 一键部署支持
 - 📖 README 重构：架构图 / API 文档 / 项目目录
 
-### v1.7 (2026-06-20)
+### v1.7 (2026-04-20)
 
 - ✨ Streamlit 60/40 双栏布局 + Agent 气泡
 - 🐛 修复 pyvis 图谱在 Streamlit 中的渲染问题
 
-### v1.6 (2026-06-08)
+### v1.6 (2026-03-08)
 
 - ✨ 辩论引擎 DebateEngine（多轮辩论 + 收敛判定）
 
-### v1.5 (2026-04-25)
+### v1.5 (2026-01-25)
 
 - ✨ FastAPI 8 端点 + Lifespan 资源管理
 - ✨ 传承人视角叙事生成
 
-### v1.4 (2026-03-02)
+### v1.4 (2025-07-02)
 
 - ✨ 非遗知识图谱（NetworkX + pyvis）+ LangGraph 多 Agent 工作流
 
-### v1.3 (2025-08-18)
+### v1.3 (2025-06-18)
 
 - ✨ 多粒度知识服务（3 级用户画像）+ 知识缺口检测
 
