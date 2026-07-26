@@ -10,11 +10,10 @@ LLM工厂 - 统一创建ChatOpenAI实例，集成Langfuse追踪
 
 import logging
 from typing import Optional, List, Any, Dict
-from threading import local
 from langchain_openai import ChatOpenAI
 
-# 线程本地存储，用于请求级 LLM 配置覆盖（api_key / base_url / model）
-_thread_local = local()
+# 请求级 LLM 配置覆盖（api_key / base_url / model）
+_request_override: Optional[Dict[str, Optional[str]]] = None
 
 from config import settings, get_llm_config
 
@@ -25,8 +24,9 @@ _langfuse_handler: Optional[Any] = None
 
 
 def set_request_override(api_key: Optional[str] = None, base_url: Optional[str] = None, model: Optional[str] = None):
-    """设置当前请求的 LLM 配置覆盖（线程安全）"""
-    _thread_local.llm_override = {
+    """设置当前请求的 LLM 配置覆盖"""
+    global _request_override
+    _request_override = {
         "api_key": api_key,
         "base_url": base_url,
         "model": model,
@@ -35,12 +35,13 @@ def set_request_override(api_key: Optional[str] = None, base_url: Optional[str] 
 
 def clear_request_override():
     """清除当前请求的 LLM 配置覆盖"""
-    _thread_local.llm_override = None
+    global _request_override
+    _request_override = None
 
 
 def _get_request_override() -> Optional[Dict[str, Optional[str]]]:
     """获取当前请求的 LLM 配置覆盖"""
-    return getattr(_thread_local, "llm_override", None)
+    return _request_override
 
 
 def _get_langfuse_handler() -> Optional[Any]:
@@ -116,8 +117,8 @@ def create_llm(
         "api_key": api_key or (override.get("api_key") if override else None) or settings.deepseek_api_key,
         "temperature": temperature if temperature is not None else llm_config["temperature"],
         "max_tokens": max_tokens if max_tokens is not None else llm_config["max_tokens"],
-        "request_timeout": 30,
-        "max_retries": 0,
+        "request_timeout": 120,
+        "max_retries": 1,
     }
 
     if callbacks:

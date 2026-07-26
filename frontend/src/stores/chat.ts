@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { sendQuery } from '@/api/query'
+import { sendQuery, streamQuery } from '@/api/query'
 import type { ChatMessage, QueryResponse } from '@/types'
 
 export const useChatStore = defineStore('chat', () => {
@@ -10,6 +10,7 @@ export const useChatStore = defineStore('chat', () => {
   const includeNarrative = ref(false)
   const isSending = ref(false)
   const pendingQuestion = ref<string | null>(null)
+  const streamSteps = ref<string[]>([])  // 当前流式进度
 
   function setProfile(profile: string) {
     currentProfile.value = profile
@@ -35,7 +36,6 @@ export const useChatStore = defineStore('chat', () => {
     const t0 = performance.now()
     isSending.value = true
 
-    // Add user message
     const userMsg: ChatMessage = {
       id: crypto.randomUUID(),
       role: 'user',
@@ -54,7 +54,6 @@ export const useChatStore = defineStore('chat', () => {
 
       const elapsedMs = Math.round(performance.now() - t0)
 
-      // Add assistant message
       const assistantMsg: ChatMessage = {
         id: crypto.randomUUID(),
         role: 'assistant',
@@ -71,23 +70,14 @@ export const useChatStore = defineStore('chat', () => {
         },
       }
       messages.value.push(assistantMsg)
-
       return assistantMsg
     } catch (e: any) {
-      const elapsedMs = Math.round(performance.now() - t0)
       const errorMsg: ChatMessage = {
         id: crypto.randomUUID(),
         role: 'assistant',
         content: `抱歉，请求失败：${e.message || '未知错误'}`,
         timestamp: new Date().toISOString(),
-        metadata: {
-          sourceAgents: [],
-          hasGaps: false,
-          gapReport: '',
-          citations: [],
-          elapsedMs,
-          model: '',
-        },
+        metadata: { sourceAgents: [], hasGaps: false, gapReport: '', citations: [], elapsedMs: 0, model: '' },
       }
       messages.value.push(errorMsg)
       return errorMsg
@@ -107,6 +97,7 @@ export const useChatStore = defineStore('chat', () => {
     includeNarrative,
     isSending,
     pendingQuestion,
+    streamSteps,
     setProfile,
     setCraft,
     toggleNarrative,

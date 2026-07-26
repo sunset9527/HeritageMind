@@ -68,6 +68,10 @@ export const useSettingsStore = defineStore('settings', () => {
     return PROVIDER_PRESETS[provider]?.models || []
   }
 
+  function getProviderBaseUrl(provider: string): string {
+    return PROVIDER_PRESETS[provider]?.baseUrl || ''
+  }
+
   function setProvider(provider: string) {
     selectedProvider.value = provider
     const info = PROVIDER_PRESETS[provider]
@@ -139,6 +143,7 @@ export const useSettingsStore = defineStore('settings', () => {
     loadServerConfig,
     getProviders,
     getProviderModels,
+    getProviderBaseUrl,
     setProvider,
     setModel,
     setBaseUrl,

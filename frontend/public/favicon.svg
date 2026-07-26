@@ -1,3 +1,49 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <text y="80" font-size="80">🏺</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <!-- 印章雕刻的粗糙纹理 -->
+    <filter id="stamp" x="-5%" y="-5%" width="110%" height="110%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.06" numOctaves="4" seed="3" result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.5" xChannelSelector="R" yChannelSelector="G" result="displaced"/>
+      <feGaussianBlur in="displaced" stdDeviation="0.3" result="blurred"/>
+      <feComponentTransfer in="blurred" result="roughened">
+        <feFuncA type="discrete" tableValues="0 0.3 0.5 0.7 0.8 0.9 0.95 1"/>
+      </feComponentTransfer>
+    </filter>
+    <!-- 印泥渗化的纹理 -->
+    <filter id="inkBleed">
+      <feTurbulence type="fractalNoise" baseFrequency="0.12" numOctaves="3" seed="7" result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.2" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <!-- 残缺斑驳效果 -->
+    <filter id="worn">
+      <feTurbulence type="fractalNoise" baseFrequency="0.08" numOctaves="5" seed="12" result="n"/>
+      <feColorMatrix in="n" type="luminanceToAlpha" result="a"/>
+      <feComponentTransfer in="a" result="mask">
+        <feFuncA type="discrete" tableValues="0 0 0 0 1 1 1 1 1 1"/>
+      </feComponentTransfer>
+      <feComposite in="SourceGraphic" in2="mask" operator="in"/>
+    </filter>
+  </defs>
+
+  <!-- 外边框：不规则手刻感 -->
+  <rect x="13" y="13" width="94" height="94" rx="4" fill="none" stroke="#B84030" stroke-width="5"
+        filter="url(#stamp)" opacity="0.85"/>
+
+  <!-- 内框线 -->
+  <rect x="22" y="22" width="76" height="76" rx="2" fill="none" stroke="#B84030" stroke-width="1.2"
+        filter="url(#stamp)" opacity="0.5"/>
+
+  <!-- "遇" 字 (右上) -->
+  <text x="60" y="60" text-anchor="middle" font-size="30" font-weight="900"
+        font-family="'LiSu','隶书','STLiti','Noto Serif SC','KaiTi',serif"
+        fill="#B84030" filter="url(#worn)" opacity="0.92">遇</text>
+
+  <!-- "岸" 字 (右下) -->
+  <text x="60" y="96" text-anchor="middle" font-size="30" font-weight="900"
+        font-family="'LiSu','隶书','STLiti','Noto Serif SC','KaiTi',serif"
+        fill="#B84030" filter="url(#worn)" opacity="0.92">岸</text>
+
+  <!-- 全局印泥渗化 -->
+  <rect x="13" y="13" width="94" height="94" rx="4" fill="none" stroke="#C04838" stroke-width="0.5"
+        filter="url(#inkBleed)" opacity="0.3"/>
 </svg>

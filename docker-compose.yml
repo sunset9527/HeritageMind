@@ -1,36 +1,37 @@
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: heritagemind-postgres
-    restart: unless-stopped
+  mysql:
+    image: mysql:8.4
+    container_name: heritagemind-mysql
+    restart: "no"
     ports:
-      - "5432:5432"
+      - "3306:3306"
     environment:
-      - POSTGRES_USER=heritagemind
-      - POSTGRES_PASSWORD=heritagemind
-      - POSTGRES_DB=heritagemind
+      - MYSQL_ROOT_PASSWORD=heritagemind
+      - MYSQL_DATABASE=heritagemind
+      - MYSQL_CHARACTER_SET_SERVER=utf8mb4
+      - MYSQL_COLLATION_SERVER=utf8mb4_unicode_ci
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - mysql_data:/var/lib/mysql
     networks:
       - heritagemind-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U heritagemind"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 10s
+      start_period: 30s
 
   api:
     build:
       context: .
       target: api
     container_name: heritagemind-api
-    restart: unless-stopped
+    restart: "no"
     ports:
       - "8000:8000"
     environment:
       - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-sk-your-key-here}
-      - DATABASE_URL=postgresql://heritagemind:heritagemind@postgres:5432/heritagemind
+      - DATABASE_URL=mysql+pymysql://root:heritagemind@mysql:3306/heritagemind
       - JWT_SECRET_KEY=${JWT_SECRET_KEY:-change-me-in-production}
       - LOG_LEVEL=INFO
     volumes:
@@ -38,7 +39,7 @@ services:
       - craft_data:/app/data
       - sqlite_data:/app/data
     depends_on:
-      postgres:
+      mysql:
         condition: service_healthy
     networks:
       - heritagemind-network
@@ -55,13 +56,13 @@ services:
       context: .
       target: frontend
     container_name: heritagemind-frontend
-    restart: unless-stopped
+    restart: "no"
     ports:
       - "8501:8501"
     environment:
       - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-sk-your-key-here}
       - API_BASE_URL=http://api:8000
-      - DATABASE_URL=postgresql://heritagemind:heritagemind@postgres:5432/heritagemind
+      - DATABASE_URL=mysql+pymysql://root:heritagemind@mysql:3306/heritagemind
       - JWT_SECRET_KEY=${JWT_SECRET_KEY:-change-me-in-production}
       - LOG_LEVEL=INFO
     volumes:
@@ -85,7 +86,7 @@ services:
       context: ./frontend
       target: development
     container_name: heritagemind-vue
-    restart: unless-stopped
+    restart: "no"
     ports:
       - "5173:5173"
     environment:
@@ -108,7 +109,7 @@ services:
       context: ./frontend
       target: production
     container_name: heritagemind-nginx
-    restart: unless-stopped
+    restart: "no"
     ports:
       - "80:80"
     depends_on:
@@ -124,7 +125,7 @@ volumes:
     driver: local
   craft_data:
     driver: local
-  postgres_data:
+  mysql_data:
     driver: local
   sqlite_data:
     driver: local

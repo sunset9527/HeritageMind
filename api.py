@@ -6,6 +6,7 @@ import logging
 from typing import Optional, List, Dict, Any
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Depends, Header, status, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, Field
 from contextlib import asynccontextmanager
@@ -13,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from config import settings
 from src.workflow.graph import HeritageWorkflowGraph, get_workflow
-from src.workflow.state import QueryRequest, QueryResponse, state_to_response
+from src.workflow.state import QueryRequest, QueryResponse, state_to_response, create_initial_state
 from src.graph.heritage_graph import HeritageKnowledgeGraph
 from src.graph.builder import KnowledgeGraphBuilder
 from src.retrieval.document_loader import HeritageDocumentLoader
@@ -36,6 +37,14 @@ from src.schemas.chat import (
 )
 from src.services.auth import create_user, authenticate_user, create_access_token
 from src.services.chat import save_chat_history, get_user_history, get_user_history_count, get_chat_detail
+from src.services.prompt import create_prompt, get_prompt, list_prompts, update_prompt, delete_prompt
+from src.schemas.prompt import PromptCreate, PromptUpdate, PromptResponse, PromptListResponse
+from src.services.media import upload_media, list_media, get_media, delete_media, get_media_url, STORAGE_ROOT
+from src.schemas.media import MediaResponse, MediaListResponse, MediaUpdateStatus
+from src.models.media import MediaType
+from src.services.document_parser import parse_document
+from src.models.favorite import Favorite
+from src.retrieval.multimodal_search import search_images_by_text, search_similar_images, index_all_images
 from src.utils.llm import set_request_override, clear_request_override
 
 # 配置日志
@@ -101,10 +110,38 @@ async def lifespan(app: FastAPI):
 
 # 创建FastAPI应用
 app = FastAPI(
-    title="非遗知识问答系统API",
-    description="基于多智能体的非遗知识保存与传承平台",
-    version="1.0.0",
-    lifespan=lifespan
+    title="HeritageMind — 非遗知识平台 API",
+    description="""
+## 概述
+基于多智能体协作的非遗知识问答与保存平台。
+
+### 功能模块
+- **问答**: 三专家 Agent 协作 + 辩论引擎 + 知识缺口检测
+- **知识库**: 23 种非遗技艺，55,000 字知识文档
+- **知识图谱**: 65 节点交互式可视化
+- **多媒体**: 图片/音频上传与存储
+- **认证**: JWT 登录注册
+
+### 使用方式
+1. 无需认证的端点可直接调用（如 /query、/graph/visualize）
+2. 需要认证的端点（🔒）需携带 `Authorization: Bearer <token>`
+3. 可通过 `X-API-Key` / `X-Model` header 自定义 LLM 配置
+    """,
+    version="2.2.0",
+    lifespan=lifespan,
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_tags=[
+        {"name": "问答", "description": "非遗知识问答核心接口"},
+        {"name": "知识图谱", "description": "知识图谱查询与可视化"},
+        {"name": "知识库", "description": "文档管理、分类、上传"},
+        {"name": "多媒体", "description": "图片/音频上传与管理"},
+        {"name": "认证", "description": "用户注册、登录、Token 管理"},
+        {"name": "聊天历史", "description": "问答记录查询（需登录）"},
+        {"name": "收藏", "description": "用户收藏管理（需登录）"},
+        {"name": "Prompt", "description": "Prompt 模板管理"},
+        {"name": "系统", "description": "健康检查、配置等"},
+    ],
 )
 
 # 添加CORS中间件
@@ -258,6 +295,62 @@ async def query(
     except Exception as e:
         logger.error(f"问答处理失败: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/query/stream")
+async def query_stream(
+    request: QueryRequest,
+    x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
+    x_api_base: Optional[str] = Header(None, alias="X-API-Base"),
+    x_model: Optional[str] = Header(None, alias="X-Model"),
+):
+    """SSE 流式问答 — 每个步骤实时推送进度"""
+    import json as _json
+
+    async def event_stream():
+        try:
+            logger.info(f"流式请求 header: X-API-Key={'***' if x_api_key else '(空)'}, X-Model={x_model or '(空)'}")
+            if x_api_key and x_api_key.strip():
+                set_request_override(api_key=x_api_key.strip(), base_url=x_api_base, model=x_model)
+            elif not settings.deepseek_api_key or 'your-' in settings.deepseek_api_key:
+                yield f"data: {_json.dumps({'step': 'error', 'msg': '未配置API Key，请在设置页填写'}, ensure_ascii=False)}\n\n"
+                return
+
+            yield f"data: {_json.dumps({'step': 'start', 'msg': '开始分析问题...'}, ensure_ascii=False)}\n\n"
+
+            # 使用 astream 获取每一步状态
+            initial_state = create_initial_state(
+                question=request.question,
+                user_profile=request.user_profile,
+                include_narrative=request.include_narrative,
+            )
+
+            step_names = {
+                "analyze_question": "分析问题意图...",
+                "dispatch_to_experts": "调度专家Agent...",
+                "collect_responses": "专家正在检索资料...",
+                "fuse_knowledge": "融合多专家观点...",
+                "detect_gaps": "检测知识覆盖度...",
+                "generate_response": "生成最终回答...",
+            }
+
+            final = None
+            async for chunk in workflow.graph.astream(initial_state):
+                for node_name, state_val in chunk.items():
+                    label = step_names.get(node_name, node_name)
+                    yield f"data: {_json.dumps({'step': node_name, 'msg': label}, ensure_ascii=False)}\n\n"
+                    final = state_val
+
+            if final:
+                resp = state_to_response(final)
+                yield f"data: {_json.dumps({'step': 'done', 'answer': resp.answer, 'source_agents': resp.source_agents, 'has_gaps': resp.has_gaps, 'gap_report': resp.gap_report}, ensure_ascii=False)}\n\n"
+
+            yield "data: [DONE]\n\n"
+
+        except Exception as e:
+            yield f"data: {_json.dumps({'step': 'error', 'msg': str(e)}, ensure_ascii=False)}\n\n"
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 
 @app.post("/query/simple")
@@ -566,6 +659,273 @@ async def get_document_summary():
     except Exception as e:
         logger.error(f"获取文档摘要失败: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
+# Prompt 管理接口
+# ============================================================================
+
+@app.get("/prompts", response_model=PromptListResponse)
+async def list_prompt_templates(limit: int = 50, offset: int = 0, db: Session = Depends(get_db)):
+    """获取 Prompt 模板列表"""
+    items, total = list_prompts(db, limit, offset)
+    return PromptListResponse(
+        items=[PromptResponse.model_validate(p) for p in items],
+        total=total,
+    )
+
+
+@app.post("/prompts", response_model=PromptResponse)
+async def create_prompt_template(data: PromptCreate, db: Session = Depends(get_db)):
+    """创建 Prompt 模板"""
+    existing = await _get_prompt_by_name_safe(db, data.name)
+    if existing:
+        raise HTTPException(status_code=409, detail=f"Prompt '{data.name}' 已存在")
+    return PromptResponse.model_validate(create_prompt(db, data))
+
+
+@app.get("/prompts/{prompt_id}", response_model=PromptResponse)
+async def get_prompt_template(prompt_id: int, db: Session = Depends(get_db)):
+    """获取单个 Prompt 模板"""
+    prompt = get_prompt(db, prompt_id)
+    if not prompt:
+        raise HTTPException(status_code=404, detail="Prompt 不存在")
+    return PromptResponse.model_validate(prompt)
+
+
+@app.put("/prompts/{prompt_id}", response_model=PromptResponse)
+async def update_prompt_template(prompt_id: int, data: PromptUpdate, db: Session = Depends(get_db)):
+    """更新 Prompt 模板（自动递增版本号）"""
+    prompt = update_prompt(db, prompt_id, data)
+    if not prompt:
+        raise HTTPException(status_code=404, detail="Prompt 不存在")
+    return PromptResponse.model_validate(prompt)
+
+
+@app.delete("/prompts/{prompt_id}")
+async def delete_prompt_template(prompt_id: int, db: Session = Depends(get_db)):
+    """删除 Prompt 模板"""
+    ok = delete_prompt(db, prompt_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Prompt 不存在")
+    return {"success": True}
+
+
+async def _get_prompt_by_name_safe(db: Session, name: str):
+    """安全查询：避免同步调用在 async 上下文报错"""
+    from src.services.prompt import get_prompt_by_name
+    return get_prompt_by_name(db, name)
+
+
+# ============================================================================
+# 多媒体接口
+# ============================================================================
+
+@app.post("/media/upload", response_model=MediaResponse)
+async def upload_media_file(
+    file: UploadFile = File(...),
+    craft_name: str = Form(...),
+    media_type: str = Form("image"),
+    title: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    """上传图片或音频文件"""
+    if file.content_type is None:
+        raise HTTPException(status_code=400, detail="无法识别文件类型")
+    doc = upload_media(db=db, file=file.file, original_name=file.filename or "unknown",
+                       mime_type=file.content_type, craft_name=craft_name,
+                       media_type=media_type, title=title)
+    resp = MediaResponse.model_validate(doc)
+    resp.url = get_media_url(doc)
+    return resp
+
+
+@app.get("/media/list", response_model=MediaListResponse)
+async def list_media_files(craft_name: Optional[str] = None, media_type: Optional[str] = None,
+                           limit: int = 50, offset: int = 0, db: Session = Depends(get_db)):
+    """列出媒体文件"""
+    items, total = list_media(db, craft_name, media_type, limit, offset)
+    result = []
+    for item in items:
+        r = MediaResponse.model_validate(item); r.url = get_media_url(item); result.append(r)
+    return MediaListResponse(items=result, total=total)
+
+
+@app.get("/media/{media_id}", response_model=MediaResponse)
+async def get_media_file(media_id: int, db: Session = Depends(get_db)):
+    doc = get_media(db, media_id)
+    if not doc: raise HTTPException(status_code=404, detail="文件不存在")
+    resp = MediaResponse.model_validate(doc); resp.url = get_media_url(doc); return resp
+
+
+@app.delete("/media/{media_id}")
+async def delete_media_item(media_id: int, db: Session = Depends(get_db)):
+    ok = delete_media(db, media_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="文件不存在")
+    return {"success": True}
+
+
+@app.put("/media/{media_id}/status")
+async def update_media_status(media_id: int, body: MediaUpdateStatus, db: Session = Depends(get_db)):
+    doc = get_media(db, media_id)
+    if not doc: raise HTTPException(status_code=404, detail="文件不存在")
+    doc.status = body.status
+    db.commit()
+    return {"id": media_id, "status": body.status}
+
+@app.post("/knowledge/rebuild-embeddings")
+async def rebuild_embeddings(db: Session = Depends(get_db)):
+    from src.retrieval.embeddings import EmbeddingManager, reset_embedding_model
+    reset_embedding_model()
+    global retriever
+    r = MultiSourceRetriever(document_loader=document_loader)
+    r.build_index()
+    retriever = r
+    return {"message": "向量索引已重建", "documents": len(r.documents)}
+async def delete_media_file(media_id: int, db: Session = Depends(get_db)):
+    ok = delete_media(db, media_id)
+    if not ok: raise HTTPException(status_code=404, detail="文件不存在")
+    return {"success": True}
+
+
+@app.get("/media/file/{media_type}/{filename}")
+async def serve_media_file(media_type: str, filename: str):
+    file_path = STORAGE_ROOT / media_type / filename
+    if not file_path.exists(): raise HTTPException(status_code=404, detail="文件不存在")
+    from fastapi.responses import FileResponse
+    return FileResponse(str(file_path))
+
+
+# ============================================================================
+# 多模态检索接口
+# ============================================================================
+
+@app.get("/search/image")
+async def search_image_by_text(q: str, top_k: int = 6, db: Session = Depends(get_db)):
+    """文搜图：用文字描述搜索已上传的图片"""
+    results = search_images_by_text(db, q, top_k)
+    return {"query": q, "results": results, "total": len(results)}
+
+
+@app.post("/search/similar")
+async def search_similar_image(file: UploadFile = File(...), top_k: int = 6,
+                               db: Session = Depends(get_db)):
+    """以图搜图：上传图片搜索相似图片"""
+    content = await file.read()
+    results = search_similar_images(db, content, top_k)
+    return {"results": results, "total": len(results)}
+
+
+@app.post("/search/index-images")
+async def rebuild_image_index(db: Session = Depends(get_db)):
+    """重建图片向量索引"""
+    count = index_all_images(db)
+    return {"indexed": count, "message": f"已索引 {count} 张图片"}
+
+
+# ============================================================================
+# 收藏接口
+# ============================================================================
+
+@app.post("/favorites")
+async def add_favorite(craft_name: str = Form(...), chat_id: Optional[int] = Form(None),
+                       note: str = Form(""), current_user: User = Depends(get_current_user),
+                       db: Session = Depends(get_db)):
+    fav = Favorite(user_id=current_user.id, craft_name=craft_name, chat_id=chat_id, note=note)
+    db.add(fav); db.commit(); db.refresh(fav)
+    return {"id": fav.id, "craft_name": fav.craft_name, "created_at": fav.created_at.isoformat()}
+
+
+@app.get("/favorites")
+async def list_favorites(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    favs = db.scalars(
+        select(Favorite).where(Favorite.user_id == current_user.id).order_by(Favorite.created_at.desc())
+    ).all()
+    return {"items": [{"id": f.id, "craft_name": f.craft_name, "chat_id": f.chat_id,
+                        "note": f.note, "created_at": f.created_at.isoformat()} for f in favs]}
+
+
+@app.delete("/favorites/{fav_id}")
+async def remove_favorite(fav_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    fav = db.get(Favorite, fav_id)
+    if not fav or fav.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="收藏不存在")
+    db.delete(fav); db.commit()
+    return {"success": True}
+
+
+# ============================================================================
+# 文档解析上传接口
+# ============================================================================
+
+KNOWLEDGE_CATEGORIES = ["陶瓷", "织绣", "雕刻", "金属工艺", "纸艺版画", "戏曲", "印染", "编织", "漆艺", "彩塑"]
+
+
+@app.get("/knowledge/categories")
+async def list_categories():
+    """知识库分类列表"""
+    cats = []
+    for cat in KNOWLEDGE_CATEGORIES:
+        crafts_in_cat = [c["name"] for c in _get_craft_list() if _craft_category(c["name"]) == cat]
+        cats.append({"name": cat, "crafts": crafts_in_cat, "count": len(crafts_in_cat)})
+    return {"categories": cats}
+
+
+def _craft_category(name: str) -> str:
+    mapping = {
+        "景泰蓝": "金属工艺", "芜湖铁画": "金属工艺",
+        "苏绣": "织绣", "蜀锦": "织绣", "南京云锦": "织绣", "缂丝": "织绣", "壮锦": "织绣",
+        "龙泉青瓷": "陶瓷", "景德镇瓷器": "陶瓷", "宜兴紫砂": "陶瓷", "唐三彩": "陶瓷", "钧瓷": "陶瓷", "汝瓷": "陶瓷",
+        "东阳木雕": "雕刻", "玉雕": "雕刻",
+        "剪纸": "纸艺版画", "木版年画": "纸艺版画",
+        "京剧": "戏曲", "皮影戏": "戏曲",
+        "苗族蜡染": "印染",
+        "竹编": "编织",
+        "漆器": "漆艺",
+        "泥人张": "彩塑",
+    }
+    return mapping.get(name, "其他")
+
+
+def _get_craft_list():
+    return [
+        {"id": "jingtailan", "name": "景泰蓝"}, {"id": "suxiu", "name": "苏绣"},
+        {"id": "longquan_ci", "name": "龙泉青瓷"}, {"id": "yixing_zisha", "name": "宜兴紫砂"},
+        {"id": "wuhu_tiehua", "name": "芜湖铁画"}, {"id": "shujin", "name": "蜀锦"},
+        {"id": "jianzhi", "name": "剪纸"}, {"id": "jingdezhen_ciqi", "name": "景德镇瓷器"},
+        {"id": "nanjing_yunjin", "name": "南京云锦"}, {"id": "dongyang_mudiao", "name": "东阳木雕"},
+        {"id": "miaozu_laran", "name": "苗族蜡染"}, {"id": "muban_nianhua", "name": "木版年画"},
+        {"id": "kesi", "name": "缂丝"}, {"id": "zhubian", "name": "竹编"},
+        {"id": "yudiao", "name": "玉雕"}, {"id": "qiqi", "name": "漆器"},
+        {"id": "tangsancai", "name": "唐三彩"}, {"id": "junci", "name": "钧瓷"},
+        {"id": "ruci", "name": "汝瓷"}, {"id": "nirenzhang", "name": "泥人张"},
+        {"id": "piyingxi", "name": "皮影戏"}, {"id": "zhuangjin", "name": "壮锦"},
+        {"id": "jingju", "name": "京剧"},
+    ]
+
+
+@app.post("/documents/upload")
+async def upload_document(file: UploadFile = File(...), craft_name: str = Form(...),
+                          db: Session = Depends(get_db)):
+    """上传文档（PDF/Word/Markdown/TXT），自动解析文本"""
+    if not file.filename or not file.content_type:
+        raise HTTPException(status_code=400, detail="无效文件")
+    content = await file.read()
+    text = parse_document(content, file.filename, file.content_type)
+    if not text:
+        raise HTTPException(status_code=400, detail="无法解析此文件格式")
+    # 保存为 txt 到知识库
+    import os
+    docs_dir = Path(settings.crafts_doc_path)
+    docs_dir.mkdir(parents=True, exist_ok=True)
+    safe_name = craft_name + "_upload.txt"
+    file_path = docs_dir / safe_name
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write(f"{craft_name}\n\n{text}")
+    logger.info(f"文档已解析保存: {safe_name} ({len(text)} 字)")
+    return {"filename": safe_name, "craft_name": craft_name, "length": len(text),
+            "message": "文档已解析并加入知识库，重启后端后生效"}
 
 
 # ============================================================================

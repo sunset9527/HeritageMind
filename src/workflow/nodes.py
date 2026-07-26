@@ -92,7 +92,7 @@ def dispatch_to_experts_node(state: WorkflowState) -> WorkflowState:
             "history_expert": HistoryExpertAgent(retriever=retriever),
             "heritage_expert": HeritageExpertAgent(retriever=retriever)
         }
-        
+
         # 分派问题
         responses = {}
         for expert_name in required_experts:
@@ -101,7 +101,7 @@ def dispatch_to_experts_node(state: WorkflowState) -> WorkflowState:
                 try:
                     agent = expert_map[expert_name]
                     result = agent.process(question, context)
-                    
+
                     responses[expert_name] = AgentResponse(
                         agent_name=expert_name,
                         content=result.get("answer", ""),

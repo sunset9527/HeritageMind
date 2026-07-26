@@ -75,6 +75,18 @@ class Settings(BaseSettings):
         le=1.0,
         description="相似度阈值"
     )
+    chunk_size: int = Field(
+        default=500,
+        ge=100,
+        le=2000,
+        description="文档分块大小（字符数）"
+    )
+    chunk_overlap: int = Field(
+        default=50,
+        ge=0,
+        le=200,
+        description="文档分块重叠大小"
+    )
 
     # 工作流配置
     max_expert_agents: int = Field(
@@ -110,8 +122,8 @@ class Settings(BaseSettings):
 
     # 数据库配置
     database_url: str = Field(
-        default="sqlite:///./data/heritage.db",
-        description="数据库连接URL。本地开发: sqlite:///./data/heritage.db，生产: postgresql://user:pass@host:5432/heritagemind"
+        default="mysql+pymysql://root:123456@localhost:3306/heritagemind",
+        description="数据库连接URL。默认 MySQL，也可 SQLite: sqlite:///./data/heritage.db"
     )
 
     # JWT认证配置
@@ -156,12 +168,24 @@ class Settings(BaseSettings):
 
     # Embedding配置
     embedding_model: str = Field(
-        default="BAAI/bge-large-zh-v1.5",
+        default="embedding-2",
         description="Embedding模型名称"
     )
     embedding_dimensions: int = Field(
         default=1024,
         description="嵌入向量维度"
+    )
+    embedding_mode: str = Field(
+        default="api",
+        description="嵌入模式: 'api' 使用智谱API / 'local' 使用本地BGE模型"
+    )
+    zhipu_api_key: str = Field(
+        default="",
+        description="智谱AI API Key"
+    )
+    zhipu_base_url: str = Field(
+        default="https://open.bigmodel.cn/api/paas/v4/",
+        description="智谱AI API 基础URL"
     )
 
     # BM25配置

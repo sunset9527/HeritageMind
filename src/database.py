@@ -1,8 +1,7 @@
 """
 数据库层 - SQLAlchemy引擎与会话管理
 
-本地开发使用SQLite，生产环境使用PostgreSQL。
-通过config.py中的DATABASE_URL统一配置。
+支持 MySQL / SQLite / PostgreSQL，通过 config.py 的 DATABASE_URL 切换。
 """
 
 import logging
@@ -14,16 +13,24 @@ from config import settings
 logger = logging.getLogger(__name__)
 
 # 创建数据库引擎
-# SQLite需要check_same_thread=False以支持多线程访问（Streamlit场景）
 connect_args = {}
+engine_kwargs = {}
+
 if "sqlite" in settings.database_url:
     connect_args["check_same_thread"] = False
+elif "mysql" in settings.database_url:
+    # MySQL 字符集和连接池配置
+    connect_args["charset"] = "utf8mb4"
+    engine_kwargs["pool_size"] = 10
+    engine_kwargs["pool_recycle"] = 3600
+    engine_kwargs["max_overflow"] = 20
 
 engine = create_engine(
     settings.database_url,
     echo=False,
     connect_args=connect_args,
-    pool_pre_ping=True,  # 连接前检测有效性
+    pool_pre_ping=True,
+    **engine_kwargs,
 )
 
 # 会话工厂

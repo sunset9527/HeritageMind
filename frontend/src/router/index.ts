@@ -21,6 +21,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '知识图谱' },
   },
   {
+    path: '/media',
+    name: 'media',
+    component: () => import('@/views/MediaView.vue'),
+    meta: { title: '多媒体' },
+  },
+  {
     path: '/settings',
     name: 'settings',
     component: () => import('@/views/SettingsView.vue'),

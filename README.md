@@ -132,21 +132,25 @@
 | 类别 | 技术 | 用途 |
 |------|------|------|
 | LLM | DeepSeek API | 对话生成、意图分析、缺口检测 |
-| Agent 编排 | LangGraph | 多 Agent 并行调度与工作流 |
+| Embedding | 智谱 API (embedding-2) / BAAI BGE | 文档向量化，API优先+本地降级 |
+| Agent 编排 | LangGraph | 多 Agent 调度与工作流 |
+| 重排序 | BAAI/bge-reranker-base | CrossEncoder 逐对精排 |
 | 检索框架 | LangChain | 文档加载与检索链 |
 | 向量数据库 | ChromaDB | 非遗知识向量存储与语义检索 |
 | 关键词检索 | BM25 + jieba | 术语精确匹配 |
-| 知识图谱 | NetworkX + pyvis | 图谱建模与交互式可视化 |
-| 后端 | FastAPI | RESTful API，18 个端点 |
-| 前端 | Vue 3 + TypeScript + Element Plus + Tailwind | SPA 应用，Streamlit 保留可回退 |
+| 知识图谱 | NetworkX + pyvis | 65 节点全中文可视化 |
+| 后端 | FastAPI | RESTful API，30+ 端点 |
+| 前端 | Vue 3 + TypeScript + Element Plus + Tailwind | SPA 应用 |
 | 状态管理 | Pinia | auth / chat / graph / settings 四模块 |
-| 路由 | Vue Router 4 | 首页 / 问答 / 图谱 / 设置 / 登录 / 注册 |
-| 数据库 | SQLAlchemy 2.0 + Alembic | ORM 建模与版本化迁移 |
-| 数据存储 | SQLite / PostgreSQL 16 | 开发用 SQLite，生产用 PostgreSQL |
+| 路由 | Vue Router 4 | 首页 / 问答 / 图谱 / 媒体 / 设置 / 登录 / 注册 |
+| 数据库 | MySQL 8.4 + SQLAlchemy 2.0 + Alembic | 5 张表，utf8mb4 |
+| 多媒体 | 本地文件系统 | 图片/音频上传与存储 |
+| 音频转写 | Whisper (openai-whisper) | 语音转文字 |
 | 认证 | python-jose + passlib[bcrypt] | JWT 签发校验与密码哈希 |
 | 可观测性 | Langfuse | LLM 调用全链路追踪 |
 | 配置 | Pydantic Settings | 集中配置管理 |
-| 测试 | pytest | 核心模块测试 |
+| CI/CD | GitHub Actions | ruff lint + pytest |
+| 测试 | pytest | 检索模块 7 用例 |
 
 ## 快速开始
 
@@ -235,6 +239,22 @@ docker compose logs -f
 | GET | `/auth/me` | 当前用户信息 🔒 |
 | GET | `/chat/history` | 聊天历史列表（分页） 🔒 |
 | GET | `/chat/history/{chat_id}` | 单条聊天详情 🔒 |
+| GET | `/prompts` | Prompt 模板列表 |
+| POST | `/prompts` | 创建 Prompt 模板 |
+| GET | `/prompts/{id}` | 获取 Prompt 模板 |
+| PUT | `/prompts/{id}` | 更新 Prompt 模板（版本号+1） |
+| DELETE | `/prompts/{id}` | 删除 Prompt 模板 |
+| GET | `/config` | 服务器默认 LLM 配置 |
+| POST | `/media/upload` | 上传图片/音频 |
+| GET | `/media/list` | 媒体列表（可按技艺/类型筛选） |
+| DELETE | `/media/{id}` | 删除媒体文件 |
+| POST | `/favorites` | 添加收藏 🔒 |
+| GET | `/favorites` | 收藏列表 🔒 |
+| DELETE | `/favorites/{id}` | 删除收藏 🔒 |
+| GET | `/search/image` | 文搜图 |
+| POST | `/search/similar` | 以图搜图 |
+| GET | `/knowledge/categories` | 知识库分类 |
+| POST | `/documents/upload` | 上传文档（PDF/Word/MD 自动解析） |
 
 > 🔒 需在请求头携带 `Authorization: Bearer <access_token>`
 
@@ -331,9 +351,13 @@ HeritageMind/
 │   ├── 2_Graph.py                #   知识图谱页
 │   └── 3_Settings.py             #   设置页
 ├── alembic.ini                   # Alembic 迁移配置
+├── .github/workflows/ci.yml      # GitHub Actions CI（ruff + pytest）
 ├── migrations/                   # 数据库迁移脚本
 │   └── versions/
-│       └── 001_init_users_chat.py  # users + chat_history 建表
+│       ├── 001_init_users_chat.py  # users + chat_history 建表
+│       └── 002_add_prompts.py      # prompts 表
+├── tests/                        # 测试
+│   └── test_retrieval.py          #   检索模块测试
 ├── Dockerfile                    # Docker 多阶段构建
 ├── docker-compose.yml            # Docker Compose（PostgreSQL + API + Streamlit + Vue + Nginx）
 ├── .dockerignore                 # Docker 构建排除
@@ -353,13 +377,16 @@ HeritageMind/
 │   ├── deps.py                   # FastAPI 依赖注入（get_db / get_current_user）
 │   ├── models/                   # ORM 模型
 │   │   ├── user.py               #   用户表
-│   │   └── chat.py               #   聊天历史表
+│   │   ├── chat.py               #   聊天历史表
+│   │   └── prompt.py             #   Prompt 模板表
 │   ├── schemas/                  # Pydantic 请求/响应模型
 │   │   ├── user.py               #   注册/登录/Token
-│   │   └── chat.py               #   聊天历史
+│   │   ├── chat.py               #   聊天历史
+│   │   └── prompt.py             #   Prompt CRUD
 │   ├── services/                 # 业务服务层
 │   │   ├── auth.py               #   注册/登录/JWT 签发
-│   │   └── chat.py               #   聊天历史存取
+│   │   ├── chat.py               #   聊天历史存取
+│   │   └── prompt.py             #   Prompt 管理 + 热加载
 │   ├── agents/                   # Agent 模块
 │   │   ├── dispatcher.py         #   调度 Agent（意图分析+专家分配）
 │   │   ├── craft_expert.py       #   技艺知识 Agent
@@ -382,7 +409,7 @@ HeritageMind/
 │   │   ├── embeddings.py         #   Embedding 模型配置
 │   │   ├── fusion.py             #   结果融合
 │   │   ├── query_rewriter.py     #   查询改写
-│   │   └── reranker.py           #   CrossEncoder 重排序
+│   │   └── reranker.py           #   CrossEncoder 重排序（逐对精排 + 规则降级）
 │   ├── workflow/                 # LangGraph 工作流
 │   │   ├── graph.py              #   主工作流定义
 │   │   ├── nodes.py              #   工作流节点
@@ -407,78 +434,51 @@ HeritageMind/
 
 ## Release
 
-### v1.11.0 (2026-07-25)
+> 以下为合并后的大版本。细碎小版本记录见 git history。
 
-- ✨ 知识图谱全中文化：节点标签、悬浮提示、属性键值全部中文化
-- 🐛 修复图谱筛选 500 错误
-- 🐛 修复 pyvis `add_node`/`add_edge` 参数名兼容 + Jinja2 tojson Unicode 转义
-- ✨ 图谱节点属性键值英转中（region→产地，period→时期 等）
+### v2.2 — 多模态平台（2026-07-26~28）
 
-### v1.10.0 (2026-07-22~23)
+- ✨ 图片/音频上传：POST /media/upload，本地存储 + MySQL
+- ✨ 前端 MediaView：上传表单 + 画廊 + 筛选 + 删除
+- ✨ 文搜图/以图搜图：BGE 向量匹配 + CLIP 降级
+- ✨ 文档解析：PDF/Word/Markdown 自动解析（pdfplumber + python-docx）
+- ✨ 收藏功能：favorites 表 + CRUD API（需登录）
+- ✨ 知识库分类：23 种技艺分 10 大类
+- ✨ Swagger 文档：/docs + /redoc，9 个 Tag
+- ✨ 审核状态：media_documents.status（draft→reviewed→published）
+- ✨ Embedding 重建：POST /knowledge/rebuild-embeddings
+- ✨ 音频转写：Whisper base（openai-whisper）
+- ✨ Chunk 配置：chunk_size / chunk_overlap 可配置
+- ✨ Settings 保存按钮 + ElMessage 反馈
+- ✨ Embedding 升级：智谱 API (embedding-2) 优先 + 本地 BGE 降级
 
-- ✨ 知识库从 6 种扩展到 23 种非遗技艺（55,000 字）
-- ✨ Vue 3 前端全栈重写（Vite + TypeScript + Pinia + Element Plus + Tailwind）
-- ✨ 百度真实图片轮播 + 马山正行楷毛笔字体
-- 🐛 修复中文分词检索 bug（空格切分→jieba 分词）
-- ⚡ 缺口检测快速路径（90%+ 场景跳过 LLM 调用）
-- ⚡ 占位符 API Key 503 立即返回（不再超时卡住）
-- 🐛 缺口报告优化（部分覆盖时仅显示一行提示）
-- ✨ 文档加载器改为自动扫描目录
+### v2.1 — 前端现代化 + 知识平台（2026-07-22~26）
 
-### v1.9.0 (2026-07-17)
+- ✨ Vue 3 全栈：Vite + TypeScript + Pinia + Element Plus + Tailwind
+- ✨ Dashboard：马山正行楷毛笔标题 + 23 张本地图片轮播（左名右竖排）+ 模糊背景
+- ✨ AI 问答：ChatView + Agent 彩色标签 + 辩论面板 + 流式进度
+- ✨ 知识图谱：65 节点全中文可视化（pyvis tojson Unicode 修复 + 筛选修复）
+- ✨ 设置页：提供商切换 + 模型输入 + API Key 管理
+- 🔴 Logo：🏺→朱砂红「遇岸」隶书印章 SVG
+- ✨ 知识库 6→23 种：17 篇新文档，55,000 字，10 大类
+- 🐛 jieba 分词：修复中文检索 0 篇 bug
+- ⚡ 缺口检测：快速路径 + 占位 Key 503 快速返回
+- ✨ Prompt 管理：prompts 表 + CRUD + 版本控制
+- ✨ CrossEncoder 重排序：BAAI/bge-reranker-base
+- ✨ Query Rewrite：规则 + LLM 双模式
+- ✨ CI/CD：GitHub Actions（ruff + pytest）
 
-- ✨ 用户系统：注册 / 登录 / JWT 认证（OAuth2 密码流 + bcrypt 密码哈希）
-- ✨ 聊天历史持久化：登录用户问答自动存档，支持分页查询与详情回看
-- ✨ 数据库层：SQLAlchemy 2.0 + Alembic 迁移，SQLite（开发）/ PostgreSQL（生产）双支持
-- ✨ Langfuse LLM 可观测性：统一 LLM 工厂 `create_llm()`，Agent 调用全链路追踪
-- ♻️ Streamlit 多页面重构：首页 Dashboard + Chat / Graph / Settings 三页面，公共组件抽离 ui_components.py
-- 🐳 docker-compose 新增 PostgreSQL 16 服务（健康检查 + 启动依赖编排）
+### v2.0 — 产品地基 + 质量兜底（2026-07-17~25）
 
-### v1.8.0 (2026-07-2)
-
-- ✨ Docker Compose 一键部署支持
-- 📝 技术博客：多 Agent 辩论机制设计实践
-- 📖 README 重构：架构图 / API 文档 / 项目目录
-
-### v1.7.0 (2026-06-20)
-
-- ✨ Streamlit 60/40 双栏布局 + Agent 气泡
-- 🐛 修复 pyvis 图谱在 Streamlit 中的渲染问题
-
-### v1.6.0 (2026-06-08)
-
-- ✨ 辩论引擎 DebateEngine（多轮辩论 + 收敛判定）
-- 🐛 修复辩论无限循环问题（加入 CONVERGE 指令）
-
-### v1.5.0 (2026-04-25)
-
-- ✨ FastAPI 8 端点 + Lifespan 资源管理
-- ✨ 传承人视角叙事生成
-
-### v1.4.0 (2026-03-02)
-
-- ✨ 非遗知识图谱（NetworkX + pyvis）
-- ✨ LangGraph 多 Agent 并行工作流
-
-### v1.3.0 (2025-08-18)
-
-- ✨ 多粒度知识服务（3 级用户画像）
-- ✨ 知识缺口检测 GapDetector
-
-### v1.2.0 (2025-04-05)
-
-- ✨ 查询改写 + CrossEncoder 重排序
-- 🐛 修复"景泰蓝"术语匹配问题
-
-### v1.1.0 (2025-03-24)
-
-- ✨ 三专家 Agent + 调度器
-- ✨ ChromaDB + BM25 + RRF 多源检索
-
-### v1.0.0 (2025-03-10)
-
-- 🎉 首次发布
-- ✨ 6 种非遗技艺知识库
-- ✨ 基础问答 + FastAPI + Streamlit
+- ✨ 用户系统：JWT 注册/登录（OAuth2 + bcrypt），users 表
+- ✨ 聊天历史：chat_history 表，分页查询
+- 🗄️ 数据库：SQLAlchemy 2.0 + Alembic + MySQL 8.4 + utf8mb4
+- ✨ Langfuse：LLM 全链路追踪
+- ✨ Docker Compose：PostgreSQL + API + Streamlit 三服务
+- ✨ 基础 Agent：三专家 + 调度器 + 辩论引擎
+- ✨ 知识图谱：NetworkX + pyvis
+- ✨ 多粒度知识服务 + 知识缺口检测
+- ✨ 检索管线：ChromaDB + BM25 + RRF
+- ✨ 6 种非遗技艺知识库（初始版本）
 
 

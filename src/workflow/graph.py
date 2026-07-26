@@ -127,7 +127,7 @@ class HeritageWorkflowGraph:
             user_profile=user_profile,
             include_narrative=include_narrative
         )
-        
+
         try:
             # 执行工作流
             final_state = None

@@ -10,6 +10,7 @@ const navLinks = [
   { path: '/', label: '首页' },
   { path: '/chat', label: '问答' },
   { path: '/graph', label: '图谱' },
+  { path: '/media', label: '媒体' },
   { path: '/settings', label: '设置' },
 ]
 
@@ -27,7 +28,7 @@ function isActive(path: string) {
     <div class="max-w-6xl mx-auto px-6 h-13 flex items-center justify-between">
       <!-- Logo — 极简 -->
       <router-link to="/" class="flex items-center gap-2 no-underline group">
-        <span class="text-xl">🏺</span>
+        <img src="/favicon.svg?v=3" alt="" class="w-6 h-6" />
         <span class="font-semibold text-[15px] tracking-tight text-[var(--text)] group-hover:text-[var(--accent)] transition-colors">
           HeritageMind
         </span>
