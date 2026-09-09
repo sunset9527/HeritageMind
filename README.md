@@ -456,7 +456,7 @@ HeritageMind/
 
 > 以下为合并后的大版本。细碎小版本记录见 git history。
 
-### v1.5 — MySQL 会话记忆与 Vue 多轮对话（2026-08-12）
+### v2.5 — MySQL 会话记忆与 Vue 多轮对话（2026-08-12）
 
 > 保持既有 **MySQL + Vue 3** 技术栈：不迁移 PostgreSQL，也不引入 Streamlit。由于当前工作流会在单个 HTTP 请求内完整执行，本版本持久化的是跨轮对话语义，而非体积较大的逐节点 LangGraph checkpoint。
 
