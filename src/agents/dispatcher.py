@@ -7,8 +7,16 @@ import logging
 from typing import Dict, List, Optional, Any, Tuple
 from pydantic import BaseModel, Field
 
+from langchain_core.messages import SystemMessage, HumanMessage
+
 from config import settings, get_llm_config
-from src.utils.prompts import DISPATCHER_SYSTEM_PROMPT, get_question_analysis_prompt, get_fusion_prompt
+from src.utils.prompts import (
+    DISPATCHER_SYSTEM_PROMPT,
+    PLANNER_SYSTEM_PROMPT,
+    get_question_analysis_prompt,
+    get_question_plan_prompt,
+    get_fusion_prompt,
+)
 from src.utils.llm import create_llm
 
 logger = logging.getLogger(__name__)
@@ -21,6 +29,62 @@ class QuestionAnalysis(BaseModel):
     reasoning: str = Field(description="为什么需要这些专家的解释")
     key_entities: List[str] = Field(description="识别出的关键实体")
     complexity: str = Field(description="问题复杂度：simple/medium/complex")
+
+
+class QuestionPlan(BaseModel):
+    """复杂问题的回答大纲（Planner 产物；只影响生成结构）"""
+    aspects: List[str] = Field(description="必须覆盖的子方面（3-6 个），每个一句话概括")
+    outline: str = Field(description="回答总纲：子方面的组织顺序说明")
+    sub_questions: Optional[List[str]] = Field(default=None, description="预留：子问题检索（本版不使用）")
+
+
+# 路由工具 schema（裸 dict 以固定工具名 route_question；字段约束内嵌，引导模型输出合法参数）
+QUESTION_ANALYSIS_TOOL = {
+    "type": "function",
+    "function": {
+        "name": "route_question",
+        "description": "分析一条中国非遗相关的用户提问，决定需要哪些专家 Agent 参与回答，并给出意图、关键实体与复杂度。",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "intent_analysis": {"type": "string", "description": "问题意图的详细分析"},
+                "required_experts": {
+                    "type": "array",
+                    "items": {"type": "string", "enum": ["craft_expert", "history_expert", "heritage_expert"]},
+                    "description": "需要参与的专家，限定三类：craft_expert / history_expert / heritage_expert",
+                },
+                "reasoning": {"type": "string", "description": "为什么需要这些专家的解释"},
+                "key_entities": {"type": "array", "items": {"type": "string"}, "description": "识别出的关键实体（技艺名称、人物、地域、朝代等）"},
+                "complexity": {"type": "string", "enum": ["simple", "medium", "complex"], "description": "问题复杂度：simple/medium/complex"},
+            },
+            "required": ["required_experts", "complexity"],
+        },
+    },
+}
+
+
+# Planner 工具 schema（裸 dict 以固定工具名 create_plan）
+QUESTION_PLAN_TOOL = {
+    "type": "function",
+    "function": {
+        "name": "create_plan",
+        "description": "为一个复杂的中国非遗相关问题制定回答大纲：拆解出必须覆盖的子方面并给出组织顺序。",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "aspects": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "minItems": 3,
+                    "maxItems": 6,
+                    "description": "必须覆盖的子方面，3-6 个，每个一句话概括",
+                },
+                "outline": {"type": "string", "description": "回答总纲：子方面的组织顺序与说明"},
+            },
+            "required": ["aspects", "outline"],
+        },
+    },
+}
 
 
 class DispatcherAgent:
@@ -53,59 +117,115 @@ class DispatcherAgent:
             self.llm = create_llm()
         else:
             self.llm = llm
-        
+
         self.system_prompt = DISPATCHER_SYSTEM_PROMPT
         self.debate_engine = debate_engine
-        
-    def analyze_question(self, question: str) -> QuestionAnalysis:
+
+        # 原生 function calling：绑定单一路由工具；不支持 bind_tools 的端点退回裸 llm
+        self.router_llm = self.llm.bind_tools([QUESTION_ANALYSIS_TOOL]) if hasattr(self.llm, "bind_tools") else self.llm
+        # Planner：绑定 create_plan 工具；不支持 bind_tools 的端点退回裸 llm
+        self.planner_llm = self.llm.bind_tools([QUESTION_PLAN_TOOL]) if hasattr(self.llm, "bind_tools") else self.llm
+    def analyze_question(self, question: str, conversation_context: Optional[str] = None) -> QuestionAnalysis:
         """
         分析用户问题，确定需要的专家Agent
-        
+
+        采用单次 LLM 调用、三分支降级：
+        ① 原生 tool_calls（route_question）→ ② content 口述 JSON → ③ 关键词回退。
+        任一支路失败都不会二次调用 LLM，保证旧行为不劣化。
+
         Args:
             question: 用户问题
-        
+
         Returns:
             QuestionAnalysis: 问题分析结果
         """
         try:
-            prompt = get_question_analysis_prompt(question)
-            
-            response = self.llm.invoke(prompt)
-            content = response.content if hasattr(response, 'content') else str(response)
-            
-            # 尝试解析JSON响应
-            # 提取JSON部分（处理可能的markdown代码块）
-            if "```json" in content:
-                start = content.find("```json") + 7
-                end = content.find("```", start)
-                content = content[start:end].strip()
-            elif "```" in content:
-                start = content.find("```") + 3
-                end = content.find("```", start)
-                content = content[start:end].strip()
-            
-            result = json.loads(content)
-
-            required = result.get("required_experts", [])
-            # LLM 返回空列表时，回退到关键词匹配
-            if not required:
-                logger.warning("LLM返回空专家列表，使用关键词回退")
-                return self._fallback_analysis(question)
-
-            return QuestionAnalysis(
-                intent_analysis=result.get("intent_analysis", ""),
-                required_experts=required,
-                reasoning=result.get("reasoning", ""),
-                key_entities=result.get("key_entities", []),
-                complexity=result.get("complexity", "medium")
-            )
-            
-        except json.JSONDecodeError as e:
-            logger.warning(f"JSON解析失败，使用默认分析: {e}")
-            return self._fallback_analysis(question)
+            messages = [
+                SystemMessage(content=self.system_prompt),
+                HumanMessage(content=get_question_analysis_prompt(question, conversation_context)),
+            ]
+            response = self.router_llm.invoke(messages)
         except Exception as e:
-            logger.error(f"问题分析出错: {e}")
+            logger.warning(f"路由调用失败，使用关键词回退: {e}")
             return self._fallback_analysis(question)
+
+        # 分支一：原生工具调用
+        tool_calls = getattr(response, "tool_calls", None) or []
+        if tool_calls and tool_calls[0].get("name") == "route_question":
+            args = tool_calls[0].get("args") or {}
+            analysis = self._build_analysis(question, args)
+            if analysis is not None:
+                return analysis
+            logger.warning("路由工具调用返回空专家列表，使用关键词回退")
+            return self._fallback_analysis(question)
+
+        # 分支二：模型口述 JSON 到 content（未触发/不支持工具调用时）
+        content = getattr(response, "content", None)
+        if content:
+            analysis = self._parse_content_analysis(question, str(content))
+            if analysis is not None:
+                return analysis
+
+        # 分支三：全部分支失败
+        logger.warning("路由无法解析 LLM 输出，使用关键词回退")
+        return self._fallback_analysis(question)
+
+    @staticmethod
+    def _parse_content_analysis(question: str, content: str) -> Optional[QuestionAnalysis]:
+        """
+        从 LLM 的 content 文本解析 JSON 分析结果（兼容 markdown 代码块）。
+        解析/结构非法返回 None（由调用方决定降级路径）。
+        """
+        text = content.strip()
+        try:
+            if "```json" in text:
+                start = text.find("```json") + 7
+                end = text.find("```", start)
+                text = text[start:end].strip()
+            elif "```" in text:
+                start = text.find("```") + 3
+                end = text.find("```", start)
+                text = text[start:end].strip()
+            data = json.loads(text)
+        except Exception:
+            return None
+        if not isinstance(data, dict):
+            return None
+        return DispatcherAgent._build_analysis(question, data)
+
+    @staticmethod
+    def _build_analysis(question: str, data: dict) -> Optional[QuestionAnalysis]:
+        """
+        把 LLM 返回的 args/JSON 清洗为 QuestionAnalysis。
+        清洗后 required_experts 为空返回 None（触发关键词回退）；complexity 非法时按专家数回推。
+        """
+        required = DispatcherAgent._normalize_experts(data.get("required_experts"))
+        if not required:
+            return None
+        complexity = str(data.get("complexity", "") or "")
+        if complexity not in ("simple", "medium", "complex"):
+            complexity = {1: "simple", 2: "medium"}.get(len(required), "complex")
+        key_entities = data.get("key_entities") or []
+        return QuestionAnalysis(
+            intent_analysis=str(data.get("intent_analysis", "") or ""),
+            required_experts=required,
+            reasoning=str(data.get("reasoning", "") or ""),
+            key_entities=[str(e) for e in key_entities if e],
+            complexity=complexity,
+        )
+
+    @staticmethod
+    def _normalize_experts(required) -> List[str]:
+        """白名单清洗：只保留已知三类专家 token，去重且保持出现顺序。"""
+        known = {"craft_expert", "history_expert", "heritage_expert"}
+        result = []
+        seen = set()
+        for token in required or []:
+            name = str(token).strip()
+            if name in known and name not in seen:
+                seen.add(name)
+                result.append(name)
+        return result
     
     def _fallback_analysis(self, question: str) -> QuestionAnalysis:
         """
@@ -149,40 +269,129 @@ class DispatcherAgent:
             complexity=complexity
         )
     
+    def plan_question(
+        self,
+        question: str,
+        complexity: str = "",
+        required_experts: Optional[List[str]] = None,
+        key_entities: Optional[List[str]] = None,
+    ) -> Optional[QuestionPlan]:
+        """
+        为复杂问题制定回答大纲（Planner，只影响生成结构）。
+
+        采用单次 LLM 调用、三分支降级（与路由一致）：
+        ① 原生 tool_calls（create_plan）→ ② content 口述 JSON → ③ 失败。
+        任一支路失败都返回 None（None = 跳过 plan，最安全降级，不额外调 LLM）。
+
+        Returns:
+            Optional[QuestionPlan]: 生成成功返回大纲；失败/空子方面返回 None。
+        """
+        try:
+            messages = [
+                SystemMessage(content=PLANNER_SYSTEM_PROMPT),
+                HumanMessage(content=get_question_plan_prompt(
+                    question, complexity or "medium", required_experts or [], key_entities or []
+                )),
+            ]
+            response = self.planner_llm.invoke(messages)
+        except Exception as e:
+            logger.warning(f"Planner 调用失败，跳过 plan: {e}")
+            return None
+
+        # 分支一：原生工具调用
+        tool_calls = getattr(response, "tool_calls", None) or []
+        if tool_calls and tool_calls[0].get("name") == "create_plan":
+            plan = self._build_plan(tool_calls[0].get("args") or {})
+            if plan is not None:
+                logger.info(f"Planner 生成 {len(plan.aspects)} 个子方面: {plan.aspects}")
+                return plan
+            logger.warning("Planner 工具调用返回空子方面，跳过 plan")
+            return None
+
+        # 分支二：模型口述 JSON 到 content
+        content = getattr(response, "content", None)
+        if content:
+            plan = self._parse_content_plan(str(content))
+            if plan is not None:
+                logger.info(f"Planner(content) 生成 {len(plan.aspects)} 个子方面: {plan.aspects}")
+                return plan
+
+        # 分支三：全部失败 → 跳过 plan
+        logger.warning("Planner 无法解析 LLM 输出，跳过 plan")
+        return None
+
+    @staticmethod
+    def _parse_content_plan(content: str) -> Optional[QuestionPlan]:
+        """从 content 文本解析 JSON 大纲（兼容 markdown 代码块）；结构非法返回 None。"""
+        text = content.strip()
+        try:
+            if "```json" in text:
+                start = text.find("```json") + 7
+                end = text.find("```", start)
+                text = text[start:end].strip()
+            elif "```" in text:
+                start = text.find("```") + 3
+                end = text.find("```", start)
+                text = text[start:end].strip()
+            data = json.loads(text)
+        except Exception:
+            return None
+        if not isinstance(data, dict):
+            return None
+        return DispatcherAgent._build_plan(data)
+
+    @staticmethod
+    def _build_plan(data: dict) -> Optional[QuestionPlan]:
+        """把 LLM 返回的 args/JSON 清洗为 QuestionPlan；清洗后无有效子方面返回 None。"""
+        raw_aspects = data.get("aspects") or []
+        aspects = []
+        for a in raw_aspects:
+            a = str(a).strip()
+            if a and a not in aspects:
+                aspects.append(a)
+        if not aspects:
+            return None
+        return QuestionPlan(
+            aspects=aspects,
+            outline=str(data.get("outline", "") or ""),
+        )
+
     def fuse_responses(
         self,
         responses: Dict[str, str],
         question: str,
-        user_profile: str = "curious"
+        user_profile: str = "curious",
+        plan_outline: Optional[str] = None
     ) -> str:
         """
         融合多个专家的回答
-        
+
         Args:
             responses: 专家回答字典 {agent_name: response}
             question: 原始问题
             user_profile: 用户画像类型
-        
+            plan_outline: 可选的 Planner 大纲文本（复杂问题）；非空时要求按大纲组织
+
         Returns:
             str: 融合后的回答
         """
         if not responses:
             return "抱歉，暂时没有找到相关信息。"
-        
+
         # 如果只有一个专家回答，直接返回并添加标注
         if len(responses) == 1:
             agent_name, response = list(responses.items())[0]
             expert_display = self.EXPERT_MAPPING.get(agent_name, agent_name)
             return f"[{expert_display}]\n\n{response}"
-        
+
         try:
-            prompt = get_fusion_prompt(responses, question)
-            
+            prompt = get_fusion_prompt(responses, question, plan_outline)
+
             response = self.llm.invoke(prompt)
             fused_content = response.content if hasattr(response, 'content') else str(response)
-            
+
             return fused_content
-            
+
         except Exception as e:
             logger.error(f"回答融合失败: {e}")
             # 降级处理：简单拼接
@@ -208,39 +417,6 @@ class DispatcherAgent:
                 parts.append(f"[{expert_display}]\n\n{responses[expert]}\n")
         
         return "\n".join(parts)
-    
-    def add_source_annotations(
-        self,
-        content: str,
-        agent_names: List[str],
-        metadata: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
-        """
-        为回答添加来源标注
-        
-        Args:
-            content: 回答内容
-            agent_names: 参与的Agent名称列表
-            metadata: 额外元数据
-        
-        Returns:
-            Dict: 包含内容和元数据的字典
-        """
-        result = {
-            "content": content,
-            "source_agents": [
-                {
-                    "id": agent,
-                    "name": self.EXPERT_MAPPING.get(agent, agent),
-                    "type": self._get_agent_type(agent)
-                }
-                for agent in agent_names
-            ],
-            "metadata": metadata or {}
-        }
-        
-        return result
-    
     def _get_agent_type(self, agent_name: str) -> str:
         """获取Agent类型描述"""
         types = {
@@ -250,31 +426,8 @@ class DispatcherAgent:
         }
         return types.get(agent_name, "未知专家")
     
-    def should_include_narrative(self, question: str, include_narrative: bool = False) -> bool:
-        """
-        判断是否应该使用传承人口吻
-        
-        Args:
-            question: 用户问题
-            include_narrative: 用户显式请求
-        
-        Returns:
-            bool: 是否使用叙事模式
-        """
-        narrative_keywords = ["讲讲", "说说", "听听", "师傅", "传承人", "口述", "故事"]
-        
-        # 用户显式请求
-        if include_narrative:
-            return True
-        
-        # 问题中包含叙事性关键词
-        if any(kw in question for kw in narrative_keywords):
-            return True
-        
-        return False
-
-
     def fuse_with_debate(
+        # ⚠️ TODO(2026-08-15): 当前未接线，仅供后续功能扩展
         self,
         responses: Dict[str, str],
         question: str,

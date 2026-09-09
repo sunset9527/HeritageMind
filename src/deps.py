@@ -18,7 +18,7 @@ from src.models.user import User
 logger = logging.getLogger(__name__)
 
 # OAuth2密码流认证 — token从 /auth/login 获取
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 
 
 def get_db():
@@ -58,6 +58,10 @@ def get_current_user(
         detail="无法验证身份凭证，请重新登录",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
+    # auto_error=False 后，token 可能为 None（未携带 Authorization header）
+    if token is None:
+        raise credentials_exception
 
     # 解码JWT
     payload = decode_access_token(token)

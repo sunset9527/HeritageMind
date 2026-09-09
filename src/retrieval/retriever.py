@@ -8,6 +8,8 @@ import numpy as np
 
 from config import settings, get_retriever_config
 from src.retrieval.document_loader import HeritageDocumentLoader
+from src.retrieval.craft_name_boost import apply_craft_name_boost, find_matched_crafts
+from src.retrieval.grouping import group_retrieved_docs
 
 logger = logging.getLogger(__name__)
 
@@ -104,13 +106,93 @@ class MultiSourceRetriever:
             results = keyword_results
         
         # 过滤低相似度结果
+        # 修复：keyword 命中即相关，不受 similarity_threshold 过滤。原逻辑对
+        # keyword 结果统一按 match_count/len(keywords)*0.8 打分，长 query 天然偏低
+        # （如"景泰蓝的制作工艺是怎样的？"命中 3/4 词 = 0.6 < 0.7），会把有效结果
+        # 全部滤掉导致检索返回空。阈值仅约束语义检索（余弦相似度）与混合结果。
         results = [
             r for r in results
-            if r.get("similarity", 1.0) >= similarity_threshold
+            if r.get("retrieval_type") == "keyword"
+            or r.get("similarity", 1.0) >= similarity_threshold
         ]
-        
-        # 返回Top-K
+
+        # P2优化⑤：技艺名精确匹配置顶（query 含技艺名时该技艺文档置顶 rank1）
+        # 放在 top_k 截断之前：即使目标技艺原本排在召回池较后位置，也能进入结果
+        if getattr(settings, "craft_boost_enabled", True):
+            results, _ = apply_craft_name_boost(results, query)
+
+        # 返回Top-K（v2.2：接入 CrossEncoder Reranker 精排）
+        # 此前 reranker.py 是死代码（类+单例已实现但检索链路从未调用），README 却声称已用——
+        # 现真正接线。规则：技艺名置顶文档（硬规则保证 rank1）不参与 rerank（保护），
+        # 其余候选经 CrossEncoder 逐对精排；模型不可用/失败时 reranker 内部自动降级为按原分数排序。
+        if getattr(settings, "reranker_enabled", True):
+            boosted = [r for r in results if r.get("craft_name_boosted")]
+            rest = [r for r in results if not r.get("craft_name_boosted")]
+            if rest:
+                try:
+                    from .reranker import get_reranker_model
+                    # 候选池截断：只对 top_k*3 精排（全量候选 CPU 打分太慢，
+                    # 实测 58 候选单 query 数十秒——精排只做局部重排，工程标准做法）
+                    rest = get_reranker_model().rerank(query, rest[: top_k * 3], top_k)
+                except Exception as e:
+                    logger.warning(f"Reranker 接入失败，降级按原分数取 top-k: {e}")
+                    rest = rest[:top_k]
+            results = boosted + rest
+
         return results[:top_k]
+
+    def retrieve_grouped(
+        self,
+        query: str,
+        top_k: Optional[int] = None,
+        recall_factor: int = 2,
+        max_chars_per_group: int = 1500,
+        filter_type: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        P2优化①：层级聚合检索 —— 先检索，再按「技艺 → 工序 → 细节」聚合成组返回。
+
+        解决"非遗知识碎片化单条切片丢全貌"：检索命中多条碎片时，
+        按技艺分组（metadata.craft_id 归一化），组内按工序/章节顺序排序，
+        拼接为完整技艺视图上下文。
+
+        Args:
+            query: 查询文本
+            top_k: 召回数（默认取配置 top_k；分组场景建议适当放大召回池）
+            recall_factor: 召回池放大倍数 = top_k * recall_factor（分组后组内更完整）
+            max_chars_per_group: 每组合并上下文的最大字符数
+            filter_type: 文档类型过滤（透传给 retrieve）
+
+        Returns:
+            {
+                "query": query,
+                "groups": {craft_id: {craft_name, docs, score, processes, ...}},
+                "context": 按组拼接的完整技艺视图上下文,
+                "group_count": 组数,
+                "total_docs": 召回文档数,
+                "matched_crafts": query 命中的技艺名列表
+            }
+        """
+        if top_k is None:
+            top_k = self.config["top_k"]
+
+        # 放大召回池再分组，避免截断后组内碎片不完整
+        results = self.retrieve(
+            query,
+            top_k=top_k * max(recall_factor, 1),
+            filter_type=filter_type,
+        )
+
+        grouped = group_retrieved_docs(
+            results, query, max_chars_per_group=max_chars_per_group
+        )
+        grouped["query"] = query
+        grouped["matched_crafts"] = find_matched_crafts(query)
+        logger.info(
+            f"层级聚合检索完成: query命中技艺 {grouped['matched_crafts']}，"
+            f"{grouped['group_count']} 组 / {grouped['total_docs']} 篇文档"
+        )
+        return grouped
     
     def _filter_documents(
         self,

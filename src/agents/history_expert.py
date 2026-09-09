@@ -123,11 +123,8 @@ class HistoryExpertAgent:
             }
         }
     
-    def set_retriever(self, retriever: MultiSourceRetriever):
-        """设置检索器"""
-        self.retriever = retriever
     
-    def process(self, question: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def process(self, question: str, context: Optional[Dict[str, Any]] = None, search_query: Optional[str] = None) -> Dict[str, Any]:
         """
         处理用户问题
         
@@ -140,7 +137,7 @@ class HistoryExpertAgent:
         """
         try:
             # 1. 检索相关文档
-            retrieved_docs = self._retrieve_documents(question)
+            retrieved_docs = self._retrieve_documents(search_query or question)
             
             # 2. 识别问题中的技艺
             craft_name = self._identify_craft(question, context)
@@ -255,16 +252,19 @@ class HistoryExpertAgent:
             return f"抱歉，生成回答时遇到技术问题：{str(e)}"
     
     def get_craft_history(self, craft_name: str) -> Optional[Dict[str, Any]]:
+    # ⚠️ TODO(2026-08-15): 当前未接线，仅供后续功能扩展
         """获取特定技艺的历史信息"""
         return self.history_context.get(craft_name)
     
     def get_timeline(self, craft_name: str) -> List[tuple]:
+    # ⚠️ TODO(2026-08-15): 当前未接线，仅供后续功能扩展
         """获取技艺发展时间线"""
         if craft_name in self.history_context:
             return self.history_context[craft_name]['发展']
         return []
     
     def explain_cultural_significance(self, craft_name: str) -> str:
+    # ⚠️ TODO(2026-08-15): 当前未接线，仅供后续功能扩展
         """
         解释特定技艺的文化意义
         

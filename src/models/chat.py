@@ -13,6 +13,7 @@ class ChatHistory(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True, comment="用户ID")
+    session_id = Column(String(36), ForeignKey("chat_sessions.id", ondelete="SET NULL"), nullable=True, index=True, comment="v1.5 会话ID")
     question = Column(Text, nullable=False, comment="用户问题")
     answer = Column(Text, nullable=False, comment="系统回答")
     user_profile = Column(String(20), default="curious", nullable=False, comment="用户画像: curious/learner/researcher")

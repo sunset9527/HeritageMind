@@ -169,15 +169,19 @@ class Settings(BaseSettings):
     # Embedding配置
     embedding_model: str = Field(
         default="embedding-2",
-        description="Embedding模型名称"
+        description="Embedding模型名称（API 模式用智谱模型名，本地模式用 BGE-M3 路径）"
     )
     embedding_dimensions: int = Field(
         default=1024,
         description="嵌入向量维度"
     )
     embedding_mode: str = Field(
-        default="api",
-        description="嵌入模式: 'api' 使用智谱API / 'local' 使用本地BGE模型"
+        default="local_first",
+        description="嵌入模式: 'local_first' 本地优先API兜底 / 'local' 仅本地 / 'api' 仅API"
+    )
+    local_embedding_model_path: str = Field(
+        default="./models/bge-m3",
+        description="本地 BGE-M3 模型路径（Docker 内 /models/bge-m3，Windows 本机 E:/huggingface/model）"
     )
     zhipu_api_key: str = Field(
         default="",
@@ -196,18 +200,31 @@ class Settings(BaseSettings):
 
     # Reranker配置
     reranker_model: str = Field(
-        default="BAAI/bge-reranker-base",
-        description="Cross-Encoder Reranker模型名称"
+        default="E:/huggingface/bge-reranker-base",
+        description="Cross-Encoder Reranker模型路径（本地目录，2026-08-15 改为本地路径；"
+                    "之前用 HF 模型名 BAAI/bge-reranker-base 走缓存目录，权重不完整会卡网络超时）"
     )
     reranker_enabled: bool = Field(
-        default=True,
-        description="是否启用Reranker重排序"
+        default=False,
+        description="是否启用Reranker重排序。v2.2 已接入检索链路（retriever.retrieve 精排）。"
+                    "模型已下载到 E:/huggingface/bge-reranker-base（2026-08-15 完整），"
+                    "确认加载成功后置 True；未启用时检索走 BM25+向量+RRF 三路融合"
     )
 
     # 查询重写配置
     query_rewriting_enabled: bool = Field(
         default=True,
-        description="是否启用查询重写"
+        description="检索链路是否启用查询重写（v1.4 起由 dispatch 节点读取并真正接线）"
+    )
+    query_rewriting_use_llm: bool = Field(
+        default=False,
+        description="查询重写接线时是否启用 LLM 改写候选（默认关；完整版 LLM 改写见 v1.6）"
+    )
+
+    # Planner配置（v1.4：复杂问题的子方面大纲，只影响生成结构）
+    planner_enabled: bool = Field(
+        default=True,
+        description="复杂问题是否启用 Planner 大纲分解（complex 或 ≥2 专家时触发）；关闭则完全跳过 plan 节点"
     )
 
     # RRF融合配置
@@ -215,6 +232,142 @@ class Settings(BaseSettings):
         default=60,
         ge=1,
         description="RRF融合算法参数k"
+    )
+
+    # 辩论引擎配置（P1优化：上下文瘦身与辩论降级）
+    debate_enabled: bool = Field(
+        default=True,
+        description="辩论总开关，关闭后所有问题直接走普通融合（降级）"
+    )
+    debate_max_rounds: int = Field(
+        default=3,
+        ge=1,
+        le=10,
+        description="辩论最大轮次，超过此轮次提前结束"
+    )
+    debate_history_chars: int = Field(
+        default=800,
+        ge=50,
+        description="辩论历史传给下一轮时每段截断字符数，防止上下文随轮次无限增长"
+    )
+    expert_answer_max_chars: int = Field(
+        default=600,
+        ge=50,
+        description="专家单次回答/单轮发言最大字符数，超长自动截断"
+    )
+
+    # 热门问答缓存配置（P1优化：减少重复问题对LLM的重复调用）
+    cache_enabled: bool = Field(
+        default=True,
+        description="热门问答缓存开关"
+    )
+    cache_max_entries: int = Field(
+        default=100,
+        ge=1,
+        description="缓存最大条数，超过后按LRU淘汰最旧"
+    )
+    cache_ttl_seconds: int = Field(
+        default=3600,
+        ge=1,
+        description="缓存TTL（秒），过期后自动失效"
+    )
+
+    # 检索优化配置（P2优化：召回颗粒度 + 重排）
+    craft_boost_enabled: bool = Field(
+        default=True,
+        description="技艺名精确匹配置顶开关：query 含技艺名时该技艺文档置顶 rank1"
+    )
+    craft_group_enabled: bool = Field(
+        default=True,
+        description="层级聚合开关：检索结果按「技艺→工序→细节」聚合成组返回"
+    )
+    craft_group_max_chars: int = Field(
+        default=1500,
+        ge=100,
+        description="层级聚合时每组合并上下文的最大字符数，控制生成阶段上下文体积"
+    )
+
+    # ================= 音频转写与检索（v1.4） =================
+    audio_transcribe_enabled: bool = Field(
+        default=True,
+        description="上传 media_type=audio 时是否自动入队转写（关闭则只存文件）"
+    )
+    audio_worker_enabled: bool = Field(
+        default=True,
+        description="lifespan 是否启动 asyncio 转写 worker（仅在 Redis 可达时真正消费）"
+    )
+    whisper_model_dir: str = Field(
+        default="E:/huggingface/faster-whisper-small",
+        description="faster-whisper CTranslate2 模型目录（本地加载，无需联网下载）"
+    )
+    whisper_device: str = Field(
+        default="cpu",
+        description="推理设备：cpu / cuda（本机 torch 为 CPU 版，默认 cpu）"
+    )
+    whisper_compute_type: str = Field(
+        default="int8",
+        description="CPU 量化：int8 / int8_float32 / float32"
+    )
+    whisper_cpu_threads: int = Field(
+        default=4,
+        ge=1,
+        description="Whisper CPU 线程数"
+    )
+    whisper_language: str = Field(
+        default="zh",
+        description="识别语言代码；None 则自动检测"
+    )
+    whisper_beam_size: int = Field(
+        default=5,
+        ge=1,
+        description="beam search 宽度"
+    )
+    audio_chunk_max_chars: int = Field(
+        default=500,
+        ge=50,
+        le=2000,
+        description="转写文本分块上限（入库 chroma 前切块）"
+    )
+    audio_chunk_overlap: int = Field(
+        default=50,
+        ge=0,
+        description="转写分块重叠字符"
+    )
+    audio_index_collection: str = Field(
+        default="audio_transcripts",
+        description="音频向量 collection 名（3-512 字符，[a-zA-Z0-9._-]）"
+    )
+    audio_index_path: str = Field(
+        default="./data/audio_chroma",
+        description="音频向量 PersistentClient 根目录（与文本向量隔离）"
+    )
+    audio_max_attempts: int = Field(
+        default=3,
+        ge=1,
+        description="单条音频转写最大尝试次数，超过置 FAILED"
+    )
+    audio_stale_minutes: int = Field(
+        default=15,
+        ge=1,
+        description="TRANSCRIBING 超过此时长视为陈旧，worker 启动 sweep 复位重入队"
+    )
+
+    # ================= Redis 缓存与任务队列（v1.4） =================
+    redis_url: str = Field(
+        default="redis://localhost:6379",
+        description="Redis 连接串（缓存 + 转写任务队列共用）"
+    )
+    cache_backend: str = Field(
+        default="auto",
+        description="热门问答缓存后端：auto(Redis 可达用 Redis，否则进程内 LRU) / redis / memory"
+    )
+    redis_cache_prefix: str = Field(
+        default="qa:v1",
+        description="问答缓存 Redis key 前缀"
+    )
+    audio_queue_key: str = Field(
+        default="heritagemind:audio:transcribe",
+        description="音频转写任务队列 Redis key"
     )
 
     @field_validator("deepseek_api_key", mode="before")

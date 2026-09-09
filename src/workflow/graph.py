@@ -9,11 +9,13 @@ from langgraph.graph import StateGraph, END
 from src.workflow.state import WorkflowState, create_initial_state, state_to_response, QueryResponse
 from src.workflow.nodes import (
     analyze_question_node,
+    plan_question_node,
     dispatch_to_experts_node,
     collect_expert_responses_node,
     fuse_knowledge_node,
     detect_gaps_node,
     generate_response_node,
+    should_plan,
     should_include_narrative,
     should_detect_gaps,
     has_expert_responses,
@@ -48,18 +50,27 @@ class HeritageWorkflowGraph:
         
         # 添加节点
         workflow.add_node("analyze_question", analyze_question_node)
+        workflow.add_node("plan_question", plan_question_node)
         workflow.add_node("dispatch_to_experts", dispatch_to_experts_node)
         workflow.add_node("collect_responses", collect_expert_responses_node)
         workflow.add_node("fuse_knowledge", fuse_knowledge_node)
         workflow.add_node("detect_gaps", detect_gaps_node)
         workflow.add_node("generate_response_narrative", generate_response_node)
         workflow.add_node("generate_response_standard", generate_response_node)
-        
+
         # 设置入口点
         workflow.set_entry_point("analyze_question")
-        
-        # 添加边
-        workflow.add_edge("analyze_question", "dispatch_to_experts")
+
+        # 添加边（v1.4：复杂问题先经 Planner 产出大纲，简单问题跳过直接分派）
+        workflow.add_conditional_edges(
+            "analyze_question",
+            should_plan,
+            {
+                "plan": "plan_question",
+                "skip_plan": "dispatch_to_experts",
+            }
+        )
+        workflow.add_edge("plan_question", "dispatch_to_experts")
         workflow.add_edge("dispatch_to_experts", "collect_responses")
         
         # 条件边：检查是否有专家响应
@@ -107,7 +118,9 @@ class HeritageWorkflowGraph:
         question: str,
         user_profile: str = "curious",
         include_narrative: bool = False,
-        thread_id: Optional[str] = None
+        thread_id: Optional[str] = None,
+        conversation_context: str = "",
+        memory_preferences: Optional[Dict[str, Any]] = None,
     ) -> QueryResponse:
         """
         执行问答查询
@@ -125,13 +138,17 @@ class HeritageWorkflowGraph:
         initial_state = create_initial_state(
             question=question,
             user_profile=user_profile,
-            include_narrative=include_narrative
+            include_narrative=include_narrative,
+            thread_id=thread_id,
+            conversation_context=conversation_context,
+            memory_preferences=memory_preferences,
         )
+        config = {"configurable": {"thread_id": thread_id}} if thread_id else None
 
         try:
             # 执行工作流
             final_state = None
-            for state in self.graph.stream(initial_state):
+            for state in self.graph.stream(initial_state, config=config):
                 final_state = state
                 logger.debug(f"工作流状态更新: {list(state.keys())}")
             
@@ -187,6 +204,7 @@ class HeritageWorkflowGraph:
         # 节点定义
         node_defs = [
             {"id": "analyze_question", "name": "问题分析", "type": "start"},
+            {"id": "plan_question", "name": "复杂问题规划", "type": "process"},
             {"id": "dispatch_to_experts", "name": "专家分派", "type": "process"},
             {"id": "collect_responses", "name": "收集响应", "type": "process"},
             {"id": "fuse_knowledge", "name": "知识融合", "type": "process"},
@@ -199,7 +217,9 @@ class HeritageWorkflowGraph:
         
         # 边定义
         edge_defs = [
+            {"source": "analyze_question", "target": "plan_question"},
             {"source": "analyze_question", "target": "dispatch_to_experts"},
+            {"source": "plan_question", "target": "dispatch_to_experts"},
             {"source": "dispatch_to_experts", "target": "collect_responses"},
             {"source": "collect_responses", "target": "fuse_knowledge"},
             {"source": "fuse_knowledge", "target": "detect_gaps"},
@@ -224,7 +244,9 @@ class HeritageWorkflowGraph:
         question: str,
         user_profile: str = "curious",
         include_narrative: bool = False,
-        thread_id: Optional[str] = None
+        thread_id: Optional[str] = None,
+        conversation_context: str = "",
+        memory_preferences: Optional[Dict[str, Any]] = None,
     ) -> QueryResponse:
         """
         异步执行问答查询
@@ -244,13 +266,17 @@ class HeritageWorkflowGraph:
         initial_state = create_initial_state(
             question=question,
             user_profile=user_profile,
-            include_narrative=include_narrative
+            include_narrative=include_narrative,
+            thread_id=thread_id,
+            conversation_context=conversation_context,
+            memory_preferences=memory_preferences,
         )
+        config = {"configurable": {"thread_id": thread_id}} if thread_id else None
         
         try:
             # 异步执行工作流
             final_state = None
-            async for state in self.graph.astream(initial_state):
+            async for state in self.graph.astream(initial_state, config=config):
                 final_state = state
                 logger.debug(f"工作流状态更新: {list(state.keys())}")
             

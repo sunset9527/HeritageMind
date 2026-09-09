@@ -145,12 +145,27 @@
 | 路由 | Vue Router 4 | 首页 / 问答 / 图谱 / 媒体 / 设置 / 登录 / 注册 |
 | 数据库 | MySQL 8.4 + SQLAlchemy 2.0 + Alembic | 5 张表，utf8mb4 |
 | 多媒体 | 本地文件系统 | 图片/音频上传与存储 |
-| 音频转写 | Whisper (openai-whisper) | 语音转文字 |
+| 音频转写 | faster-whisper (本地 CTranslate2 small) | 语音转文字（PyAV 解码，无需系统 ffmpeg） |
+| 音频检索 | ChromaDB（独立 audio collection） | 转写文本分块向量检索，`GET /search/audio` 按文字搜音频 |
+| 缓存/队列 | Redis 8 + redis-py | 热门问答缓存（Redis 优先，进程内 LRU 兜底）+ 音频转写任务队列 |
 | 认证 | python-jose + passlib[bcrypt] | JWT 签发校验与密码哈希 |
 | 可观测性 | Langfuse | LLM 调用全链路追踪 |
 | 配置 | Pydantic Settings | 集中配置管理 |
 | CI/CD | GitHub Actions | ruff lint + pytest |
 | 测试 | pytest | 检索模块 7 用例 |
+
+## 文档解析（PDF/扫描件 OCR）
+
+非遗资料多为扫描件/图片 PDF，`src/services/document_parser.py` 的 PDF 解析已升级为双通道：
+
+- **文本层**：pymupdf(fitz) 提取，数字原生 PDF 直接出字
+- **扫描页 OCR 兜底**：页文本字符数 < 20 → 渲染位图 → RapidOCR 中文识别（新模块 `src/services/pdf_parser.py`）
+
+`parse_document(bytes, filename, mime)` 对上传的 PDF（含扫描件）统一返回纯文本，供知识库入库，接口签名不变。
+
+```bash
+python -m pytest tests/test_pdf_parser.py -v
+```
 
 ## 快速开始
 
@@ -253,6 +268,11 @@ docker compose logs -f
 | DELETE | `/favorites/{id}` | 删除收藏 🔒 |
 | GET | `/search/image` | 文搜图 |
 | POST | `/search/similar` | 以图搜图 |
+| POST | `/search/index-images` | 重建图片向量索引 |
+| GET | `/search/audio` | 文搜音频（按文字命中已转写音频，`?q=&top_k=&craft_name=`） |
+| POST | `/search/audio/index` | 重建音频转写向量索引 |
+| GET | `/media/{id}/transcript` | 查询音频转写状态（UPLOADED→TRANSCRIBING→INDEXED/FAILED，轮询用） |
+| POST | `/media/{id}/transcribe` | 手动触发/重试音频转写 |
 | GET | `/knowledge/categories` | 知识库分类 |
 | POST | `/documents/upload` | 上传文档（PDF/Word/MD 自动解析） |
 
@@ -436,7 +456,44 @@ HeritageMind/
 
 > 以下为合并后的大版本。细碎小版本记录见 git history。
 
-### v2.2 — 多模态平台（2026-07-26~28）
+### v1.5 — MySQL 会话记忆与 Vue 多轮对话（2026-09-09）
+
+> 保持既有 **MySQL + Vue 3** 技术栈：不迁移 PostgreSQL，也不引入 Streamlit。由于当前工作流会在单个 HTTP 请求内完整执行，本版本持久化的是跨轮对话语义，而非体积较大的逐节点 LangGraph checkpoint。
+
+- 🧠 **跨轮会话记忆**：新增 `chat_sessions`，并为 `chat_history` 关联 `session_id`；登录用户首次 `/query` 自动建会话，后续携带 `session_id` 即会加载最近 4 轮、最多 2,400 字的上下文。上下文同时进入路由分析、检索改写与最终回答生成，支持“介绍昆曲”后继续追问“它有哪些代表剧目？”
+- 🔐 **会话隔离与缓存安全**：所有会话读取均同时校验 `session_id + user_id`，越权按不存在处理；带会话的问答不走热门问答缓存，避免不同上下文因相同问题命中错误答案；记忆读写失败则降级为空上下文，不中断本轮回答。
+- 🎯 **用户偏好学习**：新增 `user_preferences`，只从项目内 23 种标准技艺与用户显式选择的学习深度学习偏好；保留最多 5 个技艺，不从 LLM 生成文本中写入偏好。本轮显式画像和技艺筛选始终优先于历史偏好。
+- 🧭 **会话 API**：新增 `GET /chat/sessions`、`POST /chat/sessions`、`GET /chat/sessions/{session_id}/messages`；`/query` 与 `/query/stream` 均支持可选 `session_id`，响应 metadata 返回本轮会话 ID。
+- 🎨 **Vue 交互**：Pinia 维护 `activeSessionId`；聊天侧栏支持“继续上次对话”、加载历史轮次和“新对话”，首轮请求自动回填服务端创建的会话 ID。
+- 🗄️ **数据库迁移**：新增 Alembic `003_add_v15_session_memory.py`，创建 `chat_sessions`、`user_preferences` 并向 `chat_history` 增加 `session_id`。已有 MySQL 环境升级前执行 `python -m alembic upgrade head`。
+- ✅ **验证**：新增会话归属、上下文截断/顺序、偏好白名单、工作流 thread 配置、带指代的检索改写等离线测试；全量 `python -m pytest tests/ --basetemp <可写临时目录>` **145 通过、1 跳过**。
+
+### v1.4 多模态补做 — 音频转写·检索 + Redis 缓存/队列（2026-09-09）
+
+> 开发路线图 `agent非遗.md` 的 v1.4 表格遗留的多模态 / Redis 项，叠加上文 v1.4 核心 Agent 主线一并补齐，两条同属 2026-09-09 交付。
+
+- 🎙️ **音频转写流水线**：上传 `media_type=audio` 自动建 `audio_transcripts` sidecar 行并入队（不阻断上传，响应带 `transcript_status`）；单 asyncio worker 消费 Redis 队列，faster-whisper **small**（本地 CTranslate2 权重 `E:/huggingface/faster-whisper-small`，int8 CPU，PyAV 解码免系统 ffmpeg）转写 → 文本按句边界分块（overlap 防断裂）→ chromadb 1.5.1 独立 audio collection 向量入库。状态机 `UPLOADED → TRANSCRIBING → INDEXED | FAILED`，CAS `claim_job` 抢占 + `attempts` 上限 + `full_text` 持久化：中断重试时**只重索引、不二次转写**
+- 🔍 **文搜音频**：新增 `GET /search/audio`（BGE 向量检索，embedding 异常自动降级子串），按 `media_id` 聚合成单条命中并回连 `media_documents` 带出 url/title；`POST /media/{id}/transcribe` 手动触发/重试、`GET /media/{id}/transcript` 轮询状态、`POST /search/audio/index` 用 `full_text` 全量重建。删除媒体自动清 sidecar + chroma 向量
+- ⚡ **Redis 缓存与任务队列**：热门问答缓存从 api.py 内联 LRU 迁到 `src/services/cache.py` 的 `QaCache`（memory/redis/auto 三后端；auto 探测 Redis 可达性，不可达自动降级进程内 LRU，缓存故障不影响问答）；转写任务用 Redis List RPUSH/BLPOP，worker 启动 sweep 兜底 Redis 离线期积压（陈旧 TRANSCRIBING 复位、达上限转 FAILED）
+- 🛡️ 降级完备：Redis 不可达 → 问答走内存 LRU、入队仅 warning、worker 自检不空转；embedding 不可用 → 子串检索兜底
+- ✅ 验证：全量 `python -m pytest tests/` **137 通过**（核心 Agent 84 + 本次新增 chunking / chroma store / transcription / sidecar / worker / QaCache / Redis 队列 7 组共 **53 例**，全部离线确定性，无 whisper/BGE/Redis/持久 chroma 也可跑）；真机端到端（MySQL + Redis + 本地 small 模型 + 本地 BGE）实测：上传 wav → UPLOADED → 转写入库 → INDEXED → `/search/audio?q=掐丝` 命中 → 删除媒体后 sidecar/向量/检索全清空、队列排空
+
+### v1.4 核心 Agent 主线 — Router 工具化 · 检索改写接线 · Planner 大纲（2026-09-09）
+
+> 本条目对应开发路线图 `agent非遗.md` 的 **v1.4「核心 Agent 主线」**里程碑，实现时叠加于当时最新产品版本（v2.3）之上；与下文产品历史版本中的 `v1.4 (2026-03-02) 非遗知识图谱` 属于不同编号体系，请勿混淆。
+
+- 🧭 Router 原生 function-calling：路由分析改走 `route_question` 工具（裸 dict schema 固定工具名、枚举内嵌引导），三分支降级 —— 原生 tool_calls → content 口述 JSON（兼容 ```json 剥壳）→ 关键词回退；`DISPATCHER_SYSTEM_PROMPT` 现真正以 SystemMessage 进 LLM，不再要求"提示词输出 JSON + 手解析"
+- 🔀 检索 Query 改写接线（规则模式）：`select_best_query` 选出最佳候选写入 `state.search_query`；dispatch 层级聚合检索、缺口检测与三专家 `process(question, context, search_query=...)` 统一消费改写后 query。改写只作用于检索，专家识别技艺名 / 生成仍用原始 question。开关：`query_rewriting_enabled`（接线总闸）/ `query_rewriting_use_llm`（LLM 候选，默认关，完整 LLM 改写版留待 v1.6）
+- 🗂️ Planner 大纲式分解：复杂问题（complex 或 ≥2 专家）在分派前经 `create_plan` 产出 3-6 个必须覆盖子方面 + 组织大纲，注入融合提示词与生成粒度适配（`context`），约束回答结构而不触发额外检索；`planner_enabled` 可一键关回旧路径，plan 失败自动跳过（None，最安全降级）
+- 🧯 修复请求级 override 泄漏：`/query` 与 `/query/stream` 对 `set_request_override` 包裹 try/finally，异常 / 客户端中断 / 正常 [DONE] 均收尾 `clear_request_override()`，杜绝一次带 `X-API-Key/Base/Model` 的请求污染后续无头请求
+- ✅ 验证：全量 `python -m pytest tests/` 84 通过（新增 router 工具调用 / 改写接线 / Planner 接线 3 组共 39 例）；检索 eval 基线无回归 —— HM-100 三路 Hit@5 96/96（100%），craft-boost 含技艺名全集 Hit@1 62/62（100%）
+
+### v2.3 (2026-08-02) — 检索效果实测
+
+- 📊 自建 94 条领域评测集（40 直问 + 54 推理难题，难题不含技艺名称），Hit@5 三路均 100%（BM25 / 向量 BGE-M3 / RRF 混合）
+- 🔍 评测脚本 `eval_retrieval_hm100.py` 可复现；6 条覆盖缺口 query 验证 gap_detector 价值
+
+### v2.2 — 多模态平台（2026-07-26~28，自 v1.9 起合并入 v2.x）
 
 - ✨ 图片/音频上传：POST /media/upload，本地存储 + MySQL
 - ✨ 前端 MediaView：上传表单 + 画廊 + 筛选 + 删除
@@ -480,5 +537,44 @@ HeritageMind/
 - ✨ 多粒度知识服务 + 知识缺口检测
 - ✨ 检索管线：ChromaDB + BM25 + RRF
 - ✨ 6 种非遗技艺知识库（初始版本）
+
+### v1.8 (2026-07-02)
+
+- ✨ Docker Compose 一键部署支持
+- 📖 README 重构：架构图 / API 文档 / 项目目录
+
+### v1.7 (2026-06-20)
+
+- ✨ Streamlit 60/40 双栏布局 + Agent 气泡
+- 🐛 修复 pyvis 图谱在 Streamlit 中的渲染问题
+
+### v1.6 (2026-06-08)
+
+- ✨ 辩论引擎 DebateEngine（多轮辩论 + 收敛判定）
+
+### v1.5 (2026-04-25)
+
+- ✨ FastAPI 8 端点 + Lifespan 资源管理
+- ✨ 传承人视角叙事生成
+
+### v1.4 (2026-03-02)
+
+- ✨ 非遗知识图谱（NetworkX + pyvis）+ LangGraph 多 Agent 工作流
+
+### v1.3 (2025-08-18)
+
+- ✨ 多粒度知识服务（3 级用户画像）+ 知识缺口检测
+
+### v1.2 (2025-04-05)
+
+- ✨ 查询改写 + CrossEncoder 重排序
+
+### v1.1 (2025-03-24)
+
+- ✨ 三专家 Agent + 调度器 + ChromaDB + BM25 + RRF 多源检索
+
+### v1.0 (2025-03-10)
+
+- 🎉 首次发布：6 种非遗技艺知识库 + 基础问答 + FastAPI + Streamlit
 
 

@@ -209,11 +209,8 @@ class HeritageExpertAgent:
             ]
         }
     
-    def set_retriever(self, retriever: MultiSourceRetriever):
-        """设置检索器"""
-        self.retriever = retriever
     
-    def process(self, question: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def process(self, question: str, context: Optional[Dict[str, Any]] = None, search_query: Optional[str] = None) -> Dict[str, Any]:
         """
         处理用户问题
         
@@ -226,7 +223,7 @@ class HeritageExpertAgent:
         """
         try:
             # 1. 检索相关文档
-            retrieved_docs = self._retrieve_documents(question)
+            retrieved_docs = self._retrieve_documents(search_query or question)
             
             # 2. 识别问题中的技艺
             craft_name = self._identify_craft(question, context)
@@ -352,10 +349,12 @@ class HeritageExpertAgent:
             return f"抱歉，生成回答时遇到技术问题：{str(e)}"
     
     def get_heritage_info(self, craft_name: str) -> Optional[Dict[str, Any]]:
+    # ⚠️ TODO(2026-08-15): 当前未接线，仅供后续功能扩展
         """获取特定技艺的传承信息"""
         return self.heritage_context.get(craft_name)
     
     def get_inheritors(self, craft_name: str) -> List[Dict[str, str]]:
+    # ⚠️ TODO(2026-08-15): 当前未接线，仅供后续功能扩展
         """获取传承人列表"""
         if craft_name in self.heritage_context:
             return [
@@ -365,12 +364,14 @@ class HeritageExpertAgent:
         return []
     
     def get_learning_paths(self, craft_name: str) -> Dict[str, str]:
+    # ⚠️ TODO(2026-08-15): 当前未接线，仅供后续功能扩展
         """获取学习途径"""
         if craft_name in self.heritage_context:
             return self.heritage_context[craft_name]['学习途径']
         return {}
     
     def get_endangerment_assessment(self, craft_name: str) -> str:
+    # ⚠️ TODO(2026-08-15): 当前未接线，仅供后续功能扩展
         """
         获取濒危程度评估
         
@@ -385,6 +386,7 @@ class HeritageExpertAgent:
         return "未知"
     
     def generate_learning_guide(self, craft_name: str, level: str = "beginner") -> str:
+    # ⚠️ TODO(2026-08-15): 当前未接线，仅供后续功能扩展
         """
         生成学习指南
         

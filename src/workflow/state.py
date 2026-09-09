@@ -35,15 +35,28 @@ class WorkflowState(TypedDict):
     # === 用户输入 ===
     question: str = Field(default="", description="用户问题")
     user_profile: str = Field(default="curious", description="用户画像")
+    thread_id: Optional[str] = Field(default=None, description="会话线程ID（v1.5 MySQL 会话标识）")
+    conversation_context: str = Field(default="", description="同一会话的近期问答上下文")
+    memory_preferences: Dict[str, Any] = Field(default_factory=dict, description="用户已学习偏好")
     
     # === 问题分析 ===
     question_analysis: Optional[Dict[str, Any]] = Field(default=None, description="问题分析结果")
     required_experts: List[str] = Field(default_factory=list, description="需要的专家Agent")
     key_entities: List[str] = Field(default_factory=list, description="识别的关键实体")
     complexity: str = Field(default="medium", description="问题复杂度")
-    
+
+    # === 查询重写（v1.4 接线：改写后的检索 query 供 dispatch / detect_gaps 复用） ===
+    search_query: str = Field(default="", description="实际用于检索的 query（改写后；未改写时等于 question）")
+    search_query_meta: Optional[Dict[str, Any]] = Field(default=None, description="改写元数据：original/rewritten/method/score，未改写为 None")
+
+    # === Planner（v1.4：复杂问题的子方面大纲，只影响生成结构） ===
+    plan: Optional[Dict[str, Any]] = Field(default=None, description="复杂问题的回答大纲（aspects/outline）；跳过或失败为 None")
+
     # === Agent响应 ===
     expert_responses: Dict[str, AgentResponse] = Field(default_factory=dict, description="各专家Agent的响应")
+    
+    # === 层级聚合检索（P2优化①：技艺→工序→细节） ===
+    retrieval_groups: Optional[Dict[str, Any]] = Field(default=None, description="层级聚合检索结果（按技艺分组的完整视图）")
     
     # === 知识融合 ===
     fused_content: str = Field(default="", description="融合后的内容")
@@ -111,7 +124,10 @@ class GraphQueryResult(BaseModel):
 def create_initial_state(
     question: str,
     user_profile: str = "curious",
-    include_narrative: bool = False
+    include_narrative: bool = False,
+    thread_id: Optional[str] = None,
+    conversation_context: str = "",
+    memory_preferences: Optional[Dict[str, Any]] = None,
 ) -> WorkflowState:
     """
     创建初始工作流状态
@@ -127,12 +143,19 @@ def create_initial_state(
     return WorkflowState(
         question=question,
         user_profile=user_profile,
+        thread_id=thread_id,
+        conversation_context=conversation_context,
+        memory_preferences=memory_preferences or {},
         include_narrative=include_narrative,
         question_analysis=None,
         required_experts=[],
         key_entities=[],
         complexity="medium",
+        search_query="",
+        search_query_meta=None,
+        plan=None,
         expert_responses={},
+        retrieval_groups=None,
         fused_content="",
         use_debate=False,
         debate_session=None,

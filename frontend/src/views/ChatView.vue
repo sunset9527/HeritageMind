@@ -4,14 +4,15 @@ import { ElMessage } from 'element-plus'
 import { useChatStore } from '@/stores/chat'
 import { useAuthStore } from '@/stores/auth'
 import { useSettingsStore } from '@/stores/settings'
-import { getHistory } from '@/api/chat'
+import { getSessions } from '@/api/chat'
 import { getCrafts, getProfiles } from '@/api/meta'
-import type { ChatHistoryItem, CraftItem, ProfileItem } from '@/types'
+import type { ChatSession, CraftItem, ProfileItem } from '@/types'
 import UserBubble from '@/components/chat/UserBubble.vue'
 import AgentCard from '@/components/chat/AgentCard.vue'
 import GapNotice from '@/components/chat/GapNotice.vue'
 import DebateTimeline from '@/components/chat/DebateTimeline.vue'
 import CitationList from '@/components/chat/CitationList.vue'
+import MarkdownContent from '@/components/chat/MarkdownContent.vue'
 
 const chatStore = useChatStore()
 const auth = useAuthStore()
@@ -22,7 +23,7 @@ const sidebarOpen = ref(false)
 
 const profiles = ref<ProfileItem[]>([])
 const crafts = ref<CraftItem[]>([])
-const historyItems = ref<ChatHistoryItem[]>([])
+const sessions = ref<ChatSession[]>([])
 
 onMounted(async () => {
   try { profiles.value = await getProfiles() } catch { /* */ }
@@ -42,7 +43,13 @@ onMounted(async () => {
     ]
   }
   if (auth.isAuthenticated) {
-    try { const resp = await getHistory(8); historyItems.value = resp.items } catch { /* */ }
+    try {
+      const response = await getSessions(8)
+      sessions.value = response.items
+      if (sessions.value.length && !chatStore.activeSessionId) {
+        await chatStore.loadSession(sessions.value[0].id)
+      }
+    } catch { /* */ }
   }
   if (chatStore.pendingQuestion) {
     input.value = chatStore.pendingQuestion
@@ -59,12 +66,25 @@ async function handleSend() {
   }
   input.value = ''
   await chatStore.sendQuestion(q)
+  if (auth.isAuthenticated) {
+    try { sessions.value = (await getSessions(8)).items } catch { /* */ }
+  }
   await nextTick()
   scrollToBottom()
 }
 
 function scrollToBottom() {
   if (chatContainer.value) chatContainer.value.scrollTop = chatContainer.value.scrollHeight
+}
+
+async function continueSession(sessionId: string) {
+  try {
+    await chatStore.loadSession(sessionId)
+    await nextTick()
+    scrollToBottom()
+  } catch {
+    ElMessage.error('加载对话失败')
+  }
 }
 
 const chipColors: Record<string, { bg: string; color: string; icon: string }> = {
@@ -133,12 +153,21 @@ function agentChipIcon(id: string) { return chipColors[id]?.icon || '💬' }
 
         <div class="w-full" style="height: 1px; background: var(--border)" />
 
-        <!-- History -->
-        <div v-if="historyItems.length">
-          <div class="text-[11px] uppercase tracking-wider text-[var(--text-tertiary)] mb-1.5">历史</div>
-          <div v-for="item in historyItems" :key="item.id" class="text-[12px] text-[var(--text-tertiary)] truncate py-0.5">
-            {{ item.question.slice(0, 24) }}…
+        <!-- Sessions -->
+        <div v-if="auth.isAuthenticated">
+          <div class="flex items-center justify-between text-[11px] uppercase tracking-wider text-[var(--text-tertiary)] mb-1.5">
+            <span>继续上次对话</span>
+            <button @click="chatStore.startNewSession()" class="border-0 bg-transparent cursor-pointer text-[var(--accent)] text-[11px]">新对话</button>
           </div>
+          <button
+            v-for="session in sessions"
+            :key="session.id"
+            @click="continueSession(session.id)"
+            class="w-full text-left text-[12px] truncate py-1 px-1.5 rounded border-0 cursor-pointer"
+            :style="{ color: chatStore.activeSessionId === session.id ? 'var(--accent)' : 'var(--text-tertiary)', background: chatStore.activeSessionId === session.id ? 'var(--accent-soft)' : 'transparent' }"
+          >
+            {{ session.title }}
+          </button>
         </div>
       </aside>
     </Transition>
@@ -194,8 +223,8 @@ function agentChipIcon(id: string) { return chipColors[id]?.icon || '💬' }
               </span>
             </div>
             <!-- Answer content -->
-            <div class="text-[14px] leading-relaxed whitespace-pre-wrap mb-3" style="color: var(--text)">
-              {{ msg.content }}
+            <div class="mb-3" style="color: var(--text)">
+              <MarkdownContent :content="msg.content" />
             </div>
             <GapNotice v-if="msg.metadata?.hasGaps" :text="msg.metadata?.gapReport || ''" />
             <CitationList v-if="msg.metadata?.citations?.length" :citations="msg.metadata!.citations!" />

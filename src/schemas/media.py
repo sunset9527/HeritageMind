@@ -16,6 +16,9 @@ class MediaResponse(BaseModel):
     status: str = "draft"
     created_at: datetime
     url: str = ""
+    # v1.4：音频专有，可选向后兼容
+    transcript_status: Optional[str] = None
+    transcript_updated_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
 

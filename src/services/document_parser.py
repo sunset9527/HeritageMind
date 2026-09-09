@@ -1,4 +1,4 @@
-"""文档解析服务 — 支持 PDF / Word / Markdown / TXT"""
+"""文档解析服务 — 支持 PDF / Word / Markdown / TXT（PDF 含扫描件 OCR 兜底）"""
 import io
 import logging
 from pathlib import Path
@@ -33,6 +33,17 @@ def parse_document(file_bytes: bytes, filename: str, mime_type: str) -> Optional
 
 
 def _parse_pdf(data: bytes) -> str:
+    """解析 PDF：优先 pymupdf 文本层 + RapidOCR 扫描页 OCR 兜底，pdfplumber 作为最后回退"""
+    # 第一优先：本项目的 PDF 解析器（文本层 + RapidOCR 扫描页 OCR）
+    try:
+        from src.services.pdf_parser import parse_pdf_to_text
+        return parse_pdf_to_text(data)
+    except ImportError:
+        pass  # pdf_parser 不存在时回退到 pdfplumber
+    except Exception as e:
+        logger.warning(f"pymupdf/RapidOCR 解析 PDF 失败，回退 pdfplumber: {e}")
+
+    # 回退：pdfplumber 仅文本层（无 OCR 能力）
     try:
         import pdfplumber
         text = []

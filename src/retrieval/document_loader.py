@@ -13,6 +13,22 @@ from config import settings
 
 logger = logging.getLogger(__name__)
 
+# 非遗技艺中文名 → 拼音ID 全量映射（23 种技艺，与 data/crafts 目录一一对应）
+# 提升为模块级常量：供检索置顶/层级聚合等模块复用，避免多处维护同一份名单
+CRAFT_NAME_TO_ID = {
+    "景泰蓝": "jingtailan", "苏绣": "suxiu", "龙泉青瓷": "longquan_ci",
+    "宜兴紫砂": "yixing_zisha", "芜湖铁画": "wuhu_tiehua", "蜀锦": "shujin",
+    "剪纸": "jianzhi", "景德镇瓷器": "jingdezhen_ciqi", "南京云锦": "nanjing_yunjin",
+    "东阳木雕": "dongyang_mudiao", "苗族蜡染": "miaozu_laran", "木版年画": "muban_nianhua",
+    "缂丝": "kesi", "竹编": "zhubian", "玉雕": "yudiao",
+    "漆器": "qiqi", "唐三彩": "tangsancai", "钧瓷": "junci",
+    "汝瓷": "ruci", "泥人张": "nirenzhang", "皮影戏": "piyingxi",
+    "壮锦": "zhuangjin", "京剧": "jingju",
+}
+
+# 反向映射：拼音ID → 中文名
+CRAFT_ID_TO_NAME = {v: k for k, v in CRAFT_NAME_TO_ID.items()}
+
 
 class HeritageDocumentLoader:
     """
@@ -63,17 +79,7 @@ class HeritageDocumentLoader:
     @staticmethod
     def _name_to_id(name: str) -> str:
         """中文名称转拼音 ID（简易映射）"""
-        name_map = {
-            "景泰蓝": "jingtailan", "苏绣": "suxiu", "龙泉青瓷": "longquan_ci",
-            "宜兴紫砂": "yixing_zisha", "芜湖铁画": "wuhu_tiehua", "蜀锦": "shujin",
-            "剪纸": "jianzhi", "景德镇瓷器": "jingdezhen_ciqi", "南京云锦": "nanjing_yunjin",
-            "东阳木雕": "dongyang_mudiao", "苗族蜡染": "miaozu_laran", "木版年画": "muban_nianhua",
-            "缂丝": "kesi", "竹编": "zhubian", "玉雕": "yudiao",
-            "漆器": "qiqi", "唐三彩": "tangsancai", "钧瓷": "junci",
-            "汝瓷": "ruci", "泥人张": "nirenzhang", "皮影戏": "piyingxi",
-            "壮锦": "zhuangjin", "京剧": "jingju",
-        }
-        return name_map.get(name, name.lower().replace(" ", "_"))
+        return CRAFT_NAME_TO_ID.get(name, name.lower().replace(" ", "_"))
     
     def _load_single_document(
         self,
@@ -170,16 +176,8 @@ class HeritageDocumentLoader:
             "line_count": content.count("\n") + 1
         }
         
-        # 提取技艺名称
-        craft_names = {
-            "jingtailan": "景泰蓝",
-            "suxiu": "苏绣",
-            "longquan_ci": "龙泉青瓷",
-            "yixing_zisha": "宜兴紫砂",
-            "wuhu_tiehua": "芜湖铁画",
-            "shujin": "蜀锦"
-        }
-        metadata["craft_name"] = craft_names.get(craft_id, craft_id)
+        # 提取技艺名称（全量映射，修复原来仅 6 个中文名的缺漏：其余技艺曾回退为拼音ID）
+        metadata["craft_name"] = CRAFT_ID_TO_NAME.get(craft_id, craft_id)
         
         # 提取关键词
         keywords = []
