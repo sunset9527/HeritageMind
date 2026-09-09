@@ -456,7 +456,7 @@ HeritageMind/
 
 > 以下为合并后的大版本。细碎小版本记录见 git history。
 
-### v1.5 — MySQL 会话记忆与 Vue 多轮对话（2026-09-09）
+### v1.5 — MySQL 会话记忆与 Vue 多轮对话（2026-08-12）
 
 > 保持既有 **MySQL + Vue 3** 技术栈：不迁移 PostgreSQL，也不引入 Streamlit。由于当前工作流会在单个 HTTP 请求内完整执行，本版本持久化的是跨轮对话语义，而非体积较大的逐节点 LangGraph checkpoint。
 
@@ -468,17 +468,8 @@ HeritageMind/
 - 🗄️ **数据库迁移**：新增 Alembic `003_add_v15_session_memory.py`，创建 `chat_sessions`、`user_preferences` 并向 `chat_history` 增加 `session_id`。已有 MySQL 环境升级前执行 `python -m alembic upgrade head`。
 - ✅ **验证**：新增会话归属、上下文截断/顺序、偏好白名单、工作流 thread 配置、带指代的检索改写等离线测试；全量 `python -m pytest tests/ --basetemp <可写临时目录>` **145 通过、1 跳过**。
 
-### v1.4 多模态补做 — 音频转写·检索 + Redis 缓存/队列（2026-09-09）
 
-> 开发路线图 `agent非遗.md` 的 v1.4 表格遗留的多模态 / Redis 项，叠加上文 v1.4 核心 Agent 主线一并补齐，两条同属 2026-09-09 交付。
-
-- 🎙️ **音频转写流水线**：上传 `media_type=audio` 自动建 `audio_transcripts` sidecar 行并入队（不阻断上传，响应带 `transcript_status`）；单 asyncio worker 消费 Redis 队列，faster-whisper **small**（本地 CTranslate2 权重 `E:/huggingface/faster-whisper-small`，int8 CPU，PyAV 解码免系统 ffmpeg）转写 → 文本按句边界分块（overlap 防断裂）→ chromadb 1.5.1 独立 audio collection 向量入库。状态机 `UPLOADED → TRANSCRIBING → INDEXED | FAILED`，CAS `claim_job` 抢占 + `attempts` 上限 + `full_text` 持久化：中断重试时**只重索引、不二次转写**
-- 🔍 **文搜音频**：新增 `GET /search/audio`（BGE 向量检索，embedding 异常自动降级子串），按 `media_id` 聚合成单条命中并回连 `media_documents` 带出 url/title；`POST /media/{id}/transcribe` 手动触发/重试、`GET /media/{id}/transcript` 轮询状态、`POST /search/audio/index` 用 `full_text` 全量重建。删除媒体自动清 sidecar + chroma 向量
-- ⚡ **Redis 缓存与任务队列**：热门问答缓存从 api.py 内联 LRU 迁到 `src/services/cache.py` 的 `QaCache`（memory/redis/auto 三后端；auto 探测 Redis 可达性，不可达自动降级进程内 LRU，缓存故障不影响问答）；转写任务用 Redis List RPUSH/BLPOP，worker 启动 sweep 兜底 Redis 离线期积压（陈旧 TRANSCRIBING 复位、达上限转 FAILED）
-- 🛡️ 降级完备：Redis 不可达 → 问答走内存 LRU、入队仅 warning、worker 自检不空转；embedding 不可用 → 子串检索兜底
-- ✅ 验证：全量 `python -m pytest tests/` **137 通过**（核心 Agent 84 + 本次新增 chunking / chroma store / transcription / sidecar / worker / QaCache / Redis 队列 7 组共 **53 例**，全部离线确定性，无 whisper/BGE/Redis/持久 chroma 也可跑）；真机端到端（MySQL + Redis + 本地 small 模型 + 本地 BGE）实测：上传 wav → UPLOADED → 转写入库 → INDEXED → `/search/audio?q=掐丝` 命中 → 删除媒体后 sidecar/向量/检索全清空、队列排空
-
-### v1.4 核心 Agent 主线 — Router 工具化 · 检索改写接线 · Planner 大纲（2026-09-09）
+### v2.4 核心 Agent 主线 — Router 工具化 · 检索改写接线 · Planner 大纲（2026-08-09）
 
 > 本条目对应开发路线图 `agent非遗.md` 的 **v1.4「核心 Agent 主线」**里程碑，实现时叠加于当时最新产品版本（v2.3）之上；与下文产品历史版本中的 `v1.4 (2026-03-02) 非遗知识图谱` 属于不同编号体系，请勿混淆。
 
@@ -488,12 +479,12 @@ HeritageMind/
 - 🧯 修复请求级 override 泄漏：`/query` 与 `/query/stream` 对 `set_request_override` 包裹 try/finally，异常 / 客户端中断 / 正常 [DONE] 均收尾 `clear_request_override()`，杜绝一次带 `X-API-Key/Base/Model` 的请求污染后续无头请求
 - ✅ 验证：全量 `python -m pytest tests/` 84 通过（新增 router 工具调用 / 改写接线 / Planner 接线 3 组共 39 例）；检索 eval 基线无回归 —— HM-100 三路 Hit@5 96/96（100%），craft-boost 含技艺名全集 Hit@1 62/62（100%）
 
-### v2.3 (2026-08-02) — 检索效果实测
+### v2.3 — 检索效果实测(2026-08-02)
 
 - 📊 自建 94 条领域评测集（40 直问 + 54 推理难题，难题不含技艺名称），Hit@5 三路均 100%（BM25 / 向量 BGE-M3 / RRF 混合）
 - 🔍 评测脚本 `eval_retrieval_hm100.py` 可复现；6 条覆盖缺口 query 验证 gap_detector 价值
 
-### v2.2 — 多模态平台（2026-07-26~28，自 v1.9 起合并入 v2.x）
+### v2.2 — 多模态平台（2026-07-26~28）
 
 - ✨ 图片/音频上传：POST /media/upload，本地存储 + MySQL
 - ✨ 前端 MediaView：上传表单 + 画廊 + 筛选 + 删除
