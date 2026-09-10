@@ -68,6 +68,8 @@ export const useChatStore = defineStore('chat', () => {
           hasGaps: resp.has_gaps || false,
           gapReport: resp.gap_report || '',
           citations: resp.citations || [],
+          route: resp.metadata?.route,
+          workflowTrace: resp.metadata?.workflow_trace || [],
           elapsedMs,
           model: localStorage.getItem('hm_selected_model') || 'deepseek-chat',
         },

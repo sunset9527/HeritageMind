@@ -15,6 +15,7 @@ from src.workflow.nodes import (
     fuse_knowledge_node,
     detect_gaps_node,
     generate_response_node,
+    query_graph_node,
     should_plan,
     should_include_narrative,
     should_detect_gaps,
@@ -52,6 +53,7 @@ class HeritageWorkflowGraph:
         workflow.add_node("analyze_question", analyze_question_node)
         workflow.add_node("plan_question", plan_question_node)
         workflow.add_node("dispatch_to_experts", dispatch_to_experts_node)
+        workflow.add_node("query_graph", query_graph_node)
         workflow.add_node("collect_responses", collect_expert_responses_node)
         workflow.add_node("fuse_knowledge", fuse_knowledge_node)
         workflow.add_node("detect_gaps", detect_gaps_node)
@@ -71,7 +73,8 @@ class HeritageWorkflowGraph:
             }
         )
         workflow.add_edge("plan_question", "dispatch_to_experts")
-        workflow.add_edge("dispatch_to_experts", "collect_responses")
+        workflow.add_edge("dispatch_to_experts", "query_graph")
+        workflow.add_edge("query_graph", "collect_responses")
         
         # 条件边：检查是否有专家响应
         workflow.add_conditional_edges(

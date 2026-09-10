@@ -56,6 +56,21 @@ export interface Citation {
   source?: string
 }
 
+export interface WorkflowRoute {
+  question_type: 'factual' | 'comparative' | 'procedural' | 'open_ended'
+  execution_route: 'rag' | 'graph' | 'hybrid'
+  use_memory: boolean
+  reason: string
+  fallback_reason?: string
+}
+
+export interface WorkflowTraceEntry {
+  node: string
+  status: 'completed' | 'skipped' | 'fallback'
+  elapsed_ms: number
+  message: string
+}
+
 export interface QueryResponse {
   question: string
   answer: string
@@ -187,6 +202,8 @@ export interface ChatMessage {
     model: string
     sessionId?: string
     memoryPreferences?: { preferred_crafts: string[]; preferred_profile?: string | null }
+    route?: WorkflowRoute
+    workflowTrace?: WorkflowTraceEntry[]
   }
 }
 

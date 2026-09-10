@@ -151,5 +151,6 @@ export const useSettingsStore = defineStore('settings', () => {
     clearApiKey,
     setDefaultProfile,
     setDefaultNarrative,
+    save,
   }
 })

@@ -44,6 +44,7 @@ class WorkflowState(TypedDict):
     required_experts: List[str] = Field(default_factory=list, description="需要的专家Agent")
     key_entities: List[str] = Field(default_factory=list, description="识别的关键实体")
     complexity: str = Field(default="medium", description="问题复杂度")
+    route: Dict[str, Any] = Field(default_factory=dict, description="v1.6 结构化执行路线")
 
     # === 查询重写（v1.4 接线：改写后的检索 query 供 dispatch / detect_gaps 复用） ===
     search_query: str = Field(default="", description="实际用于检索的 query（改写后；未改写时等于 question）")
@@ -51,6 +52,10 @@ class WorkflowState(TypedDict):
 
     # === Planner（v1.4：复杂问题的子方面大纲，只影响生成结构） ===
     plan: Optional[Dict[str, Any]] = Field(default=None, description="复杂问题的回答大纲（aspects/outline）；跳过或失败为 None")
+    research_evidence: List[Dict[str, Any]] = Field(default_factory=list, description="RAG 侧的精简证据")
+    graph_evidence: List[Dict[str, Any]] = Field(default_factory=list, description="本地知识图谱证据")
+    workflow_trace: List[Dict[str, Any]] = Field(default_factory=list, description="面向用户的执行轨迹")
+    citations: List[Dict[str, Any]] = Field(default_factory=list, description="最终回答采用的引用")
 
     # === Agent响应 ===
     expert_responses: Dict[str, AgentResponse] = Field(default_factory=dict, description="各专家Agent的响应")
@@ -101,6 +106,7 @@ class QueryResponse(BaseModel):
     has_gaps: bool = Field(description="是否存在知识缺口")
     gap_report: str = Field(description="缺口报告")
     reading_time: int = Field(description="预估阅读时间(分钟)")
+    citations: List[Dict[str, Any]] = Field(default_factory=list, description="回答采用的证据引用")
     metadata: Dict[str, Any] = Field(default_factory=dict, description="额外元数据")
 
 
@@ -151,9 +157,14 @@ def create_initial_state(
         required_experts=[],
         key_entities=[],
         complexity="medium",
+        route={},
         search_query="",
         search_query_meta=None,
         plan=None,
+        research_evidence=[],
+        graph_evidence=[],
+        workflow_trace=[],
+        citations=[],
         expert_responses={},
         retrieval_groups=None,
         fused_content="",
@@ -185,6 +196,10 @@ def state_to_response(state: WorkflowState) -> QueryResponse:
     char_count = len(state.get("final_response", ""))
     reading_time = max(1, char_count // 400)
     
+    metadata = dict(state.get("metadata", {}))
+    metadata["route"] = state.get("route", {})
+    metadata["workflow_trace"] = state.get("workflow_trace", [])
+
     return QueryResponse(
         question=state.get("question", ""),
         answer=state.get("final_response", ""),
@@ -193,5 +208,6 @@ def state_to_response(state: WorkflowState) -> QueryResponse:
         has_gaps=state.get("has_gaps", False),
         gap_report=state.get("gap_report", ""),
         reading_time=reading_time,
-        metadata=state.get("metadata", {})
+        citations=state.get("citations", []),
+        metadata=metadata,
     )

@@ -18,3 +18,6 @@ __all__ = [
     "DebateRound",
     "DebateSession",
 ]
+from .graph_agent import GraphAgent
+
+__all__ = ["GraphAgent"]

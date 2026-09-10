@@ -29,6 +29,10 @@ class QuestionAnalysis(BaseModel):
     reasoning: str = Field(description="为什么需要这些专家的解释")
     key_entities: List[str] = Field(description="识别出的关键实体")
     complexity: str = Field(description="问题复杂度：simple/medium/complex")
+    question_type: str = Field(default="open_ended", description="问题类型：factual/comparative/procedural/open_ended")
+    execution_route: str = Field(default="rag", description="执行路线：rag/graph/hybrid")
+    use_memory: bool = Field(default=False, description="是否使用会话记忆辅助理解")
+    route_reason: str = Field(default="", description="面向用户的简短路由理由")
 
 
 class QuestionPlan(BaseModel):
@@ -56,6 +60,10 @@ QUESTION_ANALYSIS_TOOL = {
                 "reasoning": {"type": "string", "description": "为什么需要这些专家的解释"},
                 "key_entities": {"type": "array", "items": {"type": "string"}, "description": "识别出的关键实体（技艺名称、人物、地域、朝代等）"},
                 "complexity": {"type": "string", "enum": ["simple", "medium", "complex"], "description": "问题复杂度：simple/medium/complex"},
+                "question_type": {"type": "string", "enum": ["factual", "comparative", "procedural", "open_ended"], "description": "问题类型"},
+                "execution_route": {"type": "string", "enum": ["rag", "graph", "hybrid"], "description": "执行路线"},
+                "use_memory": {"type": "boolean", "description": "是否使用会话记忆辅助理解"},
+                "route_reason": {"type": "string", "description": "面向用户的简短路由理由"},
             },
             "required": ["required_experts", "complexity"],
         },
@@ -206,12 +214,22 @@ class DispatcherAgent:
         if complexity not in ("simple", "medium", "complex"):
             complexity = {1: "simple", 2: "medium"}.get(len(required), "complex")
         key_entities = data.get("key_entities") or []
+        question_type = str(data.get("question_type", "open_ended") or "open_ended")
+        if question_type not in {"factual", "comparative", "procedural", "open_ended"}:
+            question_type = "open_ended"
+        execution_route = str(data.get("execution_route", "rag") or "rag")
+        if execution_route not in {"rag", "graph", "hybrid"}:
+            execution_route = "rag"
         return QuestionAnalysis(
             intent_analysis=str(data.get("intent_analysis", "") or ""),
             required_experts=required,
             reasoning=str(data.get("reasoning", "") or ""),
             key_entities=[str(e) for e in key_entities if e],
             complexity=complexity,
+            question_type=question_type,
+            execution_route=execution_route,
+            use_memory=bool(data.get("use_memory", False)),
+            route_reason=str(data.get("route_reason", "") or ""),
         )
 
     @staticmethod

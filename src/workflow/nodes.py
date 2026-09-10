@@ -3,11 +3,13 @@
 """
 
 import logging
+import time
 from typing import Dict, Any, List, Literal, Callable, Optional
 from langchain_openai import ChatOpenAI
 
 from config import settings, get_llm_config
 from src.agents.dispatcher import DispatcherAgent
+from src.agents.graph_agent import GraphAgent
 from src.agents.craft_expert import CraftExpertAgent
 from src.agents.history_expert import HistoryExpertAgent
 from src.agents.heritage_expert import HeritageExpertAgent
@@ -17,6 +19,7 @@ from src.knowledge.granularity import GranularityController
 from src.knowledge.narrative import NarrativeGenerator
 from src.retrieval.retriever import MultiSourceRetriever
 from src.retrieval.query_rewriter import select_best_query
+from src.graph.heritage_graph import HeritageKnowledgeGraph
 from src.workflow.state import WorkflowState, AgentResponse
 
 logger = logging.getLogger(__name__)
@@ -89,11 +92,21 @@ def analyze_question_node(state: WorkflowState) -> WorkflowState:
             "required_experts": analysis.required_experts,
             "reasoning": analysis.reasoning,
             "key_entities": analysis.key_entities,
-            "complexity": analysis.complexity
+            "complexity": analysis.complexity,
+            "question_type": analysis.question_type,
+            "execution_route": analysis.execution_route,
+            "use_memory": analysis.use_memory,
+            "route_reason": analysis.route_reason,
         }
         state["required_experts"] = analysis.required_experts
         state["key_entities"] = analysis.key_entities
         state["complexity"] = analysis.complexity
+        state["route"] = {
+            "question_type": analysis.question_type,
+            "execution_route": analysis.execution_route,
+            "use_memory": analysis.use_memory,
+            "reason": analysis.route_reason,
+        }
         
         logger.info(f"问题分析完成，需要专家: {analysis.required_experts}")
         
@@ -468,6 +481,62 @@ def detect_gaps_node(state: WorkflowState) -> WorkflowState:
     return state
 
 
+def query_graph_node(state: WorkflowState) -> WorkflowState:
+    """v1.6 图谱查询节点：只读查询本地知识图谱。"""
+    started_at = time.perf_counter()
+    route = state.get("route") or {}
+    if route.get("execution_route") not in {"graph", "hybrid"}:
+        state["workflow_trace"].append({
+            "node": "query_graph",
+            "status": "skipped",
+            "elapsed_ms": 0,
+            "message": "当前路线不需要知识图谱查询",
+        })
+        return state
+
+    try:
+        graph = HeritageKnowledgeGraph()
+        if not graph.load_from_json():
+            raise RuntimeError("本地知识图谱加载失败")
+        result = GraphAgent(graph).research(
+            state.get("question", ""), state.get("key_entities", [])
+        )
+        state["graph_evidence"] = result["evidence"]
+        state["citations"].extend(
+            {"title": item["title"], "source": item["source"]}
+            for item in result["evidence"]
+        )
+        elapsed_ms = round((time.perf_counter() - started_at) * 1000)
+        if result["success"]:
+            state["workflow_trace"].append({
+                "node": "query_graph",
+                "status": "completed",
+                "elapsed_ms": elapsed_ms,
+                "message": f"本地知识图谱命中 {len(result['evidence'])} 条关系",
+            })
+        else:
+            route["fallback_reason"] = result["reason"]
+            state["route"] = route
+            state["workflow_trace"].append({
+                "node": "query_graph",
+                "status": "fallback",
+                "elapsed_ms": elapsed_ms,
+                "message": result["reason"],
+            })
+    except Exception as e:
+        elapsed_ms = round((time.perf_counter() - started_at) * 1000)
+        route["fallback_reason"] = "本地知识图谱不可用"
+        state["route"] = route
+        state["errors"].append(f"图谱查询错误: {str(e)}")
+        state["workflow_trace"].append({
+            "node": "query_graph",
+            "status": "fallback",
+            "elapsed_ms": elapsed_ms,
+            "message": "本地知识图谱不可用，已转为检索路线",
+        })
+    return state
+
+
 def generate_response_node(state: WorkflowState) -> WorkflowState:
     """
     响应生成节点 - 根据用户画像生成最终响应
@@ -599,6 +668,7 @@ NODES = {
     "collect_responses": collect_expert_responses_node,
     "fuse_knowledge": fuse_knowledge_node,
     "detect_gaps": detect_gaps_node,
+    "query_graph": query_graph_node,
     "generate_response": generate_response_node,
 }
 

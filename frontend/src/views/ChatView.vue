@@ -13,6 +13,7 @@ import GapNotice from '@/components/chat/GapNotice.vue'
 import DebateTimeline from '@/components/chat/DebateTimeline.vue'
 import CitationList from '@/components/chat/CitationList.vue'
 import MarkdownContent from '@/components/chat/MarkdownContent.vue'
+import WorkflowTrace from '@/components/chat/WorkflowTrace.vue'
 
 const chatStore = useChatStore()
 const auth = useAuthStore()
@@ -227,6 +228,12 @@ function agentChipIcon(id: string) { return chipColors[id]?.icon || '💬' }
               <MarkdownContent :content="msg.content" />
             </div>
             <GapNotice v-if="msg.metadata?.hasGaps" :text="msg.metadata?.gapReport || ''" />
+            <WorkflowTrace
+              v-if="msg.metadata?.route && msg.metadata?.workflowTrace?.length"
+              :route="msg.metadata.route"
+              :trace="msg.metadata.workflowTrace"
+              :citations="msg.metadata.citations || []"
+            />
             <CitationList v-if="msg.metadata?.citations?.length" :citations="msg.metadata!.citations!" />
             <div v-if="msg.metadata?.elapsedMs" class="caption mb-4">
               {{ (msg.metadata.elapsedMs / 1000).toFixed(1) }}s · {{ msg.metadata.model }}
