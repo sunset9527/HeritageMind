@@ -25,6 +25,7 @@ export interface QueryRequest {
   user_profile: string
   include_narrative: boolean
   craft_filter?: string | null
+  session_id?: string | null
 }
 
 export interface SourceAgent {
@@ -92,6 +93,22 @@ export interface ChatDetailResponse {
   agents_used: any
   has_gaps: boolean
   created_at: string
+}
+
+export interface ChatSession {
+  id: string
+  title: string
+  created_at: string
+  last_active_at: string
+}
+
+export interface ChatSessionListResponse {
+  items: ChatSession[]
+}
+
+export interface ChatSessionMessagesResponse {
+  items: ChatDetailResponse[]
+  total: number
 }
 
 // ===== Graph =====
@@ -168,6 +185,8 @@ export interface ChatMessage {
     citations: Citation[]
     elapsedMs: number
     model: string
+    sessionId?: string
+    memoryPreferences?: { preferred_crafts: string[]; preferred_profile?: string | null }
   }
 }
 

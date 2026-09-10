@@ -12,6 +12,9 @@ from src.schemas.chat import (
     ChatHistoryItem,
     ChatHistoryListResponse,
     ChatDetailResponse,
+    ChatSessionResponse,
+    ChatSessionListResponse,
+    ChatSessionMessagesResponse,
 )
 
 __all__ = [
@@ -22,4 +25,7 @@ __all__ = [
     "ChatHistoryItem",
     "ChatHistoryListResponse",
     "ChatDetailResponse",
+    "ChatSessionResponse",
+    "ChatSessionListResponse",
+    "ChatSessionMessagesResponse",
 ]

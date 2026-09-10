@@ -8,7 +8,13 @@ langchain-community>=0.0.10
 langchain-openai>=0.0.5
 
 # 向量数据库
-chromadb>=0.4.18
+chromadb>=1.5.1,<2
+
+# 音频转写（v1.4：faster-whisper small，CTranslate2 后端，PyAV 解码无需系统 ffmpeg）
+faster-whisper>=1.2.1
+
+# Redis 缓存 / 任务队列（v1.4）
+redis>=5.0
 
 # 网络图谱
 networkx>=3.2

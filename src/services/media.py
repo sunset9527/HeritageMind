@@ -95,9 +95,29 @@ def delete_media(db: Session, media_id: int) -> bool:
     file_path = _get_storage_path(doc.media_type.value) / doc.filename
     if file_path.exists():
         file_path.unlink()
+    # v1.4：音频——删 sidecar 行 + chroma 向量（无 sidecar 的媒体跳过，避免图片删除也初始化音频向量库）
+    _cleanup_audio_index(db, media_id)
     db.delete(doc)
     db.commit()
     return True
+
+
+def _cleanup_audio_index(db: Session, media_id: int) -> None:
+    """删 AudioTranscript sidecar 行并清理对应 chroma 向量；失败仅 warning，不阻断主记录删除。"""
+    from sqlalchemy import delete
+
+    from src.models.audio_transcript import AudioTranscript
+    from src.services.audio_transcript import get_transcript
+
+    has_sidecar = get_transcript(db, media_id) is not None
+    if has_sidecar:
+        db.execute(delete(AudioTranscript).where(AudioTranscript.media_id == media_id))
+        try:
+            # 曾有转写索引才打开音频向量库（get_audio_store 懒建 PersistentClient）
+            from src.retrieval.audio_store import get_audio_store
+            get_audio_store().delete_media(media_id)
+        except Exception as e:
+            logger.warning(f"清理音频向量失败 media_id={media_id}: {e}")
 
 
 def get_media_url(media: MediaDocument) -> str:

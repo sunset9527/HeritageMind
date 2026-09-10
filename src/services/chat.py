@@ -21,6 +21,7 @@ def save_chat_history(
     user_profile: str = "curious",
     agents_used: Optional[List[str]] = None,
     has_gaps: bool = False,
+    session_id: Optional[str] = None,
 ) -> ChatHistory:
     """
     保存聊天历史记录
@@ -44,6 +45,7 @@ def save_chat_history(
         user_profile=user_profile,
         agents_used=agents_used or [],
         has_gaps=has_gaps,
+        session_id=session_id,
     )
     db.add(chat)
     db.commit()

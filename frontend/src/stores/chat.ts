@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { sendQuery, streamQuery } from '@/api/query'
+import { getSessionMessages } from '@/api/chat'
 import type { ChatMessage, QueryResponse } from '@/types'
 
 export const useChatStore = defineStore('chat', () => {
@@ -11,6 +12,7 @@ export const useChatStore = defineStore('chat', () => {
   const isSending = ref(false)
   const pendingQuestion = ref<string | null>(null)
   const streamSteps = ref<string[]>([])  // 当前流式进度
+  const activeSessionId = ref<string | null>(null)
 
   function setProfile(profile: string) {
     currentProfile.value = profile
@@ -50,6 +52,7 @@ export const useChatStore = defineStore('chat', () => {
         user_profile: currentProfile.value,
         include_narrative: includeNarrative.value,
         craft_filter: currentCraft.value,
+        session_id: activeSessionId.value,
       })
 
       const elapsedMs = Math.round(performance.now() - t0)
@@ -70,6 +73,13 @@ export const useChatStore = defineStore('chat', () => {
         },
       }
       messages.value.push(assistantMsg)
+      const sessionId = resp.metadata?.session_id
+      if (typeof sessionId === 'string') {
+        activeSessionId.value = sessionId
+        assistantMsg.metadata!.sessionId = sessionId
+      }
+      const preference = resp.metadata?.memory_preferences
+      if (preference) assistantMsg.metadata!.memoryPreferences = preference
       return assistantMsg
     } catch (e: any) {
       const errorMsg: ChatMessage = {
@@ -90,6 +100,26 @@ export const useChatStore = defineStore('chat', () => {
     messages.value = []
   }
 
+  function startNewSession() {
+    activeSessionId.value = null
+    messages.value = []
+  }
+
+  async function loadSession(sessionId: string) {
+    const response = await getSessionMessages(sessionId)
+    activeSessionId.value = sessionId
+    messages.value = response.items.flatMap((turn) => [
+      { id: `u-${turn.id}`, role: 'user' as const, content: turn.question, timestamp: turn.created_at },
+      {
+        id: `a-${turn.id}`,
+        role: 'assistant' as const,
+        content: turn.answer,
+        timestamp: turn.created_at,
+        metadata: { sourceAgents: [], hasGaps: turn.has_gaps, gapReport: '', citations: [], elapsedMs: 0, model: '' },
+      },
+    ])
+  }
+
   return {
     messages,
     currentProfile,
@@ -98,6 +128,7 @@ export const useChatStore = defineStore('chat', () => {
     isSending,
     pendingQuestion,
     streamSteps,
+    activeSessionId,
     setProfile,
     setCraft,
     toggleNarrative,
@@ -105,5 +136,7 @@ export const useChatStore = defineStore('chat', () => {
     clearPendingQuestion,
     sendQuestion,
     clearMessages,
+    startNewSession,
+    loadSession,
   }
 })

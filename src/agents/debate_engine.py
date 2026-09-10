@@ -122,6 +122,11 @@ class DebateEngine:
             Tuple[bool, str]: (是否触发辩论, 辩论模式)
                 - 模式: "progressive" / "parallel" / "multi_perspective" / ""
         """
+        # P1优化：辩论总开关——关闭后直接降级为普通融合，不触发任何辩论
+        if not settings.debate_enabled:
+            logger.info("辩论已关闭（debate_enabled=False），降级为普通融合")
+            return False, ""
+
         required_experts = analysis.get("required_experts", [])
         complexity = analysis.get("complexity", "medium")
         question_lower = question.lower()
@@ -164,7 +169,8 @@ class DebateEngine:
         self,
         question: str,
         mode: str,
-        context: Optional[Dict[str, Any]] = None
+        context: Optional[Dict[str, Any]] = None,
+        shared_docs: Optional[List[Dict[str, Any]]] = None
     ) -> DebateSession:
         """
         执行辩论
@@ -173,6 +179,7 @@ class DebateEngine:
             question: 用户问题
             mode: 辩论模式 ("progressive" / "parallel" / "multi_perspective")
             context: 上下文信息
+            shared_docs: 共享检索文档（P1优化：整个辩论流程只检索一次，各轮复用）
         
         Returns:
             DebateSession: 辩论会话结果
@@ -180,23 +187,25 @@ class DebateEngine:
         context = context or {}
         
         if mode == "progressive":
-            return self._run_progressive_debate(question, context)
+            return self._run_progressive_debate(question, context, shared_docs)
         elif mode == "parallel":
-            return self._run_parallel_debate(question, context)
+            return self._run_parallel_debate(question, context, shared_docs)
         elif mode == "multi_perspective":
-            return self._run_multi_perspective_debate(question, context)
+            return self._run_multi_perspective_debate(question, context, shared_docs)
         else:
             # 降级：单轮简单回答
-            return self._run_simple_session(question, context)
+            return self._run_simple_session(question, context, shared_docs)
     
     def _run_progressive_debate(
         self,
         question: str,
-        context: Dict[str, Any]
+        context: Dict[str, Any],
+        shared_docs: Optional[List[Dict[str, Any]]] = None
     ) -> DebateSession:
         """
         递进辩论模式：层层深入
-        Round1: 主答(craft) → Round2: 补充(heritage) → Round3: 历史视角(history) → Round4: 回应(craft)
+        Round1: 主答(craft) → Round2: 补充(heritage) → Round3: 历史视角(history)
+        P1优化：由4轮减为3轮（去掉Round4回应），轮次受 settings.debate_max_rounds 约束
         """
         session = DebateSession(question=question, debate_mode="progressive")
         
@@ -213,7 +222,8 @@ class DebateEngine:
                 "craft_expert",
                 role="主答",
                 context=context,
-                history=None
+                history=None,
+                shared_docs=shared_docs
             )
         )
         round1 = DebateRound(
@@ -227,6 +237,10 @@ class DebateEngine:
         session.rounds.append(round1)
         debate_history.append(("craft_expert", "主答", content))
         
+        # P1优化：轮次上限约束
+        if len(session.rounds) >= settings.debate_max_rounds:
+            return session
+        
         # Round 2: 传承专家补充
         logger.info("递进辩论 Round 2: 传承专家补充")
         content, refs = self._call_agent(
@@ -237,7 +251,8 @@ class DebateEngine:
                 "heritage_expert",
                 role="补充",
                 context=context,
-                history=debate_history
+                history=debate_history,
+                shared_docs=shared_docs
             )
         )
         round2 = DebateRound(
@@ -251,6 +266,10 @@ class DebateEngine:
         session.rounds.append(round2)
         debate_history.append(("heritage_expert", "补充", content))
         
+        # P1优化：轮次上限约束
+        if len(session.rounds) >= settings.debate_max_rounds:
+            return session
+        
         # Round 3: 历史专家视角
         logger.info("递进辩论 Round 3: 历史专家视角")
         content, refs = self._call_agent(
@@ -261,7 +280,8 @@ class DebateEngine:
                 "history_expert",
                 role="深化",
                 context=context,
-                history=debate_history
+                history=debate_history,
+                shared_docs=shared_docs
             )
         )
         round3 = DebateRound(
@@ -275,39 +295,18 @@ class DebateEngine:
         session.rounds.append(round3)
         debate_history.append(("history_expert", "深化", content))
         
-        # Round 4: 技艺专家回应（可选，深化洞见）
-        logger.info("递进辩论 Round 4: 技艺专家回应")
-        content, refs = self._call_agent(
-            "craft_expert",
-            question,
-            self._build_round_prompt(
-                question,
-                "craft_expert",
-                role="回应",
-                context=context,
-                history=debate_history
-            )
-        )
-        round4 = DebateRound(
-            round_num=4,
-            agent_name="craft_expert",
-            agent_avatar="🎨",
-            role="回应",
-            content=content,
-            references=refs
-        )
-        session.rounds.append(round4)
-        
         return session
     
     def _run_parallel_debate(
         self,
         question: str,
-        context: Dict[str, Any]
+        context: Dict[str, Any],
+        shared_docs: Optional[List[Dict[str, Any]]] = None
     ) -> DebateSession:
         """
         并列辩论模式：多技艺同时发言后交叉质疑
-        Round1: 三个Agent同时发言 → Round2: 交叉质疑
+        Round1: 三个Agent同时发言 → Round2: 交叉质疑（仅保留 craft 质疑）
+        P1优化：去掉 heritage 回应，轮次受 settings.debate_max_rounds 约束
         """
         session = DebateSession(question=question, debate_mode="parallel")
         
@@ -326,7 +325,8 @@ class DebateEngine:
                     role="并列发言",
                     context=context,
                     history=None,
-                    parallel_mode=True
+                    parallel_mode=True,
+                    shared_docs=shared_docs
                 )
             )
             debate_round = DebateRound(
@@ -340,8 +340,12 @@ class DebateEngine:
             session.rounds.append(debate_round)
             debate_history.append((agent_name, "并列发言", content))
         
-        # Round 2: 交叉质疑
-        logger.info("并列辩论 Round 2: 交叉质疑")
+        # P1优化：轮次上限约束——若 max_rounds 不足以支撑 Round2 则提前结束
+        if settings.debate_max_rounds < 2:
+            return session
+        
+        # Round 2: 交叉质疑（仅保留 craft 质疑，去掉 heritage 回应）
+        logger.info("并列辩论 Round 2: 交叉质疑（craft）")
         
         # 技艺专家质疑其他
         content, refs = self._call_agent(
@@ -360,38 +364,18 @@ class DebateEngine:
         session.rounds.append(debate_round)
         debate_history.append(("craft_expert", "质疑", content))
         
-        # 传承专家回应
-        content, refs = self._call_agent(
-            "heritage_expert",
-            question,
-            self._build_round_prompt(
-                question,
-                "heritage_expert",
-                role="回应质疑",
-                context=context,
-                history=debate_history
-            )
-        )
-        debate_round = DebateRound(
-            round_num=2,
-            agent_name="heritage_expert",
-            agent_avatar="🏛️",
-            role="回应",
-            content=content,
-            references=refs
-        )
-        session.rounds.append(debate_round)
-        
         return session
     
     def _run_multi_perspective_debate(
         self,
         question: str,
-        context: Dict[str, Any]
+        context: Dict[str, Any],
+        shared_docs: Optional[List[Dict[str, Any]]] = None
     ) -> DebateSession:
         """
         多视角辩论模式：全面多角度讨论
-        全部3个Agent各一轮 → 互相质疑 → 最终回应
+        3个Agent各发言一轮（技艺/历史/传承视角）
+        P1优化：由5轮减为3轮（去掉Round4质疑与Round5综合回应），轮次受 settings.debate_max_rounds 约束
         """
         session = DebateSession(question=question, debate_mode="multi_perspective")
         
@@ -407,7 +391,8 @@ class DebateEngine:
                 "craft_expert",
                 role="技艺视角",
                 context=context,
-                history=None
+                history=None,
+                shared_docs=shared_docs
             )
         )
         round1 = DebateRound(
@@ -421,6 +406,10 @@ class DebateEngine:
         session.rounds.append(round1)
         debate_history.append(("craft_expert", "技艺视角", content))
         
+        # P1优化：轮次上限约束
+        if len(session.rounds) >= settings.debate_max_rounds:
+            return session
+        
         # Round 2: 历史专家视角
         logger.info("多视角辩论 Round 2: 历史专家视角")
         content, refs = self._call_agent(
@@ -431,7 +420,8 @@ class DebateEngine:
                 "history_expert",
                 role="历史视角",
                 context=context,
-                history=debate_history
+                history=debate_history,
+                shared_docs=shared_docs
             )
         )
         round2 = DebateRound(
@@ -445,6 +435,10 @@ class DebateEngine:
         session.rounds.append(round2)
         debate_history.append(("history_expert", "历史视角", content))
         
+        # P1优化：轮次上限约束
+        if len(session.rounds) >= settings.debate_max_rounds:
+            return session
+        
         # Round 3: 传承专家视角
         logger.info("多视角辩论 Round 3: 传承专家视角")
         content, refs = self._call_agent(
@@ -455,7 +449,8 @@ class DebateEngine:
                 "heritage_expert",
                 role="传承视角",
                 context=context,
-                history=debate_history
+                history=debate_history,
+                shared_docs=shared_docs
             )
         )
         round3 = DebateRound(
@@ -469,53 +464,13 @@ class DebateEngine:
         session.rounds.append(round3)
         debate_history.append(("heritage_expert", "传承视角", content))
         
-        # Round 4: 互相质疑
-        logger.info("多视角辩论 Round 4: 互相质疑")
-        content, refs = self._call_agent(
-            "craft_expert",
-            question,
-            self._build_cross_examination_prompt(question, debate_history, "craft_expert")
-        )
-        round4 = DebateRound(
-            round_num=4,
-            agent_name="craft_expert",
-            agent_avatar="🎨",
-            role="质疑与反思",
-            content=content,
-            references=refs
-        )
-        session.rounds.append(round4)
-        debate_history.append(("craft_expert", "质疑与反思", content))
-        
-        # Round 5: 传承专家回应
-        logger.info("多视角辩论 Round 5: 传承专家回应")
-        content, refs = self._call_agent(
-            "heritage_expert",
-            question,
-            self._build_round_prompt(
-                question,
-                "heritage_expert",
-                role="综合回应",
-                context=context,
-                history=debate_history
-            )
-        )
-        round5 = DebateRound(
-            round_num=5,
-            agent_name="heritage_expert",
-            agent_avatar="🏛️",
-            role="综合回应",
-            content=content,
-            references=refs
-        )
-        session.rounds.append(round5)
-        
         return session
     
     def _run_simple_session(
         self,
         question: str,
-        context: Dict[str, Any]
+        context: Dict[str, Any],
+        shared_docs: Optional[List[Dict[str, Any]]] = None
     ) -> DebateSession:
         """简单会话：单轮快速回答（降级方案）"""
         session = DebateSession(question=question, debate_mode="simple")
@@ -528,7 +483,8 @@ class DebateEngine:
                 "craft_expert",
                 role="主答",
                 context=context,
-                history=None
+                history=None,
+                shared_docs=shared_docs
             )
         )
         
@@ -608,7 +564,8 @@ class DebateEngine:
         role: str,
         context: Dict[str, Any],
         history: Optional[List[Tuple[str, str, str]]] = None,
-        parallel_mode: bool = False
+        parallel_mode: bool = False,
+        shared_docs: Optional[List[Dict[str, Any]]] = None
     ) -> str:
         """
         构建辩论轮次Prompt
@@ -620,6 +577,7 @@ class DebateEngine:
             context: 上下文信息
             history: 辩论历史 [(agent, role, content), ...]
             parallel_mode: 是否为并列发言模式
+            shared_docs: 共享检索文档（P1优化：有则复用，避免每轮重复检索）
         
         Returns:
             str: 构建好的Prompt
@@ -627,13 +585,16 @@ class DebateEngine:
         agent_info = self.AGENT_INFO.get(agent_name, {})
         system_prompt = agent_info.get("system_prompt", "")
         
-        # 检索相关文档
+        # 检索相关文档（P1优化：优先复用 run_full_debate 检索一次的 shared_docs，无则自行检索以向后兼容）
         retrieved_docs = []
-        try:
-            results = self.retriever.retrieve(question, top_k=5)
-            retrieved_docs = [r.get("content", "")[:200] for r in results if r.get("content")]
-        except Exception:
-            pass
+        if shared_docs:
+            retrieved_docs = [r.get("content", "")[:200] for r in shared_docs if r.get("content")]
+        else:
+            try:
+                results = self.retriever.retrieve(question, top_k=settings.top_k)
+                retrieved_docs = [r.get("content", "")[:200] for r in results if r.get("content")]
+            except Exception:
+                pass
         
         prompt_parts = [
             f"# {agent_info.get('display_name', agent_name)} 辩论发言",
@@ -642,11 +603,13 @@ class DebateEngine:
             f"## 你的专业领域\n{agent_info.get('focus', '')}",
         ]
         
-        # 添加辩论历史
+        # 添加辩论历史（P1优化：每段截断到 settings.debate_history_chars，防止上下文随轮次无限增长）
         if history:
             prompt_parts.append("\n## 之前的辩论内容\n")
             for prev_agent, prev_role, prev_content in history:
                 prev_info = self.AGENT_INFO.get(prev_agent, {})
+                if len(prev_content) > settings.debate_history_chars:
+                    prev_content = prev_content[:settings.debate_history_chars] + "…"
                 prompt_parts.append(
                     f"【{prev_info.get('display_name', prev_agent)} - {prev_role}】\n{prev_content}\n"
                 )
@@ -678,6 +641,9 @@ class DebateEngine:
             prompt_parts.append("4. 简洁精炼，适合并列呈现")
         else:
             prompt_parts.append("4. 可以展开深入讨论")
+        
+        # P1优化：回答字数限制——控制单轮输出体积，减少Token消耗
+        prompt_parts.append(f"5. 回答控制在 {settings.expert_answer_max_chars} 字以内，精炼直接")
         
         return "\n".join(prompt_parts)
     
@@ -843,6 +809,9 @@ class DebateEngine:
         """
         运行完整辩论流程：执行辩论 → 提取洞见 → 综合结果
         
+        P1优化：整个辩论流程只检索一次（shared_docs），各轮复用，
+        避免每轮 Prompt 构建时重复检索（原实现每轮 top_k=5 检索一次）。
+        
         Args:
             question: 用户问题
             mode: 辩论模式
@@ -851,7 +820,14 @@ class DebateEngine:
         Returns:
             DebateSession: 完整的辩论会话（含综合和洞见）
         """
-        session = self.run_debate(question, mode, context)
+        # P1优化：检索复用——整个辩论流程只检索一次
+        shared_docs: List[Dict[str, Any]] = []
+        try:
+            shared_docs = self.retriever.retrieve(question, top_k=settings.top_k)
+        except Exception as e:
+            logger.warning(f"辩论引擎检索失败，降级为无参考文档: {e}")
+        
+        session = self.run_debate(question, mode, context, shared_docs=shared_docs)
         self._extract_insights(session)
         self.synthesize(session)
         return session

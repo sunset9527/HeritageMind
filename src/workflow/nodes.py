@@ -16,9 +16,49 @@ from src.knowledge.gap_detector import KnowledgeGapDetector
 from src.knowledge.granularity import GranularityController
 from src.knowledge.narrative import NarrativeGenerator
 from src.retrieval.retriever import MultiSourceRetriever
+from src.retrieval.query_rewriter import select_best_query
 from src.workflow.state import WorkflowState, AgentResponse
 
 logger = logging.getLogger(__name__)
+
+
+def _apply_retrieval_query(state: WorkflowState, question: str) -> None:
+    """把改写后的检索 query 写入 state（v1.4 接线，规则模式）。
+
+    语义：
+    - query_rewriting_enabled 关闭 → 不做任何改写，search_query 恒 = question；
+    - 开启 → select_best_query 选最佳候选（无规则命中则等于原文）。
+    改写只作用于检索 query；专家识别技艺名 / 生成回答仍用原始 question。
+    """
+    if not getattr(settings, "query_rewriting_enabled", True):
+        state["search_query"] = question
+        state["search_query_meta"] = None
+        return
+    try:
+        conversation_context = state.get("conversation_context") or None
+        best = (
+            select_best_query(question, conversation_context=conversation_context)
+            if conversation_context else select_best_query(question)
+        )
+    except Exception as e:
+        logger.warning(f"检索 query 改写异常，回退原文: {e}")
+        state["search_query"] = question
+        state["search_query_meta"] = None
+        return
+    state["search_query"] = best.rewritten
+    state["search_query_meta"] = {
+        "original": best.original,
+        "rewritten": best.rewritten,
+        "method": best.method,
+        "score": best.score,
+    }
+    if best.rewritten != question:
+        logger.info(
+            f"检索 query 改写: {question} -> {best.rewritten} "
+            f"(method={best.method}, score={best.score})"
+        )
+    else:
+        logger.debug(f"检索 query 无需改写: {question}")
 
 
 def analyze_question_node(state: WorkflowState) -> WorkflowState:
@@ -39,7 +79,9 @@ def analyze_question_node(state: WorkflowState) -> WorkflowState:
         dispatcher = DispatcherAgent()
         
         # 分析问题
-        analysis = dispatcher.analyze_question(question)
+        analysis = dispatcher.analyze_question(
+            question, conversation_context=state.get("conversation_context") or None
+        )
         
         # 更新状态
         state["question_analysis"] = {
@@ -64,13 +106,78 @@ def analyze_question_node(state: WorkflowState) -> WorkflowState:
     return state
 
 
+def plan_question_node(state: WorkflowState) -> WorkflowState:
+    """
+    Planner 节点 - 为复杂问题制定回答大纲（只影响生成结构，不触发额外检索）
+
+    Args:
+        state: 当前状态
+
+    Returns:
+        WorkflowState: 更新后的状态
+    """
+    try:
+        question = state["question"]
+        dispatcher = DispatcherAgent()
+        plan = dispatcher.plan_question(
+            question=question,
+            complexity=state.get("complexity", "medium"),
+            required_experts=state.get("required_experts", []),
+            key_entities=state.get("key_entities", []),
+        )
+        state["plan"] = plan.model_dump() if plan else None
+        logger.info(f"Planner: plan={'生成' if plan else '跳过'}")
+    except Exception as e:
+        logger.warning(f"Planner 节点异常，跳过 plan: {e}")
+        state["errors"].append(f"Planner 错误: {str(e)}")
+        state["plan"] = None
+    return state
+
+
+def _plan_outline_text(state: WorkflowState) -> Optional[str]:
+    """把 state['plan'] 渲染成注入融合/生成的大纲文本；无 plan 返回 None。"""
+    plan = state.get("plan")
+    if not plan:
+        return None
+    parts = []
+    aspects = plan.get("aspects") or []
+    if aspects:
+        parts.append("子方面：")
+        for i, a in enumerate(aspects, 1):
+            parts.append(f"{i}. {a}")
+    outline = plan.get("outline")
+    if outline:
+        parts.append(f"组织顺序：{outline}")
+    text = "\n".join(parts).strip()
+    return text or None
+
+
+def should_plan(state: WorkflowState) -> Literal["plan", "skip_plan"]:
+    """
+    条件判断：是否执行 Planner（复杂问题分解）
+
+    触发条件：planner_enabled 开启，且 复杂度为 complex 或 需 ≥2 个专家。
+    未触发时走 skip_plan 直接进入专家分派（旧路径，无 plan 节点延迟）。
+
+    Returns:
+        str: "plan" 或 "skip_plan"
+    """
+    if not getattr(settings, "planner_enabled", True):
+        return "skip_plan"
+    complexity = state.get("complexity", "medium")
+    expert_count = len(state.get("required_experts", []))
+    if complexity == "complex" or expert_count >= 2:
+        return "plan"
+    return "skip_plan"
+
+
 def dispatch_to_experts_node(state: WorkflowState) -> WorkflowState:
     """
     专家分派节点 - 将问题分派给相应的专家Agent
-    
+
     Args:
         state: 当前状态
-    
+
     Returns:
         WorkflowState: 更新后的状态
     """
@@ -80,12 +187,33 @@ def dispatch_to_experts_node(state: WorkflowState) -> WorkflowState:
         context = {
             "key_entities": state.get("key_entities", [])
         }
-        
-        logger.info(f"分派给专家: {required_experts}")
-        
+
+        # v1.4：查询重写接线 — 计算实际用于检索的 query（改写后 / 未改写恒等于 question）
+        _apply_retrieval_query(state, question)
+        sq = state.get("search_query") or question
+
+        logger.info(f"分派给专家: {required_experts} (检索 query: {sq})")
+
         # 初始化检索器
         retriever = MultiSourceRetriever()
-        
+
+        # P2优化①：层级聚合检索（技艺→工序→细节），结果写入 state 供融合/生成阶段使用。
+        # 检索一次、分组一次，不改变专家分派主流程；可配置关闭（craft_group_enabled）
+        if getattr(settings, "craft_group_enabled", True):
+            try:
+                grouped = retriever.retrieve_grouped(
+                    sq,
+                    top_k=settings.top_k,
+                    max_chars_per_group=getattr(settings, "craft_group_max_chars", 1500),
+                )
+                state["retrieval_groups"] = grouped
+                logger.info(
+                    f"层级聚合检索: {grouped['group_count']} 组 / {grouped['total_docs']} 篇，"
+                    f"命中技艺 {grouped['matched_crafts']}"
+                )
+            except Exception as e:
+                logger.warning(f"层级聚合检索失败（不影响主流程）: {e}")
+
         # 根据需要的专家，初始化对应的Agent
         expert_map = {
             "craft_expert": CraftExpertAgent(retriever=retriever),
@@ -100,11 +228,16 @@ def dispatch_to_experts_node(state: WorkflowState) -> WorkflowState:
                 logger.info(f"调用 {expert_name}...")
                 try:
                     agent = expert_map[expert_name]
-                    result = agent.process(question, context)
+                    result = agent.process(question, context, search_query=sq)
+
+                    # P1优化：截断专家响应体积，控制后续融合阶段上下文长度
+                    answer = result.get("answer", "")
+                    if len(answer) > settings.expert_answer_max_chars:
+                        answer = answer[:settings.expert_answer_max_chars] + "…"
 
                     responses[expert_name] = AgentResponse(
                         agent_name=expert_name,
-                        content=result.get("answer", ""),
+                        content=answer,
                         success=result.get("success", False),
                         metadata=result
                     )
@@ -246,13 +379,17 @@ def fuse_knowledge_node(state: WorkflowState) -> WorkflowState:
                 state["use_debate"] = False
                 state["debate_session"] = None
                 # 降级到普通融合
-                fused = dispatcher.fuse_responses(response_dict, question)
+                fused = dispatcher.fuse_responses(
+                    response_dict, question, plan_outline=_plan_outline_text(state)
+                )
                 state["fused_content"] = fused
         else:
             # 普通融合模式
             logger.info("使用普通融合模式")
             state["use_debate"] = False
-            fused = dispatcher.fuse_responses(response_dict, question)
+            fused = dispatcher.fuse_responses(
+                response_dict, question, plan_outline=_plan_outline_text(state)
+            )
             state["fused_content"] = fused
         
         # 记录参与的Agent
@@ -307,9 +444,9 @@ def detect_gaps_node(state: WorkflowState) -> WorkflowState:
         # 初始化缺口检测器
         gap_detector = KnowledgeGapDetector()
         
-        # 获取检索到的文档
+        # 获取检索到的文档（复用 dispatch 阶段改写后的 query；未改写时恒等于 question）
         retriever = MultiSourceRetriever()
-        docs = retriever.retrieve(question, top_k=5)
+        docs = retriever.retrieve(state.get("search_query") or question, top_k=5)
         
         # 检测缺口
         gap_result = gap_detector.detect(question, docs)
@@ -349,12 +486,16 @@ def generate_response_node(state: WorkflowState) -> WorkflowState:
         
         logger.info(f"生成响应 (profile={user_profile}, narrative={include_narrative})")
         
-        # 多粒度适配
+        # 多粒度适配（v1.4：注入 Planner 大纲作为可选上下文，约束生成结构）
         granularity = GranularityController()
+        response_context = {"plan": _plan_outline_text(state)}
+        if state.get("conversation_context"):
+            response_context["conversation_memory"] = state["conversation_context"]
         adapted = granularity.adapt_content(
             fused_content,
             user_profile,
-            question
+            question,
+            context=response_context,
         )
         
         adapted_content = adapted.get("content", fused_content)
@@ -453,6 +594,7 @@ def has_expert_responses(state: WorkflowState) -> Literal["fuse", "error"]:
 # 节点映射表
 NODES = {
     "analyze_question": analyze_question_node,
+    "plan_question": plan_question_node,
     "dispatch_to_experts": dispatch_to_experts_node,
     "collect_responses": collect_expert_responses_node,
     "fuse_knowledge": fuse_knowledge_node,

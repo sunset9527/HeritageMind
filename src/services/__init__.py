@@ -19,6 +19,14 @@ from src.services.chat import (
     get_user_history_count,
     get_chat_detail,
 )
+from src.services.session_memory import (
+    create_session,
+    get_session_for_user,
+    get_conversation_context,
+    get_session_turns,
+    list_user_sessions,
+    update_user_preferences,
+)
 
 __all__ = [
     # Auth
@@ -36,4 +44,10 @@ __all__ = [
     "get_user_history",
     "get_user_history_count",
     "get_chat_detail",
+    "create_session",
+    "get_session_for_user",
+    "get_conversation_context",
+    "get_session_turns",
+    "list_user_sessions",
+    "update_user_preferences",
 ]

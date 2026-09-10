@@ -5,7 +5,7 @@
 知识缺口检测、叙事生成、多粒度适配等提示词模板。
 """
 
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 # =============================================================================
 # 调度Agent提示词
@@ -15,32 +15,48 @@ DISPATCHER_SYSTEM_PROMPT = """你是一个专业的非遗知识调度专家，�
 
 你的职责：
 1. 分析用户问题的意图和核心关注点
-2. 判断需要哪些专家来回答（技艺专家、历史专家、传承专家）
+2. 判断需要哪些专家来回答（技艺专家 craft_expert、历史专家 history_expert、传承专家 heritage_expert）
 3. 识别问题中的关键实体（技艺名称、人物、地域、朝代等）
-4. 评估问题复杂度
+4. 评估问题复杂度（simple/medium/complex）
 
-你需要以 JSON 格式返回分析结果：
-{
-  "intent_analysis": "问题的意图分析",
-  "required_experts": ["craft_expert", "history_expert", "heritage_expert"],
-  "reasoning": "为什么需要这些专家",
-  "key_entities": ["实体1", "实体2"],
-  "complexity": "simple|medium|complex"
-}
-
-注意：
+决策规则：
 - 简单问题（如"什么是景泰蓝"）可能只需要 1-2 个专家
 - 复杂问题（如"景泰蓝和苏绣在工艺和历史上有何异同"）需要多个专家协作
-- 始终输出合法 JSON，不要包含 markdown 代码块标记
+
+分析结果请通过 route_question 工具提交（字段约束见工具定义）。若当前无法调用工具，则直接输出同字段的 JSON 对象，不要包含 markdown 代码块标记。
 """
 
 
-def get_question_analysis_prompt(question: str) -> str:
-    """生成问题分析的提示词"""
+PLANNER_SYSTEM_PROMPT = """你是一个非遗知识回答结构规划专家。对于复杂问题，你会把它拆解成互不重叠、共同覆盖问题全貌的子方面，并给出回答大纲。
+
+你的职责：
+1. 把复杂问题拆成 3-6 个必须覆盖的子方面（aspects），每个子方面一句话概括
+2. 写出一个总纲（outline），说明回答按什么顺序组织这些子方面
+3. 子方面尽量对齐专家分工：工艺技术/材料工具 → 历史起源/演变 → 传承人/保护现状
+
+示例：问题「景泰蓝和苏绣在工艺和历史上有何异同？」
+- aspects 至少应覆盖：各自工艺流程、各自历史起源与演变、工艺比较、文化象征与传承现状
+- outline 描述：先分别概述两种技艺，再分「工艺」与「历史」两条线对比，最后落到文化象征与当代传承
+
+注意：大纲只影响回答的生成结构，你不需要真正去检索或回答。请把结果通过 create_plan 工具提交（字段约束见工具定义）。若当前无法调用工具，则直接输出同字段的 JSON 对象，不要包含 markdown 代码块标记。
+"""
+
+
+def get_question_analysis_prompt(question: str, conversation_context: Optional[str] = None) -> str:
+    """生成问题分析提示词，可选择性带入同一会话的近期上下文。"""
+    memory_block = ""
+    if conversation_context:
+        memory_block = f"""
+## 同一会话的近期上下文
+{conversation_context}
+
+若当前问题含有“它/这个/上述”等指代，请据此解析指向；不要重复回答上下文。
+"""
     return f"""请分析以下关于非物质文化遗产的用户问题：
 
 ## 用户问题
 {question}
+{memory_block}
 
 ## 分析要求
 1. 判断问题的意图类型（知识了解、工艺学习、历史研究、传承关注等）
@@ -51,11 +67,17 @@ def get_question_analysis_prompt(question: str) -> str:
 3. 识别问题中的关键实体
 4. 评估问题复杂度
 
-请以 JSON 格式返回分析结果（不要包含 ```json 代码块标记）。"""
+请调用 route_question 工具返回分析结果；若无法调用工具，请直接输出同字段（required_experts / intent_analysis / reasoning / key_entities / complexity）的 JSON 对象，不要包含 ```json 代码块标记。"""
 
 
-def get_fusion_prompt(responses: Dict[str, str], question: str) -> str:
-    """生成多专家回答融合的提示词"""
+def get_fusion_prompt(responses: Dict[str, str], question: str, plan_outline: Optional[str] = None) -> str:
+    """生成多专家回答融合的提示词
+
+    Args:
+        responses: 各专家回答 {name: answer}
+        question: 用户原始问题
+        plan_outline: 可选的 Planner 大纲（复杂问题子方面）；非空时要求按大纲组织并覆盖所有子方面
+    """
     experts_text = ""
     for name, answer in responses.items():
         expert_display = {
@@ -65,6 +87,15 @@ def get_fusion_prompt(responses: Dict[str, str], question: str) -> str:
         }.get(name, name)
         experts_text += f"\n### {expert_display}\n{answer}\n"
 
+    structure_req = ""
+    if plan_outline:
+        structure_req = f"""
+## 回答结构要求
+请按下述 Planner 大纲组织回答，并确保覆盖大纲中的所有子方面（顺序可微调，但子方面不可遗漏）：
+
+{plan_outline}
+"""
+
     return f"""你是一个非遗知识融合专家。请将以下多个专家的回答融合为一个完整、连贯的最终回答。
 
 ## 用户原始问题
@@ -72,7 +103,7 @@ def get_fusion_prompt(responses: Dict[str, str], question: str) -> str:
 
 ## 各专家回答
 {experts_text}
-
+{structure_req}
 ## 融合要求
 1. 去除各专家回答中的重复信息和矛盾之处
 2. 按照逻辑顺序组织内容（先概述，再工艺/历史，最后传承现状）
@@ -83,6 +114,34 @@ def get_fusion_prompt(responses: Dict[str, str], question: str) -> str:
 7. 控制总长度，不要过于冗长
 
 请生成融合后的最终回答："""
+
+
+def get_question_plan_prompt(
+    question: str,
+    complexity: str,
+    required_experts: List[str],
+    key_entities: List[str] = None,
+) -> str:
+    """生成问题规划（Planner）的提示词"""
+    experts_text = "、".join(required_experts) if required_experts else "（未知）"
+    entities_text = "、".join(key_entities) if key_entities else "（无）"
+
+    return f"""请为以下复杂非遗问题制定一份回答大纲。
+
+## 用户问题
+{question}
+
+## 问题上下文
+- 复杂度：{complexity}
+- 将参与的专家：{experts_text}
+- 关键实体：{entities_text}
+
+## 要求
+1. 拆解出 3-6 个必须覆盖的子方面（aspects），每个子方面一句话概括
+2. 给出一段总纲（outline），描述回答的组织顺序
+3. 子方面之间尽量正交、不重叠；对齐到专家分工（工艺/历史/传承现状）
+
+请调用 create_plan 工具返回结果；若无法调用工具，请直接输出同字段（aspects / outline）的 JSON 对象，不要包含 ```json 代码块标记。"""
 
 
 # =============================================================================

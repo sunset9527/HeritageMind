@@ -158,3 +158,44 @@ class SimpleQueryRewriter(QueryRewriter):
     """简易重写器（仅规则，无 LLM）"""
     def __init__(self):
         super().__init__(use_llm=False)
+
+
+def select_best_query(
+    query: str, top_k: int = 3, conversation_context: Optional[str] = None
+) -> RewrittenQuery:
+    """从 QueryRewriter 候选里选出用于检索的最佳查询（纯函数，供检索链路接线调用）。
+
+    策略：
+    - 优先 method="rule" 且改写后 != 原句 的候选；
+    - 其次（仅当 settings.query_rewriting_use_llm 开启时存在）取 LLM 候选；
+    - 否则回退到第一条（= 原始查询，method="original"）。
+    改写不会替换掉原始技艺名，故不影响 craft_name_boost / grouping 的 query 匹配。
+    """
+    retrieval_query = query
+    # 规则改写不能理解“它/这个”等指代；仅在有近期会话时补入上一轮用户主题，供检索使用。
+    if conversation_context and any(token in query for token in ("它", "这个", "该技艺", "上述")):
+        previous_questions = [
+            line.removeprefix("用户：").strip()
+            for line in conversation_context.splitlines()
+            if line.startswith("用户：")
+        ]
+        if previous_questions:
+            retrieval_query = f"{previous_questions[-1]} {query}"
+    try:
+        use_llm = bool(getattr(settings, "query_rewriting_use_llm", False))
+        candidates = QueryRewriter(use_llm=use_llm).rewrite(retrieval_query, top_k=top_k)
+    except Exception as e:
+        logger.warning(f"查询改写失败，回退原文: {e}")
+        return RewrittenQuery(original=query, rewritten=query, method="original", score=1.0)
+
+    if not candidates:
+        return RewrittenQuery(original=query, rewritten=query, method="original", score=1.0)
+
+    for cand in candidates:
+        if cand.method == "rule" and cand.rewritten != cand.original:
+            return cand
+    for cand in candidates:
+        if cand.method == "llm" and cand.rewritten != cand.original:
+            return cand
+    # 第一条恒为 original
+    return candidates[0]

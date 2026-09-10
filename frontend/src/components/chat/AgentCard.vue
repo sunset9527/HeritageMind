@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { AGENT_META_MAP } from '@/types'
+import MarkdownContent from '@/components/chat/MarkdownContent.vue'
 
 const props = defineProps<{
   agentType: string
@@ -37,8 +38,8 @@ const displayContent = computed(() => {
       <span class="font-semibold text-sm text-[var(--text)]">{{ meta.name }}</span>
       <span v-if="time" class="ml-auto text-xs text-[var(--text3)]">{{ time }}</span>
     </div>
-    <div class="text-sm leading-relaxed text-[var(--text)] whitespace-pre-wrap">
-      {{ displayContent }}
+    <div class="text-sm leading-relaxed text-[var(--text)]">
+      <MarkdownContent :content="displayContent" />
     </div>
   </div>
 </template>

@@ -84,11 +84,8 @@ class CraftExpertAgent:
             }
         }
     
-    def set_retriever(self, retriever: MultiSourceRetriever):
-        """设置检索器"""
-        self.retriever = retriever
     
-    def process(self, question: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def process(self, question: str, context: Optional[Dict[str, Any]] = None, search_query: Optional[str] = None) -> Dict[str, Any]:
         """
         处理用户问题
         
@@ -101,7 +98,7 @@ class CraftExpertAgent:
         """
         try:
             # 1. 检索相关文档
-            retrieved_docs = self._retrieve_documents(question)
+            retrieved_docs = self._retrieve_documents(search_query or question)
             
             # 2. 识别问题中的技艺
             craft_name = self._identify_craft(question, context)
@@ -218,6 +215,7 @@ class CraftExpertAgent:
             return f"抱歉，生成回答时遇到技术问题：{str(e)}"
     
     def get_craft_info(self, craft_name: str) -> Optional[Dict[str, Any]]:
+    # ⚠️ TODO(2026-08-15): 当前未接线，仅供后续功能扩展
         """
         获取特定技艺的详细信息
         
@@ -230,6 +228,7 @@ class CraftExpertAgent:
         return self.craft_context.get(craft_name)
     
     def list_supported_crafts(self) -> List[str]:
+    # ⚠️ TODO(2026-08-15): 当前未接线，仅供后续功能扩展
         """
         列出支持的技艺列表
         
@@ -239,6 +238,7 @@ class CraftExpertAgent:
         return list(self.craft_context.keys())
     
     def explain_technique(
+    # ⚠️ TODO(2026-08-15): 当前未接线，仅供后续功能扩展
         self,
         craft_name: str,
         technique_name: str,

@@ -1,9 +1,12 @@
 """
-Embedding 管理器 — 支持智谱 API 和本地 BGE 模型
+Embedding 管理器 — 本地 BGE-M3 优先，智谱 API 兜底
 
-智谱 API: embedding-2 模型，1024维，OpenAI 兼容格式
-本地模式: BAAI/bge-large-zh-v1.5，via HuggingFaceEmbeddings
+策略（按 embedding_mode）:
+  - "local_first"（默认）: 先尝试加载本地 BGE-M3，加载失败则降级到智谱 API
+  - "local": 仅使用本地模型，不降级
+  - "api": 仅使用智谱 API，不尝试本地
 """
+import os
 import logging
 from typing import Optional, List
 from openai import OpenAI
@@ -13,21 +16,78 @@ from config import settings
 logger = logging.getLogger(__name__)
 
 _embedding_model: Optional[object] = None
+_embedding_backend: Optional[str] = None  # "local" 或 "api"
 
 
 def get_embedding_model() -> object:
-    """获取嵌入模型实例（延迟加载，工厂函数）"""
-    global _embedding_model
+    """获取嵌入模型实例（延迟加载，本地优先、API 兜底）"""
+    global _embedding_model, _embedding_backend
     if _embedding_model is not None:
         return _embedding_model
 
-    if settings.embedding_mode == "api" and settings.zhipu_api_key:
+    mode = settings.embedding_mode
+
+    # ── 仅 API 模式 ──
+    if mode == "api":
+        if not settings.zhipu_api_key:
+            raise ValueError("embedding_mode=api 但 zhipu_api_key 未配置")
         _embedding_model = _create_zhipu_client()
-        logger.info(f"智谱 Embedding API 就绪: {settings.embedding_model}")
-    else:
+        _embedding_backend = "api"
+        logger.info(f"Embedding 后端: 智谱 API ({settings.embedding_model})")
+        return _embedding_model
+
+    # ── only local 模式 ──
+    if mode == "local":
         _embedding_model = _create_local_model()
-        logger.info(f"本地 Embedding 模型就绪: {settings.embedding_model}")
-    return _embedding_model
+        _embedding_backend = "local"
+        logger.info(f"Embedding 后端: 本地模型 ({settings.local_embedding_model_path})")
+        return _embedding_model
+
+    # ── local_first 模式（默认）: 本地优先，失败降级 API ──
+    _embedding_model = _try_create_local()
+    if _embedding_model is not None:
+        _embedding_backend = "local"
+        logger.info(f"Embedding 后端: 本地 BGE-M3 ({settings.local_embedding_model_path})")
+        return _embedding_model
+
+    if settings.zhipu_api_key:
+        _embedding_model = _create_zhipu_client()
+        _embedding_backend = "api"
+        logger.warning("本地 BGE-M3 不可用，降级为智谱 Embedding API")
+        return _embedding_model
+
+    raise RuntimeError(
+        "Embedding 初始化失败：本地 BGE-M3 不可用，且 zhipu_api_key 未配置。"
+        f"请检查模型路径: {settings.local_embedding_model_path}"
+    )
+
+
+def _try_create_local():
+    """尝试加载本地 BGE-M3 模型，失败返回 None"""
+    model_path = settings.local_embedding_model_path
+    if not os.path.isdir(model_path):
+        logger.warning(f"本地模型路径不存在: {model_path}")
+        return None
+
+    required_files = ["config.json", "pytorch_model.bin", "tokenizer.json"]
+    for f in required_files:
+        if not os.path.isfile(os.path.join(model_path, f)):
+            logger.warning(f"本地模型文件缺失: {model_path}/{f}")
+            return None
+
+    try:
+        from langchain_huggingface import HuggingFaceEmbeddings
+        model = HuggingFaceEmbeddings(
+            model_name=model_path,
+            model_kwargs={"device": "cpu"},
+            encode_kwargs={"normalize_embeddings": True, "batch_size": 32},
+        )
+        # 触发一次实际加载，确认模型可用
+        model.embed_query("测试")
+        return model
+    except Exception as e:
+        logger.warning(f"本地 BGE-M3 加载失败: {e}")
+        return None
 
 
 def _create_zhipu_client():
@@ -39,10 +99,10 @@ def _create_zhipu_client():
 
 
 def _create_local_model():
-    """创建本地 BGE 模型"""
+    """强制创建本地模型（不检查存在性，供 local 模式使用）"""
     from langchain_huggingface import HuggingFaceEmbeddings
     return HuggingFaceEmbeddings(
-        model_name=settings.embedding_model,
+        model_name=settings.local_embedding_model_path,
         model_kwargs={"device": "cpu"},
         encode_kwargs={"normalize_embeddings": True, "batch_size": 32},
     )
@@ -50,8 +110,14 @@ def _create_local_model():
 
 def reset_embedding_model():
     """重置嵌入模型"""
-    global _embedding_model
+    global _embedding_model, _embedding_backend
     _embedding_model = None
+    _embedding_backend = None
+
+
+def get_embedding_backend() -> Optional[str]:
+    """返回当前使用的 embedding 后端: 'local' 或 'api'"""
+    return _embedding_backend
 
 
 def get_embedding_dimension() -> int:
@@ -73,11 +139,15 @@ class EmbeddingManager:
             self._model = get_embedding_model()
         return self._model
 
+    def _is_api_backend(self) -> bool:
+        """判断当前是否使用 API 后端"""
+        return _embedding_backend == "api"
+
     def embed_query(self, text: str) -> List[float]:
         if text in self._cache:
             return self._cache[text]
 
-        if settings.embedding_mode == "api" and settings.zhipu_api_key:
+        if self._is_api_backend():
             resp = self.model.embeddings.create(
                 model=settings.embedding_model,
                 input=text,
@@ -91,11 +161,10 @@ class EmbeddingManager:
         return emb
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
-        results = []
         uncached = [(i, t) for i, t in enumerate(texts) if t not in self._cache]
 
         if uncached:
-            if settings.embedding_mode == "api" and settings.zhipu_api_key:
+            if self._is_api_backend():
                 for _, t in uncached:
                     resp = self.model.embeddings.create(
                         model=settings.embedding_model,

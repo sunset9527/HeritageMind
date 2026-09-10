@@ -2,6 +2,7 @@
 FastAPI后端服务 - 非遗知识问答系统API
 """
 
+import asyncio
 import logging
 from typing import Optional, List, Dict, Any
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Depends, Header, status, Request
@@ -10,6 +11,7 @@ from fastapi.responses import StreamingResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, Field
 from contextlib import asynccontextmanager
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from config import settings
@@ -34,14 +36,35 @@ from src.schemas.chat import (
     ChatHistoryItem,
     ChatHistoryListResponse,
     ChatDetailResponse,
+    ChatSessionResponse,
+    ChatSessionListResponse,
+    ChatSessionMessagesResponse,
 )
 from src.services.auth import create_user, authenticate_user, create_access_token
 from src.services.chat import save_chat_history, get_user_history, get_user_history_count, get_chat_detail
+from src.services.session_memory import (
+    create_session, extract_known_crafts, get_conversation_context,
+    get_session_for_user, get_session_turns, list_user_sessions, touch_session,
+    update_user_preferences,
+)
+from src.models.user_preference import UserPreference
 from src.services.prompt import create_prompt, get_prompt, list_prompts, update_prompt, delete_prompt
 from src.schemas.prompt import PromptCreate, PromptUpdate, PromptResponse, PromptListResponse
 from src.services.media import upload_media, list_media, get_media, delete_media, get_media_url, STORAGE_ROOT
 from src.schemas.media import MediaResponse, MediaListResponse, MediaUpdateStatus
-from src.models.media import MediaType
+from src.models.media import MediaDocument, MediaType
+from src.models.audio_transcript import AudioTranscript, AudioTranscriptStatus
+from src.retrieval.audio_store import get_audio_store
+from src.schemas.audio import (
+    AudioSearchHit,
+    AudioSearchResponse,
+    AudioTranscribeEnqueueResponse,
+    TranscriptStatusResponse,
+)
+from src.services.audio_transcript import ensure_audio_job, get_transcript
+from src.services.audio_worker import run_worker
+from src.services.cache import get_qa_cache
+from src.services.queue import close_redis
 from src.services.document_parser import parse_document
 from src.models.favorite import Favorite
 from src.retrieval.multimodal_search import search_images_by_text, search_similar_images, index_all_images
@@ -61,11 +84,16 @@ document_loader: Optional[HeritageDocumentLoader] = None
 retriever: Optional[MultiSourceRetriever] = None
 visualizer: Optional[HeritageGraphVisualizer] = None
 
+# v1.4 音频转写 worker 生命周期句柄（lifespan 启动/停止）
+_worker_stop: Optional[asyncio.Event] = None
+_worker_task: Optional[asyncio.Task] = None
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """应用生命周期管理"""
     global workflow, knowledge_graph, document_loader, retriever, visualizer
+    global _worker_stop, _worker_task
 
     logger.info("初始化应用...")
 
@@ -100,12 +128,34 @@ async def lifespan(app: FastAPI):
     
     # 初始化检索器
     retriever = MultiSourceRetriever(document_loader=document_loader)
-    
+
+    # v1.4：初始化热门问答缓存后端（auto：探测 Redis，不可达进程内 LRU）
+    await get_qa_cache().init_cache()
+
+    # v1.4：启动音频转写 worker（单 asyncio 任务；Redis 不可达时 run_worker 自检后静默退出）
+    if settings.audio_worker_enabled:
+        _worker_stop = asyncio.Event()
+        _worker_task = asyncio.create_task(run_worker(_worker_stop))
+        logger.info("音频转写 worker 任务已创建")
+
     logger.info("应用初始化完成")
-    
+
     yield
-    
+
     logger.info("应用关闭")
+    # 停 worker + 关 Redis/缓存后端
+    if _worker_task is not None:
+        _worker_stop.set()
+        try:
+            await asyncio.wait_for(_worker_task, timeout=5)
+        except Exception:
+            logger.warning("转写 worker 未在 5s 内退出，强制取消")
+            _worker_task.cancel()
+        _worker_task = None
+        _worker_stop = None
+    get_qa_cache().reset()
+    await close_redis()
+    logger.info("资源已释放")
 
 
 # 创建FastAPI应用
@@ -164,6 +214,7 @@ class QueryRequest(BaseModel):
     user_profile: str = Field(default="curious", description="用户画像")
     include_narrative: bool = Field(default=False, description="是否使用传承人口吻")
     craft_filter: Optional[str] = Field(default=None, description="技艺过滤")
+    session_id: Optional[str] = Field(default=None, description="v1.5 会话ID；登录用户不传时自动创建")
 
 
 class QueryResponse(BaseModel):
@@ -263,17 +314,59 @@ async def query(
             status_code=503,
             detail="未配置有效的 API Key。请在设置页填写你的 DeepSeek API Key，或在 .env 中配置 DEEPSEEK_API_KEY。"
         )
+    # P1优化：热门问答缓存——命中直接返回，避免重复调用LLM（自定义Header时跳过，因不同Key/模型答案不同）
+    # v1.4：后端由 api.py 内联 LRU 迁到 src/services/cache.py 的 QaCache（auto：Redis 可达优先，不可达进程内 LRU）
+    # 有会话上下文时相同问题的答案不再等价，禁止跨会话命中热门问答缓存。
+    use_cache = settings.cache_enabled and current_user is None and not (x_api_key or x_model or x_api_base)
+    if use_cache:
+        cached = await get_qa_cache().get_response(request.question)
+        if cached is not None:
+            logger.info(f"热门问答缓存命中: {request.question[:30]}...")
+            return cached
+    override_set = bool(x_api_key or x_model)
     try:
-        if x_api_key or x_model:
+        if override_set:
             set_request_override(api_key=x_api_key, base_url=x_api_base, model=x_model)
 
         logger.info(f"处理问题: {request.question[:50]}...")
 
+        chat_session = None
+        conversation_context = ""
+        memory_preferences = {}
+        if current_user is not None:
+            if request.session_id:
+                chat_session = get_session_for_user(db, request.session_id, current_user.id)
+                if chat_session is None:
+                    raise HTTPException(status_code=404, detail="聊天会话不存在")
+            else:
+                chat_session = create_session(db, current_user.id, request.question)
+            try:
+                conversation_context = get_conversation_context(db, chat_session.id, current_user.id)
+                preference = db.get(UserPreference, current_user.id)
+                if preference is not None:
+                    memory_preferences = {
+                        "preferred_crafts": preference.preferred_crafts or [],
+                        "preferred_profile": preference.preferred_profile,
+                    }
+            except Exception as e:
+                logger.warning(f"加载会话记忆失败，降级为空上下文: {e}")
+
         response = workflow.query(
             question=request.question,
             user_profile=request.user_profile,
-            include_narrative=request.include_narrative
+            include_narrative=request.include_narrative,
+            thread_id=chat_session.id if chat_session else None,
+            conversation_context=conversation_context,
+            memory_preferences=memory_preferences,
         )
+
+        if chat_session is not None:
+            response.metadata = dict(response.metadata or {})
+            response.metadata["session_id"] = chat_session.id
+
+        # P1优化：写入热门问答缓存（LRU + TTL）
+        if use_cache:
+            await get_qa_cache().set_response(request.question, response)
 
         # 如果用户已登录，自动保存聊天历史
         if current_user is not None:
@@ -286,15 +379,35 @@ async def query(
                     user_profile=request.user_profile,
                     agents_used=[a.get("id", "") for a in response.source_agents],
                     has_gaps=response.has_gaps,
+                    session_id=chat_session.id,
                 )
+                touch_session(db, chat_session)
+                db.commit()
+                preference = update_user_preferences(
+                    db,
+                    current_user.id,
+                    extract_known_crafts(request.question, response.answer, request.craft_filter or ""),
+                    request.user_profile,
+                )
+                response.metadata["memory_preferences"] = {
+                    "preferred_crafts": preference.preferred_crafts or [],
+                    "preferred_profile": preference.preferred_profile,
+                }
             except Exception as e:
                 logger.warning(f"保存聊天历史失败（不影响问答）: {e}")
 
         return response
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"问答处理失败: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+    finally:
+        # v1.4 顺带修复：请求级 API 覆盖是进程内共享状态，成功/失败都必须清除，防止泄漏到后续请求
+        if override_set:
+            clear_request_override()
 
 
 @app.post("/query/stream")
@@ -303,14 +416,38 @@ async def query_stream(
     x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
     x_api_base: Optional[str] = Header(None, alias="X-API-Base"),
     x_model: Optional[str] = Header(None, alias="X-Model"),
+    current_user: Optional[User] = Depends(get_optional_user),
+    db: Session = Depends(get_db),
 ):
     """SSE 流式问答 — 每个步骤实时推送进度"""
     import json as _json
 
+    chat_session = None
+    conversation_context = ""
+    memory_preferences = {}
+    if current_user is not None:
+        if request.session_id:
+            chat_session = get_session_for_user(db, request.session_id, current_user.id)
+            if chat_session is None:
+                raise HTTPException(status_code=404, detail="聊天会话不存在")
+        else:
+            chat_session = create_session(db, current_user.id, request.question)
+        try:
+            conversation_context = get_conversation_context(db, chat_session.id, current_user.id)
+            preference = db.get(UserPreference, current_user.id)
+            if preference is not None:
+                memory_preferences = {
+                    "preferred_crafts": preference.preferred_crafts or [],
+                    "preferred_profile": preference.preferred_profile,
+                }
+        except Exception as e:
+            logger.warning(f"加载流式会话记忆失败，降级为空上下文: {e}")
+
     async def event_stream():
+        override_set = bool(x_api_key and x_api_key.strip())
         try:
             logger.info(f"流式请求 header: X-API-Key={'***' if x_api_key else '(空)'}, X-Model={x_model or '(空)'}")
-            if x_api_key and x_api_key.strip():
+            if override_set:
                 set_request_override(api_key=x_api_key.strip(), base_url=x_api_base, model=x_model)
             elif not settings.deepseek_api_key or 'your-' in settings.deepseek_api_key:
                 yield f"data: {_json.dumps({'step': 'error', 'msg': '未配置API Key，请在设置页填写'}, ensure_ascii=False)}\n\n"
@@ -323,10 +460,15 @@ async def query_stream(
                 question=request.question,
                 user_profile=request.user_profile,
                 include_narrative=request.include_narrative,
+                thread_id=chat_session.id if chat_session else None,
+                conversation_context=conversation_context,
+                memory_preferences=memory_preferences,
             )
+            graph_config = {"configurable": {"thread_id": chat_session.id}} if chat_session else None
 
             step_names = {
                 "analyze_question": "分析问题意图...",
+                "plan_question": "规划复杂问题子方面...",
                 "dispatch_to_experts": "调度专家Agent...",
                 "collect_responses": "专家正在检索资料...",
                 "fuse_knowledge": "融合多专家观点...",
@@ -335,7 +477,7 @@ async def query_stream(
             }
 
             final = None
-            async for chunk in workflow.graph.astream(initial_state):
+            async for chunk in workflow.graph.astream(initial_state, config=graph_config):
                 for node_name, state_val in chunk.items():
                     label = step_names.get(node_name, node_name)
                     yield f"data: {_json.dumps({'step': node_name, 'msg': label}, ensure_ascii=False)}\n\n"
@@ -343,12 +485,32 @@ async def query_stream(
 
             if final:
                 resp = state_to_response(final)
-                yield f"data: {_json.dumps({'step': 'done', 'answer': resp.answer, 'source_agents': resp.source_agents, 'has_gaps': resp.has_gaps, 'gap_report': resp.gap_report}, ensure_ascii=False)}\n\n"
+                if current_user is not None and chat_session is not None:
+                    try:
+                        save_chat_history(
+                            db, current_user.id, request.question, resp.answer, request.user_profile,
+                            [a.get("id", "") for a in resp.source_agents], resp.has_gaps, chat_session.id,
+                        )
+                        touch_session(db, chat_session)
+                        db.commit()
+                        update_user_preferences(
+                            db, current_user.id,
+                            extract_known_crafts(request.question, resp.answer, request.craft_filter or ""),
+                            request.user_profile,
+                        )
+                    except Exception as e:
+                        logger.warning(f"保存流式会话记忆失败（不影响响应）: {e}")
+                yield f"data: {_json.dumps({'step': 'done', 'answer': resp.answer, 'source_agents': resp.source_agents, 'has_gaps': resp.has_gaps, 'gap_report': resp.gap_report, 'session_id': chat_session.id if chat_session else None}, ensure_ascii=False)}\n\n"
 
             yield "data: [DONE]\n\n"
 
         except Exception as e:
             yield f"data: {_json.dumps({'step': 'error', 'msg': str(e)}, ensure_ascii=False)}\n\n"
+
+        finally:
+            # v1.4 顺带修复：流式请求（含异常 / 客户端中断提前关闭生成器）结束后清除请求级 API 覆盖
+            if override_set:
+                clear_request_override()
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
@@ -737,6 +899,14 @@ async def upload_media_file(
                        media_type=media_type, title=title)
     resp = MediaResponse.model_validate(doc)
     resp.url = get_media_url(doc)
+    # v1.4：audio 上传自动入队转写（不阻断上传；入队失败仅 warning，worker sweep 兜底）
+    if media_type == MediaType.AUDIO.value and settings.audio_transcribe_enabled:
+        try:
+            tr = await ensure_audio_job(db, doc.id, craft_name)
+            resp.transcript_status = tr.status
+            resp.transcript_updated_at = tr.updated_at
+        except Exception as e:
+            logger.warning(f"音频自动转写入队失败（不影响上传）media_id={doc.id}: {e}")
     return resp
 
 
@@ -822,6 +992,127 @@ async def rebuild_image_index(db: Session = Depends(get_db)):
     """重建图片向量索引"""
     count = index_all_images(db)
     return {"indexed": count, "message": f"已索引 {count} 张图片"}
+
+
+# ============================================================================
+# 音频转写与检索接口（v1.4）
+# ============================================================================
+
+def _to_transcript_status(media_id: int, tr: Optional[AudioTranscript]) -> TranscriptStatusResponse:
+    """sidecar 行 → 状态响应（无行时 status='none'，便于前端轮询）。"""
+    if tr is None:
+        return TranscriptStatusResponse(media_id=media_id, status="none")
+    return TranscriptStatusResponse(
+        media_id=media_id,
+        status=tr.status,
+        craft_name=tr.craft_name,
+        attempts=tr.attempts,
+        language=tr.language,
+        duration_ms=tr.duration_ms,
+        chunk_count=tr.chunk_count,
+        error=tr.error,
+        created_at=tr.created_at,
+        updated_at=tr.updated_at,
+    )
+
+
+@app.get("/media/{media_id}/transcript", response_model=TranscriptStatusResponse)
+async def get_media_transcript(media_id: int, db: Session = Depends(get_db)):
+    """查询音频转写状态（上传后轮询 UPLOADED→TRANSCRIBING→INDEXED/FAILED）。无记录返回 status=none。"""
+    return _to_transcript_status(media_id, get_transcript(db, media_id))
+
+
+@app.post("/media/{media_id}/transcribe", response_model=AudioTranscribeEnqueueResponse)
+async def enqueue_media_transcribe(media_id: int, db: Session = Depends(get_db)):
+    """手动触发/重试转写：无记录→建 sidecar 入队；UPLOADED/FAILED→复位入队；转写中/已完成→409。"""
+    from src.services.queue import push_audio_job
+
+    doc = get_media(db, media_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="文件不存在")
+
+    tr = get_transcript(db, media_id)
+    if tr is None:
+        tr = await ensure_audio_job(db, media_id, doc.craft_name)
+        return AudioTranscribeEnqueueResponse(
+            media_id=media_id, status=tr.status, enqueued=True, detail="已新建转写任务并入队"
+        )
+    if tr.status == AudioTranscriptStatus.TRANSCRIBING.value:
+        raise HTTPException(status_code=409, detail="正在转写中，请稍候")
+    if tr.status == AudioTranscriptStatus.INDEXED.value:
+        raise HTTPException(status_code=409, detail="已完成转写（如需重转写请先删除该媒体）")
+    if tr.attempts >= settings.audio_max_attempts:
+        raise HTTPException(status_code=409, detail=f"已达最大尝试次数({settings.audio_max_attempts})，需人工处理")
+
+    # UPLOADED/FAILED → 复位 UPLOADED 并（重）入队
+    tr.status = AudioTranscriptStatus.UPLOADED.value
+    tr.error = None
+    db.commit()
+    ok = await push_audio_job(media_id)
+    return AudioTranscribeEnqueueResponse(
+        media_id=media_id, status=tr.status, enqueued=ok,
+        detail="已复位并入队" if ok else "入队失败（保持 UPLOADED，worker 启动 sweep 兜底）",
+    )
+
+
+@app.get("/search/audio", response_model=AudioSearchResponse)
+async def search_audio(
+    q: str,
+    top_k: int = 10,
+    craft_name: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    """文搜音频：按文字命中已转写音频（转写文本向量检索，逐 media 取最佳 chunk）。
+
+    与 /search/image 风格一致：命中后回连 media_documents 带出 url/title/审核状态。
+    """
+    query = (q or "").strip()
+    if not query:
+        raise HTTPException(status_code=400, detail="搜索词 q 不能为空")
+    hits = get_audio_store().search(query, top_k=top_k, craft_name=craft_name)
+    if not hits:
+        return AudioSearchResponse(query=q, top_k=top_k, total=0, results=[])
+
+    # 按 media_id 聚合成一条（同 media 保留 score 最高的 chunk）
+    best: Dict[int, dict] = {}
+    for h in hits:
+        cur = best.get(h["media_id"])
+        if cur is None or h["score"] > cur["score"]:
+            best[h["media_id"]] = h
+    media_map = {
+        d.id: d for d in db.scalars(select(MediaDocument).where(MediaDocument.id.in_(list(best)))).all()
+    }
+    results: List[AudioSearchHit] = []
+    for h in best.values():
+        d = media_map.get(h["media_id"])
+        results.append(AudioSearchHit(
+            media_id=h["media_id"],
+            craft_name=h["craft_name"],
+            title=d.title if d else h["title"],
+            original_name=d.original_name if d else "",
+            url=get_media_url(d) if d else "",
+            snippet=h["snippet"],
+            score=h["score"],
+            media_status=d.status if d else "draft",
+        ))
+    results.sort(key=lambda r: r.score, reverse=True)
+    return AudioSearchResponse(query=q, top_k=top_k, total=len(results), results=results)
+
+
+@app.post("/search/audio/index")
+async def rebuild_audio_index(db: Session = Depends(get_db)):
+    """重建音频转写向量索引：遍历 status=INDEXED 的 sidecar，用其 full_text 全量重放。"""
+    rows = db.scalars(
+        select(AudioTranscript).where(AudioTranscript.status == AudioTranscriptStatus.INDEXED.value)
+    ).all()
+    store = get_audio_store()
+    total_chunks = 0
+    for tr in rows:
+        doc = get_media(db, tr.media_id)
+        title = doc.title if doc else ""
+        chunks = store.index_transcript(tr.media_id, tr.craft_name, title, tr.full_text or "")
+        total_chunks += chunks
+    return {"indexed": len(rows), "chunks": total_chunks, "message": f"已重建 {len(rows)} 条音频转写索引"}
 
 
 # ============================================================================
@@ -1045,6 +1336,44 @@ async def get_chat_history(
         ))
 
     return ChatHistoryListResponse(items=items, total=total)
+
+
+@app.get("/chat/sessions", response_model=ChatSessionListResponse)
+async def get_chat_sessions(
+    limit: int = 20,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """按最近活跃时间列出当前用户可继续的对话。"""
+    records = list_user_sessions(db, current_user.id, limit=limit)
+    return ChatSessionListResponse(items=[ChatSessionResponse.model_validate(row) for row in records])
+
+
+@app.post("/chat/sessions", response_model=ChatSessionResponse)
+async def create_chat_session(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """创建空白会话；首轮问答仍会在 /query 自动创建会话。"""
+    chat_session = create_session(db, current_user.id)
+    return ChatSessionResponse.model_validate(chat_session)
+
+
+@app.get("/chat/sessions/{session_id}/messages", response_model=ChatSessionMessagesResponse)
+async def get_chat_session_messages(
+    session_id: str,
+    limit: int = 50,
+    offset: int = 0,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """分页读取本人某一会话的完整问答轮次，越权会话按不存在处理。"""
+    if get_session_for_user(db, session_id, current_user.id) is None:
+        raise HTTPException(status_code=404, detail="聊天会话不存在")
+    records = get_session_turns(db, session_id, current_user.id, limit=limit, offset=offset)
+    return ChatSessionMessagesResponse(
+        items=[ChatDetailResponse.model_validate(row) for row in records], total=len(records)
+    )
 
 
 @app.get("/chat/history/{chat_id}", response_model=ChatDetailResponse)

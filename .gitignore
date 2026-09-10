@@ -18,6 +18,7 @@ dist/
 
 # 向量数据库
 data/chroma_db/
+data/audio_chroma/
 *.db
 
 # 测试
@@ -28,6 +29,7 @@ htmlcov/
 frontend/node_modules/
 frontend/dist/
 .vite/
+frontend/tsconfig.tsbuildinfo
 
 # 系统
 .DS_Store
