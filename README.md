@@ -20,6 +20,8 @@
 | 多轮对话 | 登录用户的 MySQL 会话记忆，支持同一会话中的指代追问 |
 | 本地图谱 | 65 节点、39 条关系，覆盖技艺、材料、工具、传承人、地域与朝代 |
 | v1.6 执行轨迹 | Router 输出 `rag / graph / hybrid`；Graph Agent 只读本地图谱；响应携带路线、轨迹与引用，Vue 可展开查看 |
+| v1.8 动态协作 | Router 选出的实际专家进行受上限约束的补充、质疑与回应；SSE 实时推送 DAG 节点、协作摘要与降级状态 |
+| v1.8 质量闭环 | 登录回答保存版本化规则评分；用户可点赞/点踩并补充意见；管理员可查看评估/反馈、配置内置专家 |
 | 多模态基础 | 图片/音频/文档上传、音频转写与检索、Redis 不可达时的内存降级 |
 
 ## 当前架构
@@ -27,9 +29,9 @@
 ```text
 Vue 3 → FastAPI → LangGraph Workflow
                     ├─ Router / Planner / 会话上下文
-                    ├─ Research：混合检索 + 三专家
+                    ├─ Research：混合检索 + 动态注册专家协作
                     ├─ Graph Agent：只读 data/heritage_graph.json
-                    └─ Answer：融合证据、引用与缺口提示
+                    └─ Answer：融合证据、引用、缺口提示与过程质量信号
                          │
               MySQL · ChromaDB · 本地图谱 · 本地媒体文件
 ```
@@ -69,6 +71,8 @@ npm run dev
 完整端点、请求模型与交互调试以 Swagger 为准：<http://127.0.0.1:8001/docs>。
 
 - `POST /query`：非遗问答；可选 `session_id` 继续登录用户会话。
+- `POST /feedback`：登录用户对自己的已保存回答点赞、点踩、补充意见或取消反馈。
+- `GET /admin/evaluations`、`GET /admin/feedback`、`GET/PATCH /admin/agents`：管理员质量回看与内置 Agent 配置。
 - `GET /graph/stats`、`GET /graph/visualize`：本地图谱统计与可视化。
 - `POST /media/upload`、`GET /search/audio`：媒体上传和音频文本检索。
 
@@ -91,6 +95,14 @@ python -m pytest tests/ --basetemp E:\temp\heritagemind-pytest
 
 本次 v1.6 迭代真实结果为 **154 passed, 1 skipped**。新增测试覆盖结构化 Router、Graph Agent、工作流路线和响应契约，且不依赖外网、API Key、Redis、BGE 或 Whisper。
 
+v1.8 已额外实际运行 `tests/test_v18_quality_feedback_admin.py`，结果为 **11 passed**；覆盖规则评分、反馈归属与更新、管理员权限、评价持久化、Agent 配置注入和全禁用安全回退。`npx vue-tsc --noEmit` 已通过。尚未把完整模型端到端质量测试或全量构建回归宣称为已完成。
+
+## v1.8 数据库迁移说明
+
+执行 `python -m alembic upgrade head` 创建 `answer_evaluations`、`user_feedback` 与 `agent_configurations`。Windows 本地如遇 `alembic.ini` 编码问题，当前配置已使用 ASCII 注释兼容系统 GBK。
+
+对于历史本地库：若已有部分 v1.5 表但没有 `alembic_version`，不能直接从空版本升级，否则会重复创建旧表。项目的 `004` 迁移会兼容补齐缺失的 `chat_history.session_id`；应先检查现有表结构后再执行版本登记与升级。
+
 ## 工程导航
 
 ```text
@@ -107,7 +119,7 @@ docs/             设计规格与项目文档
 
 ## 路线图
 
-已完成：用户与会话、混合检索、知识缺口检测、三专家协作、图片/音频/文档能力、本地图谱、v1.6 结构化路由与执行轨迹。
+已完成：用户与会话、混合检索、知识缺口检测、动态多专家协作、实时 DAG、图片/音频/文档能力、本地图谱、v1.6 结构化路由与执行轨迹、v1.8 质量反馈与 Agent 管理。
 
 后续方向：图像/音频理解、Reflection Agent、外部知识源、Agent 协作深化与反馈评估。未完成方向不作为当前能力承诺。
 
