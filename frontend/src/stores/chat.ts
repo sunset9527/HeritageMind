@@ -1,8 +1,9 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { sendQuery, streamQuery } from '@/api/query'
+import { streamQuery } from '@/api/query'
 import { getSessionMessages } from '@/api/chat'
-import type { ChatMessage, QueryResponse } from '@/types'
+import type { ChatMessage } from '@/types'
+import { reduceWorkflowEvent } from '@/utils/workflowRuntime'
 
 export const useChatStore = defineStore('chat', () => {
   const messages = ref<ChatMessage[]>([])
@@ -45,54 +46,54 @@ export const useChatStore = defineStore('chat', () => {
       timestamp: new Date().toISOString(),
     }
     messages.value.push(userMsg)
+    const assistantMsg: ChatMessage = {
+      id: crypto.randomUUID(),
+      role: 'assistant',
+      content: '正在分析…',
+      timestamp: new Date().toISOString(),
+      metadata: { sourceAgents: [], hasGaps: false, gapReport: '', citations: [], elapsedMs: 0, model: localStorage.getItem('hm_selected_model') || 'deepseek-chat' },
+    }
+    messages.value.push(assistantMsg)
 
     try {
-      const resp: QueryResponse = await sendQuery({
-        question,
-        user_profile: currentProfile.value,
-        include_narrative: includeNarrative.value,
-        craft_filter: currentCraft.value,
-        session_id: activeSessionId.value,
+      return await new Promise<ChatMessage>((resolve) => {
+        streamQuery(
+          {
+            question,
+            user_profile: currentProfile.value,
+            include_narrative: includeNarrative.value,
+            craft_filter: currentCraft.value,
+            session_id: activeSessionId.value,
+          },
+          (event) => {
+            streamSteps.value.push(event.msg)
+            assistantMsg.metadata!.realtimeWorkflow = reduceWorkflowEvent(assistantMsg.metadata!.realtimeWorkflow, event)
+          },
+          (event) => {
+            const elapsedMs = Math.round(performance.now() - t0)
+            assistantMsg.content = event.answer || '抱歉，未收到回答内容。'
+            assistantMsg.metadata!.sourceAgents = event.source_agents || []
+            assistantMsg.metadata!.hasGaps = event.has_gaps || false
+            assistantMsg.metadata!.gapReport = event.gap_report || ''
+            assistantMsg.metadata!.citations = event.citations || []
+            assistantMsg.metadata!.workflowTrace = event.workflow_trace || []
+            assistantMsg.metadata!.elapsedMs = elapsedMs
+            assistantMsg.metadata!.realtimeWorkflow = reduceWorkflowEvent(assistantMsg.metadata!.realtimeWorkflow, event)
+            if (typeof event.session_id === 'string') {
+              activeSessionId.value = event.session_id
+              assistantMsg.metadata!.sessionId = event.session_id
+            }
+            isSending.value = false
+            resolve(assistantMsg)
+          },
+          (err) => {
+            assistantMsg.content = `抱歉，请求失败：${err || '未知错误'}`
+            assistantMsg.metadata!.elapsedMs = Math.round(performance.now() - t0)
+            isSending.value = false
+            resolve(assistantMsg)
+          },
+        )
       })
-
-      const elapsedMs = Math.round(performance.now() - t0)
-
-      const assistantMsg: ChatMessage = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: resp.answer,
-        timestamp: new Date().toISOString(),
-        metadata: {
-          sourceAgents: resp.source_agents || [],
-          debateSession: resp.debate_session,
-          hasGaps: resp.has_gaps || false,
-          gapReport: resp.gap_report || '',
-          citations: resp.citations || [],
-          route: resp.metadata?.route,
-          workflowTrace: resp.metadata?.workflow_trace || [],
-          elapsedMs,
-          model: localStorage.getItem('hm_selected_model') || 'deepseek-chat',
-        },
-      }
-      messages.value.push(assistantMsg)
-      const sessionId = resp.metadata?.session_id
-      if (typeof sessionId === 'string') {
-        activeSessionId.value = sessionId
-        assistantMsg.metadata!.sessionId = sessionId
-      }
-      const preference = resp.metadata?.memory_preferences
-      if (preference) assistantMsg.metadata!.memoryPreferences = preference
-      return assistantMsg
-    } catch (e: any) {
-      const errorMsg: ChatMessage = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: `抱歉，请求失败：${e.message || '未知错误'}`,
-        timestamp: new Date().toISOString(),
-        metadata: { sourceAgents: [], hasGaps: false, gapReport: '', citations: [], elapsedMs: 0, model: '' },
-      }
-      messages.value.push(errorMsg)
-      return errorMsg
     } finally {
       isSending.value = false
     }

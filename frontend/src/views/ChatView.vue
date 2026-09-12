@@ -14,6 +14,7 @@ import DebateTimeline from '@/components/chat/DebateTimeline.vue'
 import CitationList from '@/components/chat/CitationList.vue'
 import MarkdownContent from '@/components/chat/MarkdownContent.vue'
 import WorkflowTrace from '@/components/chat/WorkflowTrace.vue'
+import RealtimeWorkflowDag from '@/components/chat/RealtimeWorkflowDag.vue'
 
 const chatStore = useChatStore()
 const auth = useAuthStore()
@@ -233,6 +234,10 @@ function agentChipIcon(id: string) { return chipColors[id]?.icon || '💬' }
               :route="msg.metadata.route"
               :trace="msg.metadata.workflowTrace"
               :citations="msg.metadata.citations || []"
+            />
+            <RealtimeWorkflowDag
+              v-if="msg.metadata?.realtimeWorkflow"
+              :workflow="msg.metadata.realtimeWorkflow"
             />
             <CitationList v-if="msg.metadata?.citations?.length" :citations="msg.metadata!.citations!" />
             <div v-if="msg.metadata?.elapsedMs" class="caption mb-4">

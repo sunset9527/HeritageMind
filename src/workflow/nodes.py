@@ -5,15 +5,11 @@
 import logging
 import time
 from typing import Dict, Any, List, Literal, Callable, Optional
-from langchain_openai import ChatOpenAI
-
-from config import settings, get_llm_config
+from config import settings
 from src.agents.dispatcher import DispatcherAgent
 from src.agents.graph_agent import GraphAgent
-from src.agents.craft_expert import CraftExpertAgent
-from src.agents.history_expert import HistoryExpertAgent
-from src.agents.heritage_expert import HeritageExpertAgent
-from src.agents.debate_engine import DebateEngine
+from src.agents.debate_engine import run_dynamic_collaboration
+from src.agents.registry import AgentRegistry, get_default_agent_registry
 from src.knowledge.gap_detector import KnowledgeGapDetector
 from src.knowledge.granularity import GranularityController
 from src.knowledge.narrative import NarrativeGenerator
@@ -23,6 +19,28 @@ from src.graph.heritage_graph import HeritageKnowledgeGraph
 from src.workflow.state import WorkflowState, AgentResponse
 
 logger = logging.getLogger(__name__)
+
+
+def emit_workflow_event(
+    state: Dict[str, Any], event: str, *, step: str, msg: str, payload: Optional[Dict[str, Any]] = None
+) -> None:
+    """Emit a request-scoped runtime event when the caller is streaming."""
+    emitter = state.get("runtime_emitter")
+    if emitter is not None:
+        emitter.emit(event, step=step, msg=msg, payload=payload)
+
+
+def build_expert_map(
+    registry: AgentRegistry,
+    required_experts: List[str],
+    *,
+    retriever: MultiSourceRetriever,
+) -> Dict[str, Any]:
+    """Instantiate only validated, Router-selected Agent definitions."""
+    return {
+        definition.id: definition.create(retriever=retriever)
+        for definition in registry.resolve(required_experts)
+    }
 
 
 def _apply_retrieval_query(state: WorkflowState, question: str) -> None:
@@ -195,6 +213,7 @@ def dispatch_to_experts_node(state: WorkflowState) -> WorkflowState:
         WorkflowState: 更新后的状态
     """
     try:
+        emit_workflow_event(state, "node_started", step="dispatch_to_experts", msg="开始调度专家")
         required_experts = state.get("required_experts", [])
         question = state["question"]
         context = {
@@ -227,18 +246,36 @@ def dispatch_to_experts_node(state: WorkflowState) -> WorkflowState:
             except Exception as e:
                 logger.warning(f"层级聚合检索失败（不影响主流程）: {e}")
 
-        # 根据需要的专家，初始化对应的Agent
-        expert_map = {
-            "craft_expert": CraftExpertAgent(retriever=retriever),
-            "history_expert": HistoryExpertAgent(retriever=retriever),
-            "heritage_expert": HeritageExpertAgent(retriever=retriever)
-        }
+        # 根据 Router 的已验证结果实例化参与者；新增注册 Agent 无需修改此节点。
+        expert_map = build_expert_map(
+            get_default_agent_registry(), required_experts, retriever=retriever
+        )
+        dynamic_nodes = [
+            {"id": f"agent:{name}", "label": definition.display_name, "icon": definition.icon}
+            for name in expert_map
+            for definition in get_default_agent_registry().resolve([name])
+        ]
+        dynamic_edges = [
+            {"source": "dispatch_to_experts", "target": f"agent:{name}"}
+            for name in expert_map
+        ] + [
+            {"source": f"agent:{name}", "target": "collect_responses"}
+            for name in expert_map
+        ]
+        emit_workflow_event(
+            state,
+            "workflow_graph_updated",
+            step="dispatch_to_experts",
+            msg="已确定参与专家",
+            payload={"nodes": dynamic_nodes, "edges": dynamic_edges},
+        )
 
         # 分派问题
         responses = {}
         for expert_name in required_experts:
             if expert_name in expert_map:
                 logger.info(f"调用 {expert_name}...")
+                emit_workflow_event(state, "node_started", step=f"agent:{expert_name}", msg=f"{expert_name} 正在分析")
                 try:
                     agent = expert_map[expert_name]
                     result = agent.process(question, context, search_query=sq)
@@ -254,6 +291,12 @@ def dispatch_to_experts_node(state: WorkflowState) -> WorkflowState:
                         success=result.get("success", False),
                         metadata=result
                     )
+                    emit_workflow_event(
+                        state,
+                        "node_completed" if result.get("success", False) else "node_fallback",
+                        step=f"agent:{expert_name}",
+                        msg=f"{expert_name} {'完成' if result.get('success', False) else '未能完成，已降级'}",
+                    )
                 except Exception as e:
                     logger.error(f"专家 {expert_name} 处理失败: {e}")
                     responses[expert_name] = AgentResponse(
@@ -262,16 +305,19 @@ def dispatch_to_experts_node(state: WorkflowState) -> WorkflowState:
                         success=False,
                         metadata={"error": str(e)}
                     )
+                    emit_workflow_event(state, "node_fallback", step=f"agent:{expert_name}", msg=f"{expert_name} 调用失败")
         
         state["expert_responses"] = {
             name: resp.model_dump() for name, resp in responses.items()
         }
         
         logger.info(f"专家响应收集完成: {len(responses)}个")
+        emit_workflow_event(state, "node_completed", step="dispatch_to_experts", msg="专家分派完成")
         
     except Exception as e:
         logger.error(f"专家分派失败: {e}")
         state["errors"].append(f"专家分派错误: {str(e)}")
+        emit_workflow_event(state, "node_fallback", step="dispatch_to_experts", msg="专家分派失败")
     
     return state
 
@@ -350,47 +396,76 @@ def fuse_knowledge_node(state: WorkflowState) -> WorkflowState:
         except Exception as e:
             logger.warning(f"辩论模式判断失败: {e}")
         
-        if should_debate and len(responses) >= 2:
-            logger.info(f"使用辩论模式融合: {debate_mode}")
+        if should_debate and len(response_dict) >= 2:
+            logger.info("使用 v1.8 动态协作融合")
             state["use_debate"] = True
-            state["debate_mode"] = debate_mode
+            state["debate_mode"] = "dynamic"
             
-            # 初始化Agent实例用于辩论引擎
+            # 只实例化本次 Router 选中的专家。协作器只消费首轮回答，不会再次检索。
             retriever = MultiSourceRetriever()
-            agents = {
-                "craft_expert": CraftExpertAgent(retriever=retriever),
-                "history_expert": HistoryExpertAgent(retriever=retriever),
-                "heritage_expert": HeritageExpertAgent(retriever=retriever)
-            }
-            
-            # 初始化辩论引擎
-            debate_engine = DebateEngine(agents=agents)
+            registry = get_default_agent_registry()
+            agents = build_expert_map(registry, list(response_dict), retriever=retriever)
+
+            def on_collaboration_message(message: Any) -> None:
+                emit_workflow_event(
+                    state,
+                    "agent_message",
+                    step="collaborate",
+                    msg="专家协作中",
+                    payload={
+                        "from_agent": message.from_agent,
+                        "to_agent": message.to_agent,
+                        "kind": message.kind,
+                        "summary": message.summary,
+                    },
+                )
             
             try:
-                # 运行完整辩论
-                debate_session = debate_engine.run_full_debate(
+                emit_workflow_event(state, "node_started", step="collaborate", msg="专家正在互相补充与质疑")
+                collaboration = run_dynamic_collaboration(
                     question=question,
-                    mode=debate_mode,
-                    context={
-                        "analysis": question_analysis,
-                        "initial_responses": response_dict
-                    }
+                    initial_responses=response_dict,
+                    agents=agents,
+                    max_messages=settings.collaboration_max_messages,
+                    on_message=on_collaboration_message,
                 )
-                
-                # 存储辩论结果
-                state["debate_session"] = debate_session.to_dict()
-                state["fused_content"] = debate_session.final_synthesis
-                
-                # 添加关键洞见到metadata
-                if debate_session.key_insights:
-                    state["metadata"]["key_insights"] = debate_session.key_insights
-                
-                logger.info("辩论融合完成")
-                
+                response_dict = collaboration.responses
+                state["collaboration_messages"] = [message.__dict__ for message in collaboration.messages]
+                state["debate_session"] = {
+                    "question": question,
+                    "debate_mode": "dynamic",
+                    "rounds": [
+                        {
+                            "round_num": index + 1,
+                            "agent_name": message.from_agent,
+                            "agent_avatar": next(
+                                (definition.icon for definition in registry.resolve([message.from_agent])), "💬"
+                            ),
+                            "role": {"challenge": "质疑", "response": "回应", "supplement": "补充", "agree": "认同"}[message.kind],
+                            "content": message.summary,
+                            "references": [],
+                        }
+                        for index, message in enumerate(collaboration.messages)
+                    ],
+                    "final_synthesis": "",
+                    "key_insights": [],
+                }
+                for agent_name in dict.fromkeys(collaboration.fallback_agents):
+                    emit_workflow_event(
+                        state,
+                        "node_fallback",
+                        step=f"agent:{agent_name}",
+                        msg=f"{agent_name} 协作失败，保留首轮回答",
+                    )
+                emit_workflow_event(state, "node_completed", step="collaborate", msg="专家协作完成")
+                state["fused_content"] = dispatcher.fuse_responses(
+                    response_dict, question, plan_outline=_plan_outline_text(state)
+                )
             except Exception as e:
-                logger.error(f"辩论融合失败: {e}")
+                logger.error(f"动态协作失败: {e}")
                 state["use_debate"] = False
                 state["debate_session"] = None
+                emit_workflow_event(state, "node_fallback", step="collaborate", msg="协作失败，使用普通融合")
                 # 降级到普通融合
                 fused = dispatcher.fuse_responses(
                     response_dict, question, plan_outline=_plan_outline_text(state)
@@ -408,11 +483,11 @@ def fuse_knowledge_node(state: WorkflowState) -> WorkflowState:
         # 记录参与的Agent
         state["source_agents"] = [
             {
-                "id": name,
-                "type": _get_agent_type(name),
-                "contribution": "提供专业知识"
+                "id": definition.id,
+                "type": definition.display_name,
+                "contribution": definition.capability,
             }
-            for name in responses.keys()
+            for definition in get_default_agent_registry().resolve(responses.keys())
         ]
         
         logger.info("知识融合完成")

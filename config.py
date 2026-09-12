@@ -245,6 +245,12 @@ class Settings(BaseSettings):
         le=10,
         description="辩论最大轮次，超过此轮次提前结束"
     )
+    collaboration_max_messages: int = Field(
+        default=3,
+        ge=1,
+        le=10,
+        description="v1.8 动态协作的最大可见消息数，限制额外模型调用"
+    )
     debate_history_chars: int = Field(
         default=800,
         ge=50,

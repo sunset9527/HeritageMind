@@ -1,5 +1,5 @@
 import client from './client'
-import type { QueryRequest, QueryResponse } from '@/types'
+import type { QueryRequest, QueryResponse, WorkflowSseEvent } from '@/types'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api'
 
@@ -27,8 +27,8 @@ export async function sendQuerySimple(
 /** SSE 流式查询 — 返回每一步进度 */
 export function streamQuery(
   request: QueryRequest,
-  onStep: (step: string, msg: string) => void,
-  onDone: (answer: string, agents: any[], hasGaps: boolean, gapReport: string) => void,
+  onEvent: (event: WorkflowSseEvent) => void,
+  onDone: (event: WorkflowSseEvent) => void,
   onError: (err: string) => void,
 ): AbortController {
   const controller = new AbortController()
@@ -66,13 +66,13 @@ export function streamQuery(
           const data = line.slice(6)
           if (data === '[DONE]') continue
           try {
-            const event = JSON.parse(data)
-            if (event.step === 'done') {
-              onDone(event.answer, event.source_agents || [], event.has_gaps || false, event.gap_report || '')
+            const event = JSON.parse(data) as WorkflowSseEvent
+            if (event.event === 'done' || event.step === 'done') {
+              onDone(event)
             } else if (event.step === 'error') {
               onError(event.msg)
             } else {
-              onStep(event.step, event.msg)
+              onEvent(event)
             }
           } catch { /* skip parse errors */ }
         }
@@ -84,4 +84,3 @@ export function streamQuery(
 
   return controller
 }
-

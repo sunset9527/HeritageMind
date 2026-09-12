@@ -8,6 +8,8 @@ from .craft_expert import CraftExpertAgent
 from .history_expert import HistoryExpertAgent
 from .heritage_expert import HeritageExpertAgent
 from .debate_engine import DebateEngine, DebateRound, DebateSession
+from .graph_agent import GraphAgent
+from .registry import AgentDefinition, AgentRegistry, get_default_agent_registry
 
 __all__ = [
     "DispatcherAgent",
@@ -17,7 +19,8 @@ __all__ = [
     "DebateEngine",
     "DebateRound",
     "DebateSession",
+    "GraphAgent",
+    "AgentDefinition",
+    "AgentRegistry",
+    "get_default_agent_registry",
 ]
-from .graph_agent import GraphAgent
-
-__all__ = ["GraphAgent"]

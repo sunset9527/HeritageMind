@@ -45,7 +45,7 @@ export interface DebateRound {
 
 export interface DebateSession {
   question: string
-  debate_mode: 'progressive' | 'parallel' | 'multi_perspective'
+  debate_mode: 'progressive' | 'parallel' | 'multi_perspective' | 'dynamic'
   rounds: DebateRound[]
   final_synthesis: string
   key_insights: string[]
@@ -69,6 +69,56 @@ export interface WorkflowTraceEntry {
   status: 'completed' | 'skipped' | 'fallback'
   elapsed_ms: number
   message: string
+}
+
+export type WorkflowNodeStatus = 'pending' | 'running' | 'completed' | 'skipped' | 'fallback'
+
+export interface RealtimeWorkflowNode {
+  id: string
+  label: string
+  icon?: string
+  status: WorkflowNodeStatus
+}
+
+export interface RealtimeWorkflowEdge {
+  source: string
+  target: string
+}
+
+export interface CollaborationMessage {
+  from_agent: string
+  to_agent: string
+  kind: 'supplement' | 'challenge' | 'response' | 'agree'
+  summary: string
+}
+
+export interface RealtimeWorkflow {
+  runId: string
+  nodes: RealtimeWorkflowNode[]
+  edges: RealtimeWorkflowEdge[]
+  messages: CollaborationMessage[]
+  completed: boolean
+}
+
+export interface WorkflowSseEvent {
+  event?: string
+  run_id?: string
+  step: string
+  msg: string
+  nodes?: Array<{ id: string; label: string; icon?: string }>
+  edges?: RealtimeWorkflowEdge[]
+  from_agent?: string
+  to_agent?: string
+  kind?: CollaborationMessage['kind']
+  summary?: string
+  answer?: string
+  source_agents?: SourceAgent[]
+  has_gaps?: boolean
+  gap_report?: string
+  session_id?: string | null
+  workflow_trace?: WorkflowTraceEntry[]
+  citations?: Citation[]
+  collaboration_messages?: CollaborationMessage[]
 }
 
 export interface QueryResponse {
@@ -204,6 +254,7 @@ export interface ChatMessage {
     memoryPreferences?: { preferred_crafts: string[]; preferred_profile?: string | null }
     route?: WorkflowRoute
     workflowTrace?: WorkflowTraceEntry[]
+    realtimeWorkflow?: RealtimeWorkflow
   }
 }
 

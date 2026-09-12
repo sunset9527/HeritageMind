@@ -4,6 +4,7 @@ FastAPI后端服务 - 非遗知识问答系统API
 
 import asyncio
 import logging
+from uuid import uuid4
 from typing import Optional, List, Dict, Any
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Depends, Header, status, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,6 +18,7 @@ from sqlalchemy.orm import Session
 from config import settings
 from src.workflow.graph import HeritageWorkflowGraph, get_workflow
 from src.workflow.state import QueryRequest, QueryResponse, state_to_response, create_initial_state
+from src.workflow.events import WorkflowEventEmitter, build_base_workflow_graph, create_runtime_event
 from src.graph.heritage_graph import HeritageKnowledgeGraph
 from src.graph.builder import KnowledgeGraphBuilder
 from src.retrieval.document_loader import HeritageDocumentLoader
@@ -455,7 +457,15 @@ async def query_stream(
 
             yield f"data: {_json.dumps({'step': 'start', 'msg': '开始分析问题...'}, ensure_ascii=False)}\n\n"
 
-            # 使用 astream 获取每一步状态
+            # v1.8：节点内事件从工作线程安全转入 asyncio 队列，协作消息无需等待整张图结束。
+            event_queue: asyncio.Queue = asyncio.Queue()
+            loop = asyncio.get_running_loop()
+            run_id = uuid4().hex
+
+            def enqueue_runtime_event(event: Dict[str, Any]) -> None:
+                loop.call_soon_threadsafe(event_queue.put_nowait, event)
+
+            emitter = WorkflowEventEmitter(run_id, enqueue_runtime_event)
             initial_state = create_initial_state(
                 question=request.question,
                 user_profile=request.user_profile,
@@ -463,6 +473,7 @@ async def query_stream(
                 thread_id=chat_session.id if chat_session else None,
                 conversation_context=conversation_context,
                 memory_preferences=memory_preferences,
+                runtime_emitter=emitter,
             )
             graph_config = {"configurable": {"thread_id": chat_session.id}} if chat_session else None
 
@@ -476,12 +487,33 @@ async def query_stream(
                 "generate_response": "生成最终回答...",
             }
 
-            final = None
-            async for chunk in workflow.graph.astream(initial_state, config=graph_config):
-                for node_name, state_val in chunk.items():
-                    label = step_names.get(node_name, node_name)
-                    yield f"data: {_json.dumps({'step': node_name, 'msg': label}, ensure_ascii=False)}\n\n"
-                    final = state_val
+            emitter.emit(
+                "workflow_started",
+                step="start",
+                msg="开始分析问题",
+                payload={"nodes": build_base_workflow_graph()["nodes"], "edges": build_base_workflow_graph()["edges"]},
+            )
+
+            def run_workflow() -> Optional[Dict[str, Any]]:
+                final_state = None
+                for chunk in workflow.graph.stream(initial_state, config=graph_config):
+                    for node_name, state_val in chunk.items():
+                        final_state = state_val
+                        emitter.emit(
+                            "node_completed",
+                            step=node_name,
+                            msg=step_names.get(node_name, node_name),
+                        )
+                return final_state
+
+            worker = asyncio.create_task(asyncio.to_thread(run_workflow))
+            while not worker.done() or not event_queue.empty():
+                try:
+                    event = await asyncio.wait_for(event_queue.get(), timeout=0.1)
+                    yield f"data: {_json.dumps(event, ensure_ascii=False)}\n\n"
+                except asyncio.TimeoutError:
+                    continue
+            final = await worker
 
             if final:
                 resp = state_to_response(final)
@@ -500,12 +532,28 @@ async def query_stream(
                         )
                     except Exception as e:
                         logger.warning(f"保存流式会话记忆失败（不影响响应）: {e}")
-                yield f"data: {_json.dumps({'step': 'done', 'answer': resp.answer, 'source_agents': resp.source_agents, 'has_gaps': resp.has_gaps, 'gap_report': resp.gap_report, 'session_id': chat_session.id if chat_session else None}, ensure_ascii=False)}\n\n"
+                done_event = create_runtime_event(
+                    "done",
+                    run_id=run_id,
+                    step="done",
+                    msg="回答生成完成",
+                    payload={
+                        "answer": resp.answer,
+                        "source_agents": resp.source_agents,
+                        "has_gaps": resp.has_gaps,
+                        "gap_report": resp.gap_report,
+                        "session_id": chat_session.id if chat_session else None,
+                        "workflow_trace": resp.metadata.get("workflow_trace", []),
+                        "citations": resp.citations,
+                        "collaboration_messages": final.get("collaboration_messages", []) if final else [],
+                    },
+                )
+                yield f"data: {_json.dumps(done_event, ensure_ascii=False)}\n\n"
 
             yield "data: [DONE]\n\n"
 
         except Exception as e:
-            yield f"data: {_json.dumps({'step': 'error', 'msg': str(e)}, ensure_ascii=False)}\n\n"
+            yield f"data: {_json.dumps({'event': 'error', 'step': 'error', 'msg': str(e)}, ensure_ascii=False)}\n\n"
 
         finally:
             # v1.4 顺带修复：流式请求（含异常 / 客户端中断提前关闭生成器）结束后清除请求级 API 覆盖

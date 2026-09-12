@@ -18,6 +18,7 @@ from src.utils.prompts import (
     get_fusion_prompt,
 )
 from src.utils.llm import create_llm
+from src.agents.registry import AgentRegistry, get_default_agent_registry
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +72,17 @@ QUESTION_ANALYSIS_TOOL = {
 }
 
 
+def build_question_analysis_tool(registry: AgentRegistry) -> dict:
+    """Build the Router tool schema from the currently registered Agent IDs."""
+    from copy import deepcopy
+
+    tool = deepcopy(QUESTION_ANALYSIS_TOOL)
+    items = tool["function"]["parameters"]["properties"]["required_experts"]["items"]
+    items["enum"] = list(registry.ids)
+    items["description"] = f"可参与的专家：{' / '.join(registry.ids)}"
+    return tool
+
+
 # Planner 工具 schema（裸 dict 以固定工具名 create_plan）
 QUESTION_PLAN_TOOL = {
     "type": "function",
@@ -113,7 +125,12 @@ class DispatcherAgent:
         "heritage_expert": "传承现状Agent",
     }
     
-    def __init__(self, llm: Optional[Any] = None, debate_engine: Optional[Any] = None):
+    def __init__(
+        self,
+        llm: Optional[Any] = None,
+        debate_engine: Optional[Any] = None,
+        agent_registry: Optional[AgentRegistry] = None,
+    ):
         """
         初始化调度Agent
         
@@ -128,9 +145,14 @@ class DispatcherAgent:
 
         self.system_prompt = DISPATCHER_SYSTEM_PROMPT
         self.debate_engine = debate_engine
+        self.agent_registry = agent_registry or get_default_agent_registry()
 
         # 原生 function calling：绑定单一路由工具；不支持 bind_tools 的端点退回裸 llm
-        self.router_llm = self.llm.bind_tools([QUESTION_ANALYSIS_TOOL]) if hasattr(self.llm, "bind_tools") else self.llm
+        self.router_llm = (
+            self.llm.bind_tools([build_question_analysis_tool(self.agent_registry)])
+            if hasattr(self.llm, "bind_tools")
+            else self.llm
+        )
         # Planner：绑定 create_plan 工具；不支持 bind_tools 的端点退回裸 llm
         self.planner_llm = self.llm.bind_tools([QUESTION_PLAN_TOOL]) if hasattr(self.llm, "bind_tools") else self.llm
     def analyze_question(self, question: str, conversation_context: Optional[str] = None) -> QuestionAnalysis:
@@ -178,8 +200,7 @@ class DispatcherAgent:
         logger.warning("路由无法解析 LLM 输出，使用关键词回退")
         return self._fallback_analysis(question)
 
-    @staticmethod
-    def _parse_content_analysis(question: str, content: str) -> Optional[QuestionAnalysis]:
+    def _parse_content_analysis(self, question: str, content: str) -> Optional[QuestionAnalysis]:
         """
         从 LLM 的 content 文本解析 JSON 分析结果（兼容 markdown 代码块）。
         解析/结构非法返回 None（由调用方决定降级路径）。
@@ -199,15 +220,14 @@ class DispatcherAgent:
             return None
         if not isinstance(data, dict):
             return None
-        return DispatcherAgent._build_analysis(question, data)
+        return self._build_analysis(question, data)
 
-    @staticmethod
-    def _build_analysis(question: str, data: dict) -> Optional[QuestionAnalysis]:
+    def _build_analysis(self, question: str, data: dict) -> Optional[QuestionAnalysis]:
         """
         把 LLM 返回的 args/JSON 清洗为 QuestionAnalysis。
         清洗后 required_experts 为空返回 None（触发关键词回退）；complexity 非法时按专家数回推。
         """
-        required = DispatcherAgent._normalize_experts(data.get("required_experts"))
+        required = self._normalize_experts(data.get("required_experts"))
         if not required:
             return None
         complexity = str(data.get("complexity", "") or "")
@@ -232,18 +252,9 @@ class DispatcherAgent:
             route_reason=str(data.get("route_reason", "") or ""),
         )
 
-    @staticmethod
-    def _normalize_experts(required) -> List[str]:
-        """白名单清洗：只保留已知三类专家 token，去重且保持出现顺序。"""
-        known = {"craft_expert", "history_expert", "heritage_expert"}
-        result = []
-        seen = set()
-        for token in required or []:
-            name = str(token).strip()
-            if name in known and name not in seen:
-                seen.add(name)
-                result.append(name)
-        return result
+    def _normalize_experts(self, required) -> List[str]:
+        """白名单清洗：只保留当前注册的 Agent，去重且保持出现顺序。"""
+        return [definition.id for definition in self.agent_registry.resolve(required or [])]
     
     def _fallback_analysis(self, question: str) -> QuestionAnalysis:
         """

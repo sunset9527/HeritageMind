@@ -5,7 +5,7 @@
 import json
 import logging
 from dataclasses import dataclass, field, asdict
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Callable, Dict, List, Optional, Any, Tuple
 from src.utils.llm import create_llm
 
 from config import settings, get_llm_config
@@ -54,6 +54,115 @@ class DebateSession:
             "final_synthesis": self.final_synthesis,
             "key_insights": self.key_insights
         }
+
+
+@dataclass(frozen=True)
+class CollaborationAction:
+    """One runtime-planned, user-visible message between two participating Agents."""
+
+    from_agent: str
+    to_agent: str
+    kind: str
+
+
+@dataclass(frozen=True)
+class CollaborationMessage:
+    """A short, user-safe representation of one completed collaboration action."""
+
+    from_agent: str
+    to_agent: str
+    kind: str
+    summary: str
+
+
+@dataclass
+class DynamicCollaborationResult:
+    """Revised expert responses plus visible messages and safe fallback metadata."""
+
+    responses: Dict[str, str]
+    messages: List[CollaborationMessage] = field(default_factory=list)
+    fallback_agents: List[str] = field(default_factory=list)
+
+
+def build_collaboration_plan(
+    participants: List[str], *, max_messages: int
+) -> List[CollaborationAction]:
+    """Create a bounded plan from the actual Router-selected participants.
+
+    The plan contains no expert-specific ordering; it only preserves Router order.
+    """
+    ordered = list(dict.fromkeys(participants))
+    if len(ordered) < 2 or max_messages <= 0:
+        return []
+
+    actions: List[CollaborationAction] = [
+        CollaborationAction(ordered[0], ordered[1], "challenge"),
+        CollaborationAction(ordered[1], ordered[0], "response"),
+    ]
+    for participant in ordered[2:]:
+        actions.extend(
+            (
+                CollaborationAction(participant, ordered[0], "supplement"),
+                CollaborationAction(ordered[0], participant, "agree"),
+            )
+        )
+    return actions[:max_messages]
+
+
+def _user_safe_summary(content: Any, limit: int = 240) -> str:
+    text = " ".join(str(content or "").split())
+    return text[:limit] + ("…" if len(text) > limit else "")
+
+
+def run_dynamic_collaboration(
+    *,
+    question: str,
+    initial_responses: Dict[str, str],
+    agents: Dict[str, Any],
+    max_messages: int,
+    on_message: Optional[Callable[[CollaborationMessage], None]] = None,
+) -> DynamicCollaborationResult:
+    """Let the Router-selected Agents challenge or extend existing answers.
+
+    This function deliberately receives existing answers instead of a Retriever, so
+    collaboration cannot create another retrieval pass.
+    """
+    responses = dict(initial_responses)
+    result = DynamicCollaborationResult(responses=responses)
+    for action in build_collaboration_plan(list(responses), max_messages=max_messages):
+        agent = agents.get(action.from_agent)
+        llm = getattr(agent, "llm", None)
+        if llm is None:
+            result.fallback_agents.append(action.from_agent)
+            continue
+
+        prompt = (
+            f"用户问题：{question}\n"
+            f"你的已有回答：{responses.get(action.from_agent, '')}\n"
+            f"对方（{action.to_agent}）的回答：{responses.get(action.to_agent, '')}\n"
+            f"协作动作：{action.kind}。请只补充、质疑或回应可由已有资料支持的内容，"
+            "不要编造来源，并给出简短的修订回答。"
+        )
+        try:
+            response = llm.invoke(prompt)
+            content = getattr(response, "content", response)
+            text = str(content or "").strip()
+            if not text:
+                raise ValueError("协作 Agent 返回空内容")
+            responses[action.from_agent] = text
+            message = CollaborationMessage(
+                from_agent=action.from_agent,
+                to_agent=action.to_agent,
+                kind=action.kind,
+                summary=_user_safe_summary(text),
+            )
+            result.messages.append(message)
+            if on_message is not None:
+                on_message(message)
+        except Exception as exc:
+            logger.warning("协作 Agent %s 失败，降级到首轮回答：%s", action.from_agent, exc)
+            result.fallback_agents.append(action.from_agent)
+    return result
 
 
 class DebateEngine:

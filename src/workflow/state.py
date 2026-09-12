@@ -2,8 +2,9 @@
 工作流状态定义 - LangGraph状态模型
 """
 
-from typing import Dict, List, Optional, Any, TypedDict, Literal
+from typing import Dict, List, Optional, Any, TypedDict
 from pydantic import BaseModel, Field
+from src.workflow.events import create_runtime_event
 
 
 class AgentResponse(BaseModel):
@@ -38,6 +39,8 @@ class WorkflowState(TypedDict):
     thread_id: Optional[str] = Field(default=None, description="会话线程ID（v1.5 MySQL 会话标识）")
     conversation_context: str = Field(default="", description="同一会话的近期问答上下文")
     memory_preferences: Dict[str, Any] = Field(default_factory=dict, description="用户已学习偏好")
+    run_id: str = Field(default="", description="仅本次实时工作流使用的运行标识")
+    runtime_emitter: Any = Field(default=None, description="仅本次请求使用的实时事件发射器")
     
     # === 问题分析 ===
     question_analysis: Optional[Dict[str, Any]] = Field(default=None, description="问题分析结果")
@@ -68,6 +71,7 @@ class WorkflowState(TypedDict):
     use_debate: bool = Field(default=False, description="是否使用辩论模式")
     debate_session: Optional[Dict[str, Any]] = Field(default=None, description="辩论会话结果")
     debate_mode: str = Field(default="", description="辩论模式")
+    collaboration_messages: List[Dict[str, str]] = Field(default_factory=list, description="v1.8 可展示的专家协作摘要")
     
     # === 知识缺口检测 ===
     gap_detection: Optional[Dict[str, Any]] = Field(default=None, description="缺口检测结果")
@@ -134,6 +138,7 @@ def create_initial_state(
     thread_id: Optional[str] = None,
     conversation_context: str = "",
     memory_preferences: Optional[Dict[str, Any]] = None,
+    runtime_emitter: Any = None,
 ) -> WorkflowState:
     """
     创建初始工作流状态
@@ -152,6 +157,8 @@ def create_initial_state(
         thread_id=thread_id,
         conversation_context=conversation_context,
         memory_preferences=memory_preferences or {},
+        run_id=getattr(runtime_emitter, "run_id", ""),
+        runtime_emitter=runtime_emitter,
         include_narrative=include_narrative,
         question_analysis=None,
         required_experts=[],
@@ -171,6 +178,7 @@ def create_initial_state(
         use_debate=False,
         debate_session=None,
         debate_mode="",
+        collaboration_messages=[],
         gap_detection=None,
         has_gaps=False,
         gap_report="",
