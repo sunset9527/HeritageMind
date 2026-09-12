@@ -78,6 +78,8 @@ from src.models.favorite import Favorite
 from src.models.platform import CraftEntry, GraphChangeCandidate, InheritorProfile, SourceEvidence
 from src.services.graph_curation import merge_approved_candidate
 from src.services.platform_content import approve_graph_candidate
+from src.services.ai_search import AiSearchService
+from src.services.mcp_tools import search_web
 from src.retrieval.multimodal_search import search_images_by_text, search_similar_images, index_all_images
 from src.utils.llm import set_request_override, clear_request_override
 
@@ -1640,6 +1642,20 @@ async def list_encyclopedia(db: Session = Depends(get_db)):
     """List only published craft entries for the public encyclopedia."""
     rows = db.query(CraftEntry).filter(CraftEntry.status == "published").order_by(CraftEntry.name).all()
     return {"items": [{"name": row.name, "slug": row.slug, "summary": row.summary} for row in rows]}
+
+
+@app.post("/search/ai")
+async def ai_search(request: GraphQueryRequest, db: Session = Depends(get_db)):
+    """Aggregate local evidence first; optional Web search is explicitly degradable."""
+    if retriever is None or knowledge_graph is None:
+        raise HTTPException(status_code=503, detail="检索服务尚未初始化")
+    service = AiSearchService(
+        retrieve=lambda query: retriever.retrieve(query),
+        graph=lambda query: {"nodes": knowledge_graph.search_nodes(query), "edges": []},
+        media=lambda query: search_images_by_text(db, query),
+        optional_tools={"web": lambda query: search_web(query, endpoint="", api_key="")},
+    )
+    return await service.search(request.query)
 
 
 @app.get("/encyclopedia/{slug}")

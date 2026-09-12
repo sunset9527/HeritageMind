@@ -6,4 +6,4 @@ def test_platform_routes_are_registered():
 
     paths = {route.path for route in app.routes}
 
-    assert {"/encyclopedia", "/encyclopedia/{slug}", "/inheritors", "/inheritors/{slug}", "/admin/graph-candidates"} <= paths
+    assert {"/encyclopedia", "/encyclopedia/{slug}", "/inheritors", "/inheritors/{slug}", "/admin/graph-candidates", "/search/ai"} <= paths
