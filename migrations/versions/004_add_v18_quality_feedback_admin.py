@@ -16,6 +16,17 @@ depends_on = None
 
 
 def upgrade() -> None:
+    # Some pre-Alembic local databases already have the v1.5 tables but missed
+    # chat_history.session_id. Repair that known partial schema before v1.8.
+    inspector = sa.inspect(op.get_bind())
+    chat_columns = {column["name"] for column in inspector.get_columns("chat_history")}
+    if "session_id" not in chat_columns:
+        with op.batch_alter_table("chat_history") as batch_op:
+            batch_op.add_column(sa.Column("session_id", sa.String(length=36), nullable=True))
+            batch_op.create_index("ix_chat_history_session_id", ["session_id"])
+            batch_op.create_foreign_key(
+                "fk_chat_history_session_id", "chat_sessions", ["session_id"], ["id"], ondelete="SET NULL"
+            )
     op.create_table(
         "answer_evaluations",
         sa.Column("id", sa.Integer(), nullable=False),
