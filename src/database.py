@@ -53,6 +53,7 @@ def init_db():
     """
     from src.models import (  # noqa: F401 - 确保模型被注册
         User, ChatHistory, AnswerEvaluation, UserFeedback, AgentConfiguration,
+        CraftEntry, InheritorProfile, SourceEvidence, GraphChangeCandidate, AuditLog,
     )
     Base.metadata.create_all(bind=engine)
     logger.info("数据库表创建完成")

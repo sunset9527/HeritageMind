@@ -21,6 +21,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '知识图谱' },
   },
   {
+    path: '/encyclopedia', name: 'encyclopedia', component: () => import('@/views/EncyclopediaView.vue'), meta: { title: '技艺百科' },
+  },
+  {
+    path: '/inheritors', name: 'inheritors', component: () => import('@/views/InheritorListView.vue'), meta: { title: '传承人档案' },
+  },
+  {
     path: '/media',
     name: 'media',
     component: () => import('@/views/MediaView.vue'),

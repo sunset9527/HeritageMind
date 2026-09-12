@@ -11,6 +11,8 @@ const navLinks = [
   { path: '/', label: '首页' },
   { path: '/chat', label: '问答' },
   { path: '/graph', label: '图谱' },
+  { path: '/encyclopedia', label: '百科' },
+  { path: '/inheritors', label: '传承人' },
   { path: '/media', label: '媒体' },
   { path: '/settings', label: '设置' },
 ]

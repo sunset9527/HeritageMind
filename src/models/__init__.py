@@ -15,6 +15,7 @@ from src.models.media import MediaDocument
 
 from src.models.favorite import Favorite
 from src.models.audio_transcript import AudioTranscript, AudioTranscriptStatus
+from src.models.platform import AuditLog, CraftEntry, GraphChangeCandidate, InheritorProfile, SourceEvidence
 
 __all__ = [
     "Base",
@@ -30,4 +31,9 @@ __all__ = [
     "Favorite",
     "AudioTranscript",
     "AudioTranscriptStatus",
+    "AuditLog",
+    "CraftEntry",
+    "GraphChangeCandidate",
+    "InheritorProfile",
+    "SourceEvidence",
 ]

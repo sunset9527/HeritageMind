@@ -140,6 +140,15 @@ class TestPlanNodeAndHelpers:
         plan = QuestionPlan(aspects=["工艺", "历史"], outline="先工艺后历史")
 
         class _FakeDispatcher:
+            def __init__(self, **_kwargs):
+                pass
+
+            def __init__(self, **_kwargs):
+                pass
+
+            def __init__(self, **_kwargs):
+                pass
+
             def plan_question(self, **kwargs):
                 return plan
 
@@ -151,6 +160,15 @@ class TestPlanNodeAndHelpers:
 
     def test_plan_node_none_degrades(self, monkeypatch):
         class _FakeDispatcher:
+            def __init__(self, **_kwargs):
+                pass
+
+            def __init__(self, **_kwargs):
+                pass
+
+            def __init__(self, **_kwargs):
+                pass
+
             def plan_question(self, **kwargs):
                 return None
 
@@ -161,6 +179,15 @@ class TestPlanNodeAndHelpers:
 
     def test_plan_node_exception_degrades(self, monkeypatch):
         class _FakeDispatcher:
+            def __init__(self, **_kwargs):
+                pass
+
+            def __init__(self, **_kwargs):
+                pass
+
+            def __init__(self, **_kwargs):
+                pass
+
             def plan_question(self, **kwargs):
                 raise RuntimeError("LLM 挂了")
 

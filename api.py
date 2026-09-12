@@ -75,6 +75,9 @@ from src.services.cache import get_qa_cache
 from src.services.queue import close_redis
 from src.services.document_parser import parse_document
 from src.models.favorite import Favorite
+from src.models.platform import CraftEntry, GraphChangeCandidate, InheritorProfile, SourceEvidence
+from src.services.graph_curation import merge_approved_candidate
+from src.services.platform_content import approve_graph_candidate
 from src.retrieval.multimodal_search import search_images_by_text, search_similar_images, index_all_images
 from src.utils.llm import set_request_override, clear_request_override
 
@@ -1614,6 +1617,86 @@ async def reset_admin_agent_override(
     db.delete(row)
     db.commit()
     return {"agent_id": agent_id, "reset": True}
+
+
+# ============================================================================
+# v2.0 公开百科、传承人档案与图谱候选审核
+# ============================================================================
+
+def _serialize_inheritor(row: InheritorProfile, db: Session) -> Dict[str, Any]:
+    sources = db.query(SourceEvidence).filter(
+        SourceEvidence.subject_type == "inheritor", SourceEvidence.subject_id == row.id
+    ).all()
+    return {
+        "id": row.id, "name": row.name, "slug": row.slug, "craft_name": row.craft_name,
+        "region": row.region, "recognition": row.recognition, "biography": row.biography,
+        "lineage": row.lineage, "representative_works": row.representative_works, "status": row.status,
+        "sources": [{"name": item.source_name, "url": item.source_url, "evidence": item.evidence_text} for item in sources],
+    }
+
+
+@app.get("/encyclopedia")
+async def list_encyclopedia(db: Session = Depends(get_db)):
+    """List only published craft entries for the public encyclopedia."""
+    rows = db.query(CraftEntry).filter(CraftEntry.status == "published").order_by(CraftEntry.name).all()
+    return {"items": [{"name": row.name, "slug": row.slug, "summary": row.summary} for row in rows]}
+
+
+@app.get("/encyclopedia/{slug}")
+async def get_encyclopedia_entry(slug: str, db: Session = Depends(get_db)):
+    row = db.query(CraftEntry).filter(CraftEntry.slug == slug, CraftEntry.status == "published").first()
+    if row is None:
+        raise HTTPException(status_code=404, detail="技艺百科条目不存在")
+    return {"name": row.name, "slug": row.slug, "summary": row.summary, "content": row.content}
+
+
+@app.get("/inheritors")
+async def list_inheritors(db: Session = Depends(get_db)):
+    rows = db.query(InheritorProfile).filter(InheritorProfile.status == "published").order_by(InheritorProfile.name).all()
+    return {"items": [_serialize_inheritor(row, db) for row in rows]}
+
+
+@app.get("/inheritors/{slug}")
+async def get_inheritor(slug: str, db: Session = Depends(get_db)):
+    row = db.query(InheritorProfile).filter(InheritorProfile.slug == slug, InheritorProfile.status == "published").first()
+    if row is None:
+        raise HTTPException(status_code=404, detail="传承人档案不存在")
+    return _serialize_inheritor(row, db)
+
+
+@app.get("/admin/graph-candidates")
+async def list_graph_candidates(
+    status_filter: Optional[str] = None,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    query = db.query(GraphChangeCandidate).order_by(GraphChangeCandidate.created_at.desc())
+    if status_filter:
+        query = query.filter(GraphChangeCandidate.status == status_filter)
+    rows = query.limit(100).all()
+    return {"items": [{
+        "id": row.id, "source_entity": row.source_entity, "source_type": row.source_type,
+        "relation": row.relation, "target_entity": row.target_entity, "target_type": row.target_type,
+        "evidence_text": row.evidence_text, "source_url": row.source_url, "status": row.status,
+    } for row in rows]}
+
+
+@app.post("/admin/graph-candidates/{candidate_id}/approve")
+async def approve_and_merge_graph_candidate(
+    candidate_id: int,
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Approve first, then persist the source-backed graph mutation."""
+    candidate = approve_graph_candidate(db, candidate_id=candidate_id, actor_id=current_user.id)
+    if knowledge_graph is None:
+        raise HTTPException(status_code=503, detail="知识图谱尚未初始化")
+    merge_approved_candidate(db, candidate_id=candidate.id, graph=knowledge_graph)
+    if not knowledge_graph.save_to_json():
+        db.rollback()
+        raise HTTPException(status_code=500, detail="知识图谱保存失败")
+    db.commit()
+    return {"id": candidate.id, "status": candidate.status, "merged": True}
 
 
 # ============================================================================

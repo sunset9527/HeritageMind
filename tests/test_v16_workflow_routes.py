@@ -9,6 +9,9 @@ from src.workflow.graph import HeritageWorkflowGraph
 
 def test_analyze_node_stores_structured_route(monkeypatch):
     class _Dispatcher:
+        def __init__(self, **_kwargs):
+            pass
+
         def analyze_question(self, question, conversation_context=None):
             return QuestionAnalysis(
                 intent_analysis="查询实体关系",
