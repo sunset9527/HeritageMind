@@ -116,10 +116,22 @@ export interface WorkflowSseEvent {
   has_gaps?: boolean
   gap_report?: string
   session_id?: string | null
+  chat_id?: number | null
+  evaluation?: AnswerEvaluation | null
   workflow_trace?: WorkflowTraceEntry[]
   citations?: Citation[]
   collaboration_messages?: CollaborationMessage[]
 }
+
+export interface EvaluationDetail { code: string; score: number; max_score: number; reason: string }
+export interface AnswerEvaluation { total_score: number; rule_version: string; details: EvaluationDetail[] }
+export interface AnswerFeedback { chat_id: number; sentiment: 'up' | 'down' | null; comment?: string | null }
+export interface AdminAgentConfiguration {
+  agent_id: string; enabled: boolean; display_name: string; capability: string
+  collaboration_priority: number; parameters: Record<string, unknown>; has_override?: boolean
+}
+export interface AdminEvaluationRecord { chat_id: number; score: number; rule_version: string; details: EvaluationDetail[]; question: string; answer: string; has_gaps: boolean; created_at: string }
+export interface AdminFeedbackRecord { id: number; chat_id: number; sentiment: 'up' | 'down'; comment?: string | null; question: string; answer: string; updated_at: string }
 
 export interface QueryResponse {
   question: string
@@ -251,6 +263,9 @@ export interface ChatMessage {
     elapsedMs: number
     model: string
     sessionId?: string
+    chatId?: number
+    evaluation?: AnswerEvaluation
+    feedback?: AnswerFeedback
     memoryPreferences?: { preferred_crafts: string[]; preferred_profile?: string | null }
     route?: WorkflowRoute
     workflowTrace?: WorkflowTraceEntry[]

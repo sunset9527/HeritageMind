@@ -112,3 +112,10 @@ def get_optional_user(
         return None
 
     return get_user_by_id(db, user_id)
+
+
+def require_admin(current_user: User = Depends(get_current_user)) -> User:
+    """Require the persisted admin role for management endpoints."""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="需要管理员权限")
+    return current_user

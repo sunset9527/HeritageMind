@@ -41,6 +41,7 @@ class WorkflowState(TypedDict):
     memory_preferences: Dict[str, Any] = Field(default_factory=dict, description="用户已学习偏好")
     run_id: str = Field(default="", description="仅本次实时工作流使用的运行标识")
     runtime_emitter: Any = Field(default=None, description="仅本次请求使用的实时事件发射器")
+    agent_registry: Any = Field(default=None, description="仅本次请求使用的已验证 Agent 注册表")
     
     # === 问题分析 ===
     question_analysis: Optional[Dict[str, Any]] = Field(default=None, description="问题分析结果")
@@ -139,6 +140,7 @@ def create_initial_state(
     conversation_context: str = "",
     memory_preferences: Optional[Dict[str, Any]] = None,
     runtime_emitter: Any = None,
+    agent_registry: Any = None,
 ) -> WorkflowState:
     """
     创建初始工作流状态
@@ -159,6 +161,7 @@ def create_initial_state(
         memory_preferences=memory_preferences or {},
         run_id=getattr(runtime_emitter, "run_id", ""),
         runtime_emitter=runtime_emitter,
+        agent_registry=agent_registry,
         include_narrative=include_narrative,
         question_analysis=None,
         required_experts=[],

@@ -51,7 +51,9 @@ def init_db():
     初始化数据库，创建所有表。
     开发阶段使用，生产环境应使用Alembic迁移。
     """
-    from src.models import User, ChatHistory  # noqa: F401 - 确保模型被注册
+    from src.models import (  # noqa: F401 - 确保模型被注册
+        User, ChatHistory, AnswerEvaluation, UserFeedback, AgentConfiguration,
+    )
     Base.metadata.create_all(bind=engine)
     logger.info("数据库表创建完成")
 

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
@@ -13,6 +14,9 @@ const navLinks = [
   { path: '/media', label: '媒体' },
   { path: '/settings', label: '设置' },
 ]
+const visibleNavLinks = computed(() => auth.user?.role === 'admin'
+  ? [...navLinks, { path: '/admin', label: '管理' }]
+  : navLinks)
 
 function isActive(path: string) {
   if (path === '/') return route.path === '/'
@@ -37,7 +41,7 @@ function isActive(path: string) {
       <!-- Nav — 克制、轻盈 -->
       <nav class="flex items-center gap-0.5">
         <router-link
-          v-for="link in navLinks"
+          v-for="link in visibleNavLinks"
           :key="link.path"
           :to="link.path"
           class="px-3.5 py-1.5 rounded-full text-[13px] font-medium transition-all duration-300 no-underline"

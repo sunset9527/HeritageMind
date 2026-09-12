@@ -47,6 +47,11 @@ class AgentRegistry:
     def ids(self) -> tuple[str, ...]:
         return tuple(self._definitions)
 
+    @property
+    def definitions(self) -> tuple[AgentDefinition, ...]:
+        """Expose immutable registered definitions for safe configuration overlays."""
+        return tuple(self._definitions.values())
+
 
 @lru_cache(maxsize=1)
 def get_default_agent_registry() -> AgentRegistry:

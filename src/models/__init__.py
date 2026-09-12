@@ -5,6 +5,9 @@ SQLAlchemy模型包
 from src.database import Base
 from src.models.user import User
 from src.models.chat import ChatHistory
+from src.models.evaluation import AnswerEvaluation
+from src.models.feedback import UserFeedback
+from src.models.agent_configuration import AgentConfiguration
 from src.models.chat_session import ChatSession
 from src.models.user_preference import UserPreference
 from src.models.prompt import Prompt
@@ -17,6 +20,9 @@ __all__ = [
     "Base",
     "User",
     "ChatHistory",
+    "AnswerEvaluation",
+    "UserFeedback",
+    "AgentConfiguration",
     "ChatSession",
     "UserPreference",
     "Prompt",

@@ -33,6 +33,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '设置' },
   },
   {
+    path: '/admin',
+    name: 'admin',
+    component: () => import('@/views/AdminView.vue'),
+    meta: { title: '管理后台', requiresAdmin: true },
+  },
+  {
     path: '/login',
     name: 'login',
     component: () => import('@/views/LoginView.vue'),
@@ -62,6 +68,11 @@ const router = createRouter({
 
 router.beforeEach((to, _from, next) => {
   document.title = `${to.meta.title} - HeritageMind`
+  if (to.meta.requiresAdmin) {
+    const saved = localStorage.getItem('heritagemind_user')
+    const user = saved ? JSON.parse(saved) : null
+    if (user?.role !== 'admin') return next('/chat')
+  }
   next()
 })
 

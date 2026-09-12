@@ -15,6 +15,7 @@ import CitationList from '@/components/chat/CitationList.vue'
 import MarkdownContent from '@/components/chat/MarkdownContent.vue'
 import WorkflowTrace from '@/components/chat/WorkflowTrace.vue'
 import RealtimeWorkflowDag from '@/components/chat/RealtimeWorkflowDag.vue'
+import AnswerFeedback from '@/components/chat/AnswerFeedback.vue'
 
 const chatStore = useChatStore()
 const auth = useAuthStore()
@@ -240,6 +241,12 @@ function agentChipIcon(id: string) { return chipColors[id]?.icon || '💬' }
               :workflow="msg.metadata.realtimeWorkflow"
             />
             <CitationList v-if="msg.metadata?.citations?.length" :citations="msg.metadata!.citations!" />
+            <div v-if="msg.metadata?.evaluation" class="caption mb-2">过程质量信号：{{ msg.metadata.evaluation.total_score }}/100（规则 {{ msg.metadata.evaluation.rule_version }}）</div>
+            <AnswerFeedback
+              :chat-id="msg.metadata?.chatId"
+              :feedback="msg.metadata?.feedback"
+              @changed="(feedback) => { if (msg.metadata) msg.metadata.feedback = feedback }"
+            />
             <div v-if="msg.metadata?.elapsedMs" class="caption mb-4">
               {{ (msg.metadata.elapsedMs / 1000).toFixed(1) }}s · {{ msg.metadata.model }}
             </div>

@@ -26,7 +26,7 @@ from src.retrieval.retriever import MultiSourceRetriever
 from src.knowledge.gap_detector import KnowledgeGapDetector
 from src.graph.visualizer import HeritageGraphVisualizer
 from src.database import init_db
-from src.deps import get_db, get_current_user, get_optional_user
+from src.deps import get_db, get_current_user, get_optional_user, require_admin
 from src.models.user import User
 from src.schemas.user import (
     UserRegisterRequest,
@@ -44,6 +44,12 @@ from src.schemas.chat import (
 )
 from src.services.auth import create_user, authenticate_user, create_access_token
 from src.services.chat import save_chat_history, get_user_history, get_user_history_count, get_chat_detail
+from src.services.evaluation import persist_evaluation
+from src.services.feedback import set_feedback
+from src.services.agent_configuration import serialize_registered_agents, update_configuration, load_configured_registry
+from src.agents.registry import get_default_agent_registry
+from src.schemas.feedback import FeedbackRequest, FeedbackResponse
+from src.schemas.admin import AgentConfigurationUpdate
 from src.services.session_memory import (
     create_session, extract_known_crafts, get_conversation_context,
     get_session_for_user, get_session_turns, list_user_sessions, touch_session,
@@ -353,6 +359,8 @@ async def query(
             except Exception as e:
                 logger.warning(f"加载会话记忆失败，降级为空上下文: {e}")
 
+        agent_registry = load_configured_registry(db, get_default_agent_registry())
+
         response = workflow.query(
             question=request.question,
             user_profile=request.user_profile,
@@ -360,6 +368,7 @@ async def query(
             thread_id=chat_session.id if chat_session else None,
             conversation_context=conversation_context,
             memory_preferences=memory_preferences,
+            agent_registry=agent_registry,
         )
 
         if chat_session is not None:
@@ -373,7 +382,7 @@ async def query(
         # 如果用户已登录，自动保存聊天历史
         if current_user is not None:
             try:
-                save_chat_history(
+                chat = save_chat_history(
                     db=db,
                     user_id=current_user.id,
                     question=request.question,
@@ -383,8 +392,24 @@ async def query(
                     has_gaps=response.has_gaps,
                     session_id=chat_session.id,
                 )
+                evaluation = persist_evaluation(
+                    db,
+                    chat_id=chat.id,
+                    answer=response.answer,
+                    citations=response.citations,
+                    source_agents=response.source_agents,
+                    has_gaps=response.has_gaps,
+                    gap_report=response.gap_report,
+                    workflow_trace=response.metadata.get("workflow_trace", []),
+                )
                 touch_session(db, chat_session)
                 db.commit()
+                response.metadata["chat_id"] = chat.id
+                response.metadata["evaluation"] = {
+                    "total_score": evaluation.total_score,
+                    "rule_version": evaluation.rule_version,
+                    "details": evaluation.score_details,
+                }
                 preference = update_user_preferences(
                     db,
                     current_user.id,
@@ -445,6 +470,8 @@ async def query_stream(
         except Exception as e:
             logger.warning(f"加载流式会话记忆失败，降级为空上下文: {e}")
 
+    agent_registry = load_configured_registry(db, get_default_agent_registry())
+
     async def event_stream():
         override_set = bool(x_api_key and x_api_key.strip())
         try:
@@ -474,6 +501,7 @@ async def query_stream(
                 conversation_context=conversation_context,
                 memory_preferences=memory_preferences,
                 runtime_emitter=emitter,
+                agent_registry=agent_registry,
             )
             graph_config = {"configurable": {"thread_id": chat_session.id}} if chat_session else None
 
@@ -519,9 +547,19 @@ async def query_stream(
                 resp = state_to_response(final)
                 if current_user is not None and chat_session is not None:
                     try:
-                        save_chat_history(
+                        chat = save_chat_history(
                             db, current_user.id, request.question, resp.answer, request.user_profile,
                             [a.get("id", "") for a in resp.source_agents], resp.has_gaps, chat_session.id,
+                        )
+                        evaluation = persist_evaluation(
+                            db,
+                            chat_id=chat.id,
+                            answer=resp.answer,
+                            citations=resp.citations,
+                            source_agents=resp.source_agents,
+                            has_gaps=resp.has_gaps,
+                            gap_report=resp.gap_report,
+                            workflow_trace=resp.metadata.get("workflow_trace", []),
                         )
                         touch_session(db, chat_session)
                         db.commit()
@@ -543,6 +581,10 @@ async def query_stream(
                         "has_gaps": resp.has_gaps,
                         "gap_report": resp.gap_report,
                         "session_id": chat_session.id if chat_session else None,
+                        "chat_id": chat.id if current_user is not None and chat_session is not None else None,
+                        "evaluation": ({"total_score": evaluation.total_score, "rule_version": evaluation.rule_version,
+                                        "details": evaluation.score_details}
+                                       if current_user is not None and chat_session is not None else None),
                         "workflow_trace": resp.metadata.get("workflow_trace", []),
                         "citations": resp.citations,
                         "collaboration_messages": final.get("collaboration_messages", []) if final else [],
@@ -1446,6 +1488,132 @@ async def get_chat_detail_endpoint(
         has_gaps=record.has_gaps,
         created_at=record.created_at,
     )
+
+
+# ============================================================================
+# v1.8 回答反馈与 Agent 管理
+# ============================================================================
+
+@app.post("/feedback", response_model=FeedbackResponse)
+async def submit_feedback(
+    request: FeedbackRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Create, replace or cancel the caller's one feedback record for an owned answer."""
+    try:
+        feedback = set_feedback(
+            db,
+            user_id=current_user.id,
+            chat_id=request.chat_id,
+            sentiment=request.sentiment,
+            comment=request.comment,
+        )
+        db.commit()
+    except ValueError as error:
+        db.rollback()
+        raise HTTPException(status_code=404, detail=str(error))
+    return FeedbackResponse(
+        chat_id=request.chat_id,
+        sentiment=feedback.sentiment if feedback else None,
+        comment=feedback.comment if feedback else None,
+    )
+
+
+@app.get("/admin/agents")
+async def list_admin_agents(
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """List the fixed built-in Agent set and its safe data overrides."""
+    return {"items": serialize_registered_agents(db, get_default_agent_registry())}
+
+
+@app.get("/admin/evaluations")
+async def list_admin_evaluations(
+    limit: int = 30,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Return recent explainable evaluation records for operational review."""
+    from src.models.chat import ChatHistory
+    from src.models.evaluation import AnswerEvaluation
+
+    rows = db.query(AnswerEvaluation, ChatHistory).join(ChatHistory, AnswerEvaluation.chat_id == ChatHistory.id).order_by(
+        AnswerEvaluation.created_at.desc()
+    ).limit(min(max(limit, 1), 100)).all()
+    return {"items": [{
+        "chat_id": evaluation.chat_id, "score": evaluation.total_score, "rule_version": evaluation.rule_version,
+        "details": evaluation.score_details, "question": chat.question, "answer": chat.answer,
+        "has_gaps": chat.has_gaps, "created_at": evaluation.created_at,
+    } for evaluation, chat in rows]}
+
+
+@app.get("/admin/feedback")
+async def list_admin_feedback(
+    limit: int = 30,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Return recent feedback with its answer context, without credentials or prompts."""
+    from src.models.chat import ChatHistory
+    from src.models.feedback import UserFeedback
+
+    rows = db.query(UserFeedback, ChatHistory).join(ChatHistory, UserFeedback.chat_id == ChatHistory.id).order_by(
+        UserFeedback.updated_at.desc()
+    ).limit(min(max(limit, 1), 100)).all()
+    return {"items": [{
+        "id": feedback.id, "chat_id": feedback.chat_id, "sentiment": feedback.sentiment,
+        "comment": feedback.comment, "question": chat.question, "answer": chat.answer,
+        "updated_at": feedback.updated_at,
+    } for feedback, chat in rows]}
+
+
+@app.patch("/admin/agents/{agent_id}")
+async def update_admin_agent(
+    agent_id: str,
+    request: AgentConfigurationUpdate,
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Update safe metadata/configuration for a registered Agent only."""
+    try:
+        row = update_configuration(
+            db,
+            agent_id=agent_id,
+            values=request.model_dump(),
+            updated_by_user_id=current_user.id,
+            default_registry=get_default_agent_registry(),
+        )
+        db.commit()
+    except ValueError as error:
+        db.rollback()
+        raise HTTPException(status_code=422, detail=str(error))
+    return {
+        "agent_id": row.agent_id,
+        "enabled": row.enabled,
+        "display_name": row.display_name,
+        "capability": row.capability,
+        "collaboration_priority": row.collaboration_priority,
+        "parameters": row.parameters or {},
+    }
+
+
+@app.delete("/admin/agents/{agent_id}/override")
+async def reset_admin_agent_override(
+    agent_id: str,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Delete a persisted override so the built-in Agent definition is restored."""
+    from src.models.agent_configuration import AgentConfiguration
+
+    row = db.query(AgentConfiguration).filter(AgentConfiguration.agent_id == agent_id).first()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Agent 配置覆盖不存在")
+    db.delete(row)
+    db.commit()
+    return {"agent_id": agent_id, "reset": True}
 
 
 # ============================================================================

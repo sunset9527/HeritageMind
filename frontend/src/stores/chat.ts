@@ -77,6 +77,8 @@ export const useChatStore = defineStore('chat', () => {
             assistantMsg.metadata!.gapReport = event.gap_report || ''
             assistantMsg.metadata!.citations = event.citations || []
             assistantMsg.metadata!.workflowTrace = event.workflow_trace || []
+            if (typeof event.chat_id === 'number') assistantMsg.metadata!.chatId = event.chat_id
+            if (event.evaluation) assistantMsg.metadata!.evaluation = event.evaluation
             assistantMsg.metadata!.elapsedMs = elapsedMs
             assistantMsg.metadata!.realtimeWorkflow = reduceWorkflowEvent(assistantMsg.metadata!.realtimeWorkflow, event)
             if (typeof event.session_id === 'string') {
@@ -118,7 +120,7 @@ export const useChatStore = defineStore('chat', () => {
         role: 'assistant' as const,
         content: turn.answer,
         timestamp: turn.created_at,
-        metadata: { sourceAgents: [], hasGaps: turn.has_gaps, gapReport: '', citations: [], elapsedMs: 0, model: '' },
+        metadata: { sourceAgents: [], hasGaps: turn.has_gaps, gapReport: '', citations: [], elapsedMs: 0, model: '', chatId: turn.id },
       },
     ])
   }

@@ -43,6 +43,12 @@ def build_expert_map(
     }
 
 
+def get_state_registry(state: WorkflowState) -> AgentRegistry:
+    """Use the request-scoped, admin-configured registry when present."""
+    registry = state.get("agent_registry")
+    return registry if isinstance(registry, AgentRegistry) else get_default_agent_registry()
+
+
 def _apply_retrieval_query(state: WorkflowState, question: str) -> None:
     """把改写后的检索 query 写入 state（v1.4 接线，规则模式）。
 
@@ -97,7 +103,7 @@ def analyze_question_node(state: WorkflowState) -> WorkflowState:
         logger.info(f"分析问题: {question[:50]}...")
         
         # 初始化调度Agent
-        dispatcher = DispatcherAgent()
+        dispatcher = DispatcherAgent(agent_registry=get_state_registry(state))
         
         # 分析问题
         analysis = dispatcher.analyze_question(
@@ -149,7 +155,7 @@ def plan_question_node(state: WorkflowState) -> WorkflowState:
     """
     try:
         question = state["question"]
-        dispatcher = DispatcherAgent()
+        dispatcher = DispatcherAgent(agent_registry=get_state_registry(state))
         plan = dispatcher.plan_question(
             question=question,
             complexity=state.get("complexity", "medium"),
@@ -248,12 +254,12 @@ def dispatch_to_experts_node(state: WorkflowState) -> WorkflowState:
 
         # 根据 Router 的已验证结果实例化参与者；新增注册 Agent 无需修改此节点。
         expert_map = build_expert_map(
-            get_default_agent_registry(), required_experts, retriever=retriever
+            get_state_registry(state), required_experts, retriever=retriever
         )
         dynamic_nodes = [
             {"id": f"agent:{name}", "label": definition.display_name, "icon": definition.icon}
             for name in expert_map
-            for definition in get_default_agent_registry().resolve([name])
+            for definition in get_state_registry(state).resolve([name])
         ]
         dynamic_edges = [
             {"source": "dispatch_to_experts", "target": f"agent:{name}"}
@@ -373,7 +379,7 @@ def fuse_knowledge_node(state: WorkflowState) -> WorkflowState:
         logger.info(f"融合{len(responses)}个专家的响应...")
         
         # 初始化调度Agent
-        dispatcher = DispatcherAgent()
+        dispatcher = DispatcherAgent(agent_registry=get_state_registry(state))
         
         # 构建响应字典
         response_dict = {
@@ -403,7 +409,7 @@ def fuse_knowledge_node(state: WorkflowState) -> WorkflowState:
             
             # 只实例化本次 Router 选中的专家。协作器只消费首轮回答，不会再次检索。
             retriever = MultiSourceRetriever()
-            registry = get_default_agent_registry()
+            registry = get_state_registry(state)
             agents = build_expert_map(registry, list(response_dict), retriever=retriever)
 
             def on_collaboration_message(message: Any) -> None:
@@ -487,7 +493,7 @@ def fuse_knowledge_node(state: WorkflowState) -> WorkflowState:
                 "type": definition.display_name,
                 "contribution": definition.capability,
             }
-            for definition in get_default_agent_registry().resolve(responses.keys())
+            for definition in get_state_registry(state).resolve(responses.keys())
         ]
         
         logger.info("知识融合完成")

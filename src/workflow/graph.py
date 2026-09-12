@@ -21,6 +21,7 @@ from src.workflow.nodes import (
     should_detect_gaps,
     has_expert_responses,
 )
+from src.agents.registry import AgentRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -124,6 +125,7 @@ class HeritageWorkflowGraph:
         thread_id: Optional[str] = None,
         conversation_context: str = "",
         memory_preferences: Optional[Dict[str, Any]] = None,
+        agent_registry: Optional[AgentRegistry] = None,
     ) -> QueryResponse:
         """
         执行问答查询
@@ -145,6 +147,7 @@ class HeritageWorkflowGraph:
             thread_id=thread_id,
             conversation_context=conversation_context,
             memory_preferences=memory_preferences,
+            agent_registry=agent_registry,
         )
         config = {"configurable": {"thread_id": thread_id}} if thread_id else None
 
