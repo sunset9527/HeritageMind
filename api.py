@@ -1697,6 +1697,28 @@ async def list_graph_candidates(
     } for row in rows]}
 
 
+class AdminInheritorCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    craft_name: str = Field(min_length=1, max_length=100)
+    region: str = ""
+    biography: str = ""
+    source_url: str = Field(min_length=8, max_length=500)
+    source_name: str = Field(min_length=1, max_length=255)
+    evidence_text: str = Field(min_length=1)
+
+
+@app.post("/admin/inheritors")
+async def create_admin_inheritor(request: AdminInheritorCreate, current_user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    """Create a draft record and its required public-source evidence together."""
+    from src.services.platform_content import add_source_evidence, create_inheritor_profile
+    profile = create_inheritor_profile(db, actor_id=current_user.id, name=request.name, craft_name=request.craft_name,
+        region=request.region, biography=request.biography)
+    add_source_evidence(db, subject_type="inheritor", subject_id=profile.id, source_url=request.source_url,
+        source_name=request.source_name, evidence_text=request.evidence_text, actor_id=current_user.id)
+    db.commit()
+    return {"id": profile.id, "slug": profile.slug, "status": profile.status}
+
+
 @app.post("/admin/graph-candidates/{candidate_id}/approve")
 async def approve_and_merge_graph_candidate(
     candidate_id: int,
