@@ -8,3 +8,26 @@ INHERITOR_SEED = [
     {"name":"金蕾蕾","craft_name":"苏绣","region":"江苏省南通市","recognition":"第三批国家级代表性传承人","biography":"苏绣（南通仿真绣）代表性传承人。","lineage":"1972年进入南通工艺美术研究所学习刺绣。","representative_works":"《华夏大地日月同辉》。","source_url":"https://www.ihchina.cn/ccr_detail/2687.html","source_name":"中国非物质文化遗产网","evidence_text":"官方档案记载其项目、学习经历与作品信息。"},
     {"name":"关栋天","craft_name":"京剧","region":"上海市","recognition":"第二批国家级代表性传承人","biography":"京剧代表性传承人，一级演员。","lineage":"自幼随父学艺。","representative_works":"《潘月樵传奇》《廉吏于成龙》等。","source_url":"https://www.ihchina.cn/ccr_detail/1631.html","source_name":"中国非物质文化遗产网","evidence_text":"官方档案记载其京剧项目、地区和代表作品。"},
 ]
+
+
+def import_inheritor_seed(db, *, actor_id: int) -> int:
+    """Import demonstration profiles once; callers explicitly own the transaction."""
+    from src.models.platform import InheritorProfile
+    from src.services.platform_content import add_source_evidence, create_inheritor_profile, publish_inheritor_profile
+
+    imported = 0
+    for item in INHERITOR_SEED:
+        existing = db.query(InheritorProfile).filter_by(name=item["name"]).first()
+        if existing is not None:
+            continue
+        profile = create_inheritor_profile(
+            db, actor_id=actor_id, name=item["name"], craft_name=item["craft_name"], region=item["region"],
+            recognition=item["recognition"], biography=item["biography"], lineage=item["lineage"],
+            representative_works=item["representative_works"],
+        )
+        add_source_evidence(db, subject_type="inheritor", subject_id=profile.id, source_url=item["source_url"],
+            source_name=item["source_name"], evidence_text=item["evidence_text"], actor_id=actor_id)
+        publish_inheritor_profile(db, profile_id=profile.id, actor_id=actor_id)
+        imported += 1
+    db.commit()
+    return imported
