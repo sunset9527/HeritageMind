@@ -10,6 +10,7 @@ const auth = useAuthStore()
 const navLinks = [
   { path: '/', label: '首页' },
   { path: '/chat', label: '问答' },
+  { path: '/search', label: '搜索' },
   { path: '/graph', label: '图谱' },
   { path: '/encyclopedia', label: '百科' },
   { path: '/inheritors', label: '传承人' },

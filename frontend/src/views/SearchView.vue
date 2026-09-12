@@ -1,0 +1,7 @@
+<script setup lang="ts">
+import { ref } from 'vue'
+import client from '@/api/client'
+const query = ref(''); const loading = ref(false); const error = ref(''); const result = ref<any>(null)
+async function search() { if (!query.value.trim()) return; loading.value = true; error.value = ''; try { result.value = (await client.post('/search/ai', { query: query.value })).data } catch (e: any) { error.value = e.response?.data?.detail || '搜索暂时不可用' } finally { loading.value = false } }
+</script>
+<template><main class="max-w-5xl mx-auto px-6 py-8"><h1 class="headline">AI 搜索</h1><p class="body mb-5">从本地知识库、图谱与媒体中检索；未启用的外部来源会明确标注。</p><form class="flex gap-2 mb-6" @submit.prevent="search"><input v-model="query" class="flex-1 border rounded-xl px-4 py-3" placeholder="搜索皮影戏、景泰蓝工艺…"><button class="px-5 rounded-xl bg-[var(--text)] text-white" :disabled="loading">{{ loading ? '搜索中…' : '搜索' }}</button></form><p v-if="error" class="text-red-600">{{ error }}</p><section v-if="result" class="space-y-5"><div class="setting-section"><h2>回答</h2><p>{{ result.answer || '当前仅返回已检索证据；请配置模型后生成综合回答。' }}</p></div><div class="setting-section"><h2>引用</h2><ul><li v-for="item in result.citations" :key="item.title">{{ item.title }} · {{ item.source }}</li></ul></div><div v-if="Object.keys(result.sources).length" class="text-sm text-[var(--text-tertiary)]">外部来源状态：<span v-for="(value,key) in result.sources" :key="key">{{ key }}={{ value.status }} </span></div></section></main></template>
