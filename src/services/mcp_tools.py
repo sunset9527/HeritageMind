@@ -75,3 +75,11 @@ async def search_web(query: str, *, endpoint: str, api_key: str, client: Any | N
 
 async def search_baidu_baike(query: str, *, endpoint: str, api_key: str, client: Any | None = None) -> McpToolResult:
     return await search_web(query, endpoint=endpoint, api_key=api_key, client=client)
+
+
+def search_local_knowledge(query: str, *, retriever: Any) -> McpToolResult:
+    """Expose existing local retrieval without any network dependency."""
+    items = []
+    for item in retriever.retrieve(query)[:5]:
+        items.append({"title": item.get("title") or item.get("craft_name", "本地知识"), "summary": item.get("content", "")[:500], "url": "local://knowledge"})
+    return McpToolResult(status="ok", items=items)

@@ -5,7 +5,7 @@ Install the optional ``mcp`` dependency from requirements before running this mo
 
 import asyncio
 
-from src.services.mcp_tools import search_github, search_wikipedia
+from src.services.mcp_tools import search_github, search_wikipedia, search_local_knowledge
 
 
 def run() -> None:
@@ -15,6 +15,13 @@ def run() -> None:
         raise SystemExit("MCP runtime is not installed; run pip install -r requirements.txt") from error
 
     server = FastMCP("HeritageMind")
+
+    @server.tool()
+    async def search_local_knowledge_tool(query: str) -> dict:
+        """Search HeritageMind's local, curated knowledge base."""
+        from src.retrieval.retriever import MultiSourceRetriever
+        result = search_local_knowledge(query, retriever=MultiSourceRetriever())
+        return {"status": result.status, "items": result.items, "message": result.message}
 
     @server.tool()
     async def search_wikipedia_tool(query: str) -> dict:
