@@ -1,0 +1,37 @@
+# 仅用于 API Embedding 的服务器运行依赖。
+# 本地 BGE / CrossEncoder / Whisper 采用延迟导入，保留在 requirements.txt 供本地开发使用。
+
+# Agent 与 RAG 主链
+langgraph>=0.0.20
+langchain>=0.1.0
+langchain-core>=0.1.0
+langchain-community>=0.0.10
+langchain-openai>=0.0.5
+chromadb>=1.5.1,<2
+rank-bm25>=0.2.2
+jieba>=0.42.1
+
+# Web、数据库与认证
+fastapi>=0.109.0
+uvicorn>=0.27.0
+pydantic>=2.5.0
+pydantic-settings
+python-multipart>=0.0.6
+sqlalchemy>=2.0
+alembic>=1.13
+pymysql>=1.1.0
+passlib[bcrypt]>=1.7
+python-jose[cryptography]>=3.3
+
+# 平台能力
+redis>=5.0
+networkx>=3.2
+pyvis
+langfuse>=2.0
+python-dotenv>=1.0.0
+pdfplumber>=0.10.0
+python-docx>=1.0.0
+markdown>=3.5.0
+httpx>=0.26.0
+mcp>=1.0
+requests>=2.31.0

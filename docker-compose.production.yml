@@ -14,7 +14,9 @@ services:
     restart: unless-stopped
     networks: [internal]
   api:
-    build: .
+    build:
+      context: .
+      target: api
     restart: unless-stopped
     environment:
       DATABASE_URL: mysql+pymysql://heritagemind:${MYSQL_PASSWORD}@mysql:3306/heritagemind
