@@ -25,6 +25,7 @@ const routes: RouteRecordRaw[] = [
   },
   { path: '/encyclopedia/:slug', name: 'craft-detail', component: () => import('@/views/CraftDetailView.vue'), meta: { title: '技艺百科' } },
   { path: '/search', name: 'search', component: () => import('@/views/SearchView.vue'), meta: { title: 'AI 搜索' } },
+  { path: '/profile', name: 'profile', component: () => import('@/views/ProfileView.vue'), meta: { title: '个人中心' } },
   {
     path: '/inheritors', name: 'inheritors', component: () => import('@/views/InheritorListView.vue'), meta: { title: '传承人档案' },
   },
