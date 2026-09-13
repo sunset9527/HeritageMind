@@ -59,7 +59,7 @@ def upgrade() -> None:
         sa.Column("id", sa.Integer(), nullable=False), sa.Column("source_entity", sa.String(length=160), nullable=False),
         sa.Column("source_type", sa.String(length=32), nullable=False), sa.Column("relation", sa.String(length=64), nullable=False),
         sa.Column("target_entity", sa.String(length=160), nullable=False), sa.Column("target_type", sa.String(length=32), nullable=False),
-        sa.Column("evidence_text", sa.Text(), nullable=False), sa.Column("source_url", sa.String(length=500), nullable=False),
+        sa.Column("evidence_text", sa.Text(), nullable=False), sa.Column("source_url", sa.String(length=255), nullable=False),
         sa.Column("status", sa.String(length=20), nullable=False), sa.Column("reviewed_by_user_id", sa.Integer(), nullable=True),
         sa.Column("review_reason", sa.Text(), nullable=False), sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("reviewed_at", sa.DateTime(timezone=True), nullable=True),

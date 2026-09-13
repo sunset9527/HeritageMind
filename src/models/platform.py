@@ -68,7 +68,8 @@ class GraphChangeCandidate(Base):
     target_entity = Column(String(160), nullable=False, index=True)
     target_type = Column(String(32), nullable=False)
     evidence_text = Column(Text, nullable=False)
-    source_url = Column(String(500), nullable=False)
+    # 与实体、关系组成 utf8mb4 联合唯一索引；255 可避免超过 MySQL 3072-byte 上限。
+    source_url = Column(String(255), nullable=False)
     status = Column(String(20), nullable=False, default="pending", index=True)
     reviewed_by_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     review_reason = Column(Text, nullable=False, default="")

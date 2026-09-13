@@ -47,7 +47,8 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+# 首次建库由应用启动生命周期执行；单 worker 避免空库时多个进程并发 DDL 竞争。
+CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
 
 # ==================== Streamlit 前端 ====================
 FROM dependencies AS frontend
