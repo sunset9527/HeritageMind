@@ -6,7 +6,7 @@ from re import sub
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from src.models.platform import AuditLog, GraphChangeCandidate, InheritorProfile, SourceEvidence
+from src.models.platform import AuditLog, CraftEntry, GraphChangeCandidate, InheritorProfile, SourceEvidence
 
 
 def make_slug(value: str) -> str:
@@ -75,6 +75,18 @@ def publish_inheritor_profile(db: Session, *, profile_id: int, actor_id: int) ->
     _audit(db, actor_id, "inheritor.published", "inheritor", profile.id)
     db.flush()
     return profile
+
+
+def publish_craft_entry(db: Session, *, craft_id: int, actor_id: int | None) -> CraftEntry:
+    craft = db.get(CraftEntry, craft_id)
+    if craft is None:
+        raise ValueError("craft entry not found")
+    craft.status = "published"
+    _audit(db, actor_id, "craft.published", "craft", craft.id)
+    from src.services.graph_extraction import extract_craft_candidates
+    extract_craft_candidates(db, craft)
+    db.flush()
+    return craft
 
 
 def create_graph_candidate(
