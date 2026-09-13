@@ -1719,6 +1719,19 @@ async def create_admin_inheritor(request: AdminInheritorCreate, current_user: Us
     return {"id": profile.id, "slug": profile.slug, "status": profile.status}
 
 
+@app.post("/admin/inheritors/{profile_id}/publish")
+async def publish_admin_inheritor(profile_id: int, current_user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    """Publish only after the required source-evidence check succeeds."""
+    from src.services.platform_content import publish_inheritor_profile
+    try:
+        profile = publish_inheritor_profile(db, profile_id=profile_id, actor_id=current_user.id)
+        db.commit()
+    except ValueError as error:
+        db.rollback()
+        raise HTTPException(status_code=422, detail=str(error))
+    return {"id": profile.id, "slug": profile.slug, "status": profile.status}
+
+
 @app.post("/admin/graph-candidates/{candidate_id}/approve")
 async def approve_and_merge_graph_candidate(
     candidate_id: int,
