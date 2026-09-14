@@ -376,6 +376,18 @@ h1, h2, h3, h4 {
 .section-padding { padding: 80px 24px; }
 .section-gap     { margin-bottom: 64px; }
 
+/* Shared page language: every product page carries the same paper, ink and seal hierarchy. */
+.heritage-page { position: relative; }
+.page-kicker { margin: 0 0 7px; color: var(--accent); font-size: .68rem; font-weight: 700; letter-spacing: .22em; }
+.page-title { margin: 0; color: #28332d; font-family: var(--font-brush); font-size: clamp(2.7rem, 5vw, 4.2rem); font-weight: 400; letter-spacing: .12em; line-height: 1.05; }
+.page-intro { margin: 13px 0 28px; color: var(--text-secondary); font-size: .88rem; line-height: 1.8; }
+.heritage-page .setting-section { background: #fffaf0; border-color: rgba(82, 61, 36, .17); box-shadow: 0 10px 26px rgba(69, 47, 23, .05); }
+.heritage-page .setting-section h3 { font-family: var(--font-brush); font-size: 1.6rem; font-weight: 400; letter-spacing: .08em; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
+}
+
 /* Subtle divider — 若有若无的分隔 */
 .hairline {
   border: none;

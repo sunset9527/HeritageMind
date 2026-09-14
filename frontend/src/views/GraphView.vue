@@ -48,23 +48,24 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="max-w-7xl mx-auto px-6 py-6">
-    <h2 class="text-2xl font-extrabold tracking-tight mb-1">知识图谱</h2>
-    <p class="text-[var(--text2)] mb-6">
+  <div class="heritage-page max-w-7xl mx-auto px-6 py-10">
+    <p class="page-kicker">关系探索</p>
+    <h1 class="page-title">知识图谱</h1>
+    <p class="page-intro">
       非遗技艺 · 材料 · 工具 · 传承人 · 地域 · 朝代 多维关联
     </p>
 
     <!-- Stats -->
     <div class="grid grid-cols-3 gap-4 mb-6">
-      <div class="card text-center">
+      <div class="card graph-stat text-center">
         <div class="stat-num">{{ totalNodes }}</div>
         <div class="stat-label">节点总数</div>
       </div>
-      <div class="card text-center">
+      <div class="card graph-stat text-center">
         <div class="stat-num">{{ totalEdges }}</div>
         <div class="stat-label">关系边数</div>
       </div>
-      <div class="card text-center">
+      <div class="card graph-stat text-center">
         <div class="stat-num">{{ nodeTypeCount }} 种</div>
         <div class="stat-label">节点类型</div>
       </div>
@@ -125,3 +126,7 @@ onMounted(async () => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.graph-stat { background: #fffaf0; border-top: 3px solid var(--heritage); }.graph-stat:nth-child(2) { border-top-color: var(--history); }.graph-stat:nth-child(3) { border-top-color: var(--accent); }
+</style>

@@ -178,13 +178,14 @@ function agentChipIcon(id: string) { return chipColors[id]?.icon || '💬' }
     <!-- Main Chat -->
     <div class="flex-1 flex flex-col min-w-0">
       <!-- Chat header bar -->
-      <div class="flex items-center gap-3 px-6 py-3 border-b" style="border-color: var(--border)">
+      <div class="chat-toolbar flex items-center gap-3 px-6 py-3 border-b" style="border-color: var(--border)">
         <button
           @click="sidebarOpen = !sidebarOpen"
           class="text-[var(--text-tertiary)] hover:text-[var(--text)] transition-colors text-sm"
         >
           {{ sidebarOpen ? '← 收起' : '→ 选项' }}
         </button>
+        <span class="chat-title">寻艺问答</span>
         <span class="text-[13px] text-[var(--text-tertiary)]">
           {{ chatStore.currentProfile === 'curious' ? '好奇者' : chatStore.currentProfile === 'learner' ? '学习者' : '研究者' }}
           <template v-if="chatStore.currentCraft"> · {{ chatStore.currentCraft }}</template>
@@ -309,6 +310,8 @@ function agentChipIcon(id: string) { return chipColors[id]?.icon || '💬' }
 </template>
 
 <style scoped>
+.chat-toolbar { background: #f7efdf; border-color: rgba(84, 61, 34, .16) !important; }
+.chat-title { color: var(--accent); font-family: var(--font-brush); font-size: 1.5rem; letter-spacing: .1em; }
 .slide-enter-active, .slide-leave-active { transition: all 0.3s ease; }
 .slide-enter-from, .slide-leave-to { opacity: 0; transform: translateX(-16px); }
 </style>

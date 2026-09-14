@@ -29,14 +29,13 @@ function isActive(path: string) {
 
 <template>
   <header
-    class="sticky top-0 z-50"
-    style="background: rgba(249, 247, 244, 0.72); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px)"
+    class="heritage-header sticky top-0 z-50"
   >
-    <div class="max-w-6xl mx-auto px-6 h-13 flex items-center justify-between">
+    <div class="heritage-nav max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
       <!-- Logo — 极简 -->
       <router-link to="/" class="flex items-center gap-2 no-underline group">
         <img src="/favicon.svg?v=3" alt="" class="w-6 h-6" />
-        <span class="font-semibold text-[15px] tracking-tight text-[var(--text)] group-hover:text-[var(--accent)] transition-colors">
+        <span class="brand-name group-hover:text-[var(--accent)] transition-colors">
           HeritageMind
         </span>
       </router-link>
@@ -47,7 +46,7 @@ function isActive(path: string) {
           v-for="link in visibleNavLinks"
           :key="link.path"
           :to="link.path"
-          class="px-3.5 py-1.5 rounded-full text-[13px] font-medium transition-all duration-300 no-underline"
+          class="nav-link px-3 py-1.5 text-[13px] font-medium transition-all duration-300 no-underline"
           :class="isActive(link.path)
             ? 'text-[var(--accent)]'
             : 'text-[var(--text-tertiary)] hover:text-[var(--text)]'"
@@ -79,3 +78,9 @@ function isActive(path: string) {
     </div>
   </header>
 </template>
+
+<style scoped>
+.heritage-header { background: rgba(247, 239, 222, .88); border-bottom: 1px solid rgba(84, 61, 34, .16); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+.heritage-nav { position: relative; }.heritage-nav::after { content: ''; position: absolute; bottom: -1px; left: 24px; width: 88px; height: 2px; background: var(--accent); }
+.brand-name { color: var(--text); font-family: var(--font-brush); font-size: 1.5rem; font-weight: 400; letter-spacing: .08em; }.nav-link { border-bottom: 2px solid transparent; }.nav-link.router-link-active { border-bottom-color: var(--accent); }
+</style>

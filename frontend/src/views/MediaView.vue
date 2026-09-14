@@ -52,9 +52,10 @@ function formatSize(bytes: number) {
 </script>
 
 <template>
-  <div class="max-w-5xl mx-auto px-6 py-6">
-    <h2 class="headline mb-1">多媒体管理</h2>
-    <p class="body text-[14px] mb-6">上传图片和音频，丰富非遗知识库</p>
+  <div class="heritage-page max-w-5xl mx-auto px-6 py-10">
+    <p class="page-kicker">资料归档</p>
+    <h1 class="page-title">多媒体管理</h1>
+    <p class="page-intro">上传图片和音频，丰富非遗知识库</p>
 
     <!-- Upload -->
     <div class="setting-section">

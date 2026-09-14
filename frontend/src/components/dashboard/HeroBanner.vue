@@ -19,7 +19,7 @@ function startExploring() {
   <section class="heritage-hero">
     <div class="hero-copy">
       <p class="hero-kicker">一 · 非遗文化智能知识平台</p>
-      <h1>以技艺为经<br />让传承可见</h1>
+      <h1><span class="title-line">以技艺为经</span><span class="title-line">让传承可见</span></h1>
       <p class="hero-intro">从一件器物、一段唱腔到一门手艺的历史脉络。检索、图谱与多智能体协作，将知识的来处和答案一并呈现。</p>
       <form class="hero-search" @submit.prevent="startExploring">
         <label class="sr-only" for="heritage-question">输入你想了解的非遗问题</label>
@@ -39,7 +39,8 @@ function startExploring() {
 .heritage-hero { display: grid; grid-template-columns: minmax(0, 1.06fr) minmax(330px, .94fr); max-width: 1120px; min-height: 470px; margin: 44px auto 0; overflow: hidden; border: 1px solid rgba(89, 67, 41, .2); background: #efe4ce; box-shadow: 0 18px 44px rgba(76, 49, 23, .12); }
 .hero-copy { padding: 76px 52px 52px 62px; background: linear-gradient(135deg, #f7efdf 0%, #eee1c8 100%); }
 .hero-kicker { margin: 0 0 16px; color: var(--accent); font-size: .68rem; font-weight: 700; letter-spacing: .22em; }
-h1 { position: relative; display: inline-block; margin: 0; color: #26322d; font-family: 'Ma Shan Zheng', 'Zhi Mang Xing', 'STKaiti', 'KaiTi', cursive; font-size: clamp(3.8rem, 7vw, 5.8rem); font-weight: 400; letter-spacing: .12em; line-height: .98; transform: rotate(-1deg); transform-origin: left center; }
+h1 { position: relative; display: inline-block; margin: 0; color: #26322d; font-family: 'Ma Shan Zheng', 'Zhi Mang Xing', 'STKaiti', 'KaiTi', cursive; font-size: clamp(3.4rem, 6vw, 5.2rem); font-weight: 400; letter-spacing: .07em; line-height: 1.05; transform: rotate(-1deg); transform-origin: left center; }
+.title-line { display: block; white-space: nowrap; }
 h1::after { content: ''; position: absolute; left: .14em; bottom: -.12em; width: 1.7em; height: .09em; background: var(--accent); opacity: .82; transform: rotate(-3deg); }
 .hero-intro { max-width: 390px; margin: 28px 0 24px; color: #5e5549; font-size: .9rem; line-height: 2; }
 .hero-search { display: flex; max-width: 400px; border-bottom: 1px solid #776657; gap: 12px; padding: 9px 0; }

@@ -36,9 +36,10 @@ function saveSettings() {
 </script>
 
 <template>
-  <div class="max-w-3xl mx-auto px-6 py-6">
-    <h2 class="text-2xl font-extrabold tracking-tight mb-1">系统设置</h2>
-    <p class="text-[var(--text2)] mb-6">模型选择 · API Key · 偏好配置</p>
+  <div class="heritage-page max-w-3xl mx-auto px-6 py-10">
+    <p class="page-kicker">使用偏好</p>
+    <h1 class="page-title">系统设置</h1>
+    <p class="page-intro">模型选择 · API Key · 偏好配置</p>
 
     <!-- Notice -->
     <div class="setting-section" style="background: #fafafa; border-color: var(--border)">
