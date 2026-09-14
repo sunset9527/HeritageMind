@@ -75,9 +75,9 @@ from src.services.cache import get_qa_cache
 from src.services.queue import close_redis
 from src.services.document_parser import parse_document
 from src.models.favorite import Favorite
-from src.models.platform import CraftEntry, GraphChangeCandidate, InheritorProfile, SourceEvidence
+from src.models.platform import AuditLog, CraftEntry, GraphChangeCandidate, InheritorProfile, SourceEvidence
 from src.services.graph_curation import merge_approved_candidate
-from src.services.platform_content import approve_graph_candidate
+from src.services.platform_content import approve_graph_candidate, make_slug, reject_graph_candidate
 from src.services.ai_search import AiSearchService
 from src.services.mcp_tools import search_web
 from src.retrieval.multimodal_search import search_images_by_text, search_similar_images, index_all_images
@@ -1697,6 +1697,87 @@ async def list_graph_candidates(
     } for row in rows]}
 
 
+def _serialize_craft(row: CraftEntry) -> Dict[str, Any]:
+    return {
+        "id": row.id, "name": row.name, "slug": row.slug, "summary": row.summary,
+        "content": row.content, "status": row.status, "updated_at": row.updated_at,
+    }
+
+
+class AdminCraftCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    summary: str = ""
+    content: str = ""
+
+
+class AdminCraftUpdate(BaseModel):
+    name: Optional[str] = Field(default=None, min_length=1, max_length=100)
+    summary: Optional[str] = None
+    content: Optional[str] = None
+
+
+@app.get("/admin/crafts")
+async def list_admin_crafts(_: User = Depends(require_admin), db: Session = Depends(get_db)):
+    rows = db.query(CraftEntry).order_by(CraftEntry.updated_at.desc()).limit(200).all()
+    return {"items": [_serialize_craft(row) for row in rows]}
+
+
+@app.post("/admin/crafts")
+async def create_admin_craft(request: AdminCraftCreate, current_user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    name = request.name.strip()
+    craft = CraftEntry(name=name, slug=make_slug(name), summary=request.summary.strip(), content=request.content.strip())
+    db.add(craft)
+    db.flush()
+    from src.services.platform_content import _audit
+    _audit(db, current_user.id, "craft.created", "craft", craft.id)
+    db.commit()
+    db.refresh(craft)
+    return _serialize_craft(craft)
+
+
+@app.patch("/admin/crafts/{craft_id}")
+async def update_admin_craft(craft_id: int, request: AdminCraftUpdate, current_user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    craft = db.get(CraftEntry, craft_id)
+    if craft is None:
+        raise HTTPException(status_code=404, detail="百科条目不存在")
+    if request.name is not None:
+        craft.name = request.name.strip()
+        craft.slug = make_slug(craft.name)
+    if request.summary is not None:
+        craft.summary = request.summary.strip()
+    if request.content is not None:
+        craft.content = request.content.strip()
+    from src.services.platform_content import _audit
+    _audit(db, current_user.id, "craft.updated", "craft", craft.id)
+    db.commit()
+    db.refresh(craft)
+    return _serialize_craft(craft)
+
+
+@app.post("/admin/crafts/{craft_id}/publish")
+async def publish_admin_craft(craft_id: int, current_user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    from src.services.platform_content import publish_craft_entry
+    try:
+        craft = publish_craft_entry(db, craft_id=craft_id, actor_id=current_user.id)
+        db.commit()
+    except ValueError as error:
+        db.rollback()
+        raise HTTPException(status_code=422, detail=str(error))
+    return _serialize_craft(craft)
+
+
+@app.delete("/admin/crafts/{craft_id}")
+async def delete_admin_craft(craft_id: int, current_user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    craft = db.get(CraftEntry, craft_id)
+    if craft is None:
+        raise HTTPException(status_code=404, detail="百科条目不存在")
+    from src.services.platform_content import _audit
+    _audit(db, current_user.id, "craft.deleted", "craft", craft.id)
+    db.delete(craft)
+    db.commit()
+    return {"id": craft_id, "deleted": True}
+
+
 class AdminInheritorCreate(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     craft_name: str = Field(min_length=1, max_length=100)
@@ -1705,6 +1786,21 @@ class AdminInheritorCreate(BaseModel):
     source_url: str = Field(min_length=8, max_length=500)
     source_name: str = Field(min_length=1, max_length=255)
     evidence_text: str = Field(min_length=1)
+
+
+class AdminInheritorUpdate(BaseModel):
+    craft_name: Optional[str] = Field(default=None, min_length=1, max_length=100)
+    region: Optional[str] = None
+    biography: Optional[str] = None
+    recognition: Optional[str] = None
+    lineage: Optional[str] = None
+    representative_works: Optional[str] = None
+
+
+@app.get("/admin/inheritors")
+async def list_admin_inheritors(_: User = Depends(require_admin), db: Session = Depends(get_db)):
+    rows = db.query(InheritorProfile).order_by(InheritorProfile.updated_at.desc()).limit(200).all()
+    return {"items": [_serialize_inheritor(row, db) for row in rows]}
 
 
 @app.post("/admin/inheritors")
@@ -1719,6 +1815,35 @@ async def create_admin_inheritor(request: AdminInheritorCreate, current_user: Us
     return {"id": profile.id, "slug": profile.slug, "status": profile.status}
 
 
+@app.patch("/admin/inheritors/{profile_id}")
+async def update_admin_inheritor(profile_id: int, request: AdminInheritorUpdate, current_user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    profile = db.get(InheritorProfile, profile_id)
+    if profile is None:
+        raise HTTPException(status_code=404, detail="传承人档案不存在")
+    for field in ("craft_name", "region", "biography", "recognition", "lineage", "representative_works"):
+        value = getattr(request, field)
+        if value is not None:
+            setattr(profile, field, value.strip())
+    from src.services.platform_content import _audit
+    _audit(db, current_user.id, "inheritor.updated", "inheritor", profile.id)
+    db.commit()
+    db.refresh(profile)
+    return _serialize_inheritor(profile, db)
+
+
+@app.delete("/admin/inheritors/{profile_id}")
+async def delete_admin_inheritor(profile_id: int, current_user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    profile = db.get(InheritorProfile, profile_id)
+    if profile is None:
+        raise HTTPException(status_code=404, detail="传承人档案不存在")
+    db.query(SourceEvidence).filter(SourceEvidence.subject_type == "inheritor", SourceEvidence.subject_id == profile.id).delete()
+    from src.services.platform_content import _audit
+    _audit(db, current_user.id, "inheritor.deleted", "inheritor", profile.id)
+    db.delete(profile)
+    db.commit()
+    return {"id": profile_id, "deleted": True}
+
+
 @app.post("/admin/inheritors/{profile_id}/publish")
 async def publish_admin_inheritor(profile_id: int, current_user: User = Depends(require_admin), db: Session = Depends(get_db)):
     """Publish only after the required source-evidence check succeeds."""
@@ -1730,6 +1855,17 @@ async def publish_admin_inheritor(profile_id: int, current_user: User = Depends(
         db.rollback()
         raise HTTPException(status_code=422, detail=str(error))
     return {"id": profile.id, "slug": profile.slug, "status": profile.status}
+
+
+@app.post("/admin/graph-candidates/scan")
+async def scan_graph_candidates(current_user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    """Manually scan published content; no server-side cron is installed."""
+    from src.services.graph_scheduler import scan_published_crafts
+    from src.services.platform_content import _audit
+    result = scan_published_crafts(db)
+    _audit(db, current_user.id, "graph_candidate.manual_scan", "craft", 0, str(result))
+    db.commit()
+    return result
 
 
 @app.post("/admin/graph-candidates/{candidate_id}/approve")
@@ -1748,6 +1884,31 @@ async def approve_and_merge_graph_candidate(
         raise HTTPException(status_code=500, detail="知识图谱保存失败")
     db.commit()
     return {"id": candidate.id, "status": candidate.status, "merged": True}
+
+
+class GraphCandidateRejectRequest(BaseModel):
+    reason: str = Field(default="", max_length=2000)
+
+
+@app.post("/admin/graph-candidates/{candidate_id}/reject")
+async def reject_admin_graph_candidate(candidate_id: int, request: GraphCandidateRejectRequest, current_user: User = Depends(require_admin), db: Session = Depends(get_db)):
+    try:
+        candidate = reject_graph_candidate(db, candidate_id=candidate_id, actor_id=current_user.id, reason=request.reason)
+        db.commit()
+    except ValueError as error:
+        db.rollback()
+        raise HTTPException(status_code=422, detail=str(error))
+    return {"id": candidate.id, "status": candidate.status}
+
+
+@app.get("/admin/audit-logs")
+async def list_admin_audit_logs(limit: int = 100, _: User = Depends(require_admin), db: Session = Depends(get_db)):
+    rows = db.query(AuditLog).order_by(AuditLog.created_at.desc()).limit(max(1, min(limit, 200))).all()
+    return {"items": [{
+        "id": row.id, "actor_user_id": row.actor_user_id, "action": row.action,
+        "subject_type": row.subject_type, "subject_id": row.subject_id,
+        "detail": row.detail, "created_at": row.created_at,
+    } for row in rows]}
 
 
 # ============================================================================

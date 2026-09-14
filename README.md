@@ -73,6 +73,9 @@ npm run dev
 - `POST /query`：非遗问答；可选 `session_id` 继续登录用户会话。
 - `POST /feedback`：登录用户对自己的已保存回答点赞、点踩、补充意见或取消反馈。
 - `GET /admin/evaluations`、`GET /admin/feedback`、`GET/PATCH /admin/agents`：管理员质量回看与内置 Agent 配置。
+- `/admin/crafts`、`/admin/inheritors`：管理员维护百科与传承人草稿、发布与删除；传承人发布需要公开来源证据。
+- `/admin/graph-candidates/scan`：管理员手动扫描已发布百科并生成去重候选；不配置云服务器定时任务。
+- `/admin/audit-logs`：管理员查看百科、传承人和图谱候选的操作审计。
 - `GET /graph/stats`、`GET /graph/visualize`：本地图谱统计与可视化。
 - `POST /media/upload`、`GET /search/audio`：媒体上传和音频文本检索。
 
@@ -116,6 +119,11 @@ data/             技艺文档与 heritage_graph.json
 tests/            离线确定性测试
 docs/             设计规格与项目文档
 ```
+
+## v2.0 运维说明
+
+- 首次创建管理员、手动图谱扫描以及域名到位后的静态预渲染/SEO 配置，见 [deploy/README.md](deploy/README.md)。
+- `frontend` 使用 `npm run build:ssg` 生成公开详情页的静态 HTML。真实域名尚未配置时不会写入错误的 canonical URL；域名到位后设置 `VITE_SITE_URL` 再重新构建。
 
 ## 路线图
 

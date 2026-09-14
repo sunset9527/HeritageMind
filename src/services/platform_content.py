@@ -126,3 +126,18 @@ def approve_graph_candidate(db: Session, *, candidate_id: int, actor_id: int) ->
     _audit(db, actor_id, "graph_candidate.approved", "graph_candidate", candidate.id)
     db.flush()
     return candidate
+
+
+def reject_graph_candidate(db: Session, *, candidate_id: int, actor_id: int, reason: str = "") -> GraphChangeCandidate:
+    candidate = db.get(GraphChangeCandidate, candidate_id)
+    if candidate is None:
+        raise ValueError("graph candidate not found")
+    if candidate.status == "approved":
+        raise ValueError("approved candidate cannot be rejected")
+    candidate.status = "rejected"
+    candidate.reviewed_by_user_id = actor_id
+    candidate.reviewed_at = datetime.now(timezone.utc)
+    candidate.review_reason = reason.strip()
+    _audit(db, actor_id, "graph_candidate.rejected", "graph_candidate", candidate.id, candidate.review_reason)
+    db.flush()
+    return candidate
