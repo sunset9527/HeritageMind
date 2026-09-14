@@ -1,46 +1,45 @@
-# HeritageMind
+# HeritageMind｜非遗 AI 知识平台
 
-> 面向中国非物质文化遗产的 AI 知识平台：以可追溯检索、图谱和多 Agent 协作回答问题，并在知识不足时说明边界。
+> 用可追溯的本地资料、混合检索、知识图谱与多智能体协作，帮助用户理解中国非物质文化遗产；证据不足时明确说明边界。
 
 `FastAPI` · `Vue 3` · `LangGraph` · `BM25 + BGE-M3 + RRF` · `ChromaDB` · `MySQL` · `NetworkX`
 
-## 为什么做
+## 项目展示
 
-非遗知识需要被保存，也需要被可靠地解释。HeritageMind 不把未知内容包装成事实：回答需要证据，系统会提示知识库覆盖不足。
+HeritageMind 面向“非遗知识如何被可靠解释”构建。回答附带本地证据、执行路线与知识缺口提示；百科、传承人和图谱页面都能回到明确的资料来源。
 
-当前知识库收录 23 种非遗技艺，涵盖陶瓷、丝织、雕刻、印染、纸艺、金属与戏曲等门类。
+- **23 项非遗技艺**，覆盖陶瓷、丝织、雕刻、印染、纸艺、金属与戏曲等门类；
+- **46 条已发布、可追溯的来源化资料**，每项技艺配有两条来源摘要；
+- **23 个公开百科条目**与 **6 位有公开来源证据的传承人档案**；
+- 完成公开内容初始化后，图谱有 **117 个节点、91 条关系**，包括 46 个资料来源节点。
 
 ## 核心能力
 
-| 能力 | 当前实现 |
+| 模块 | 实现与边界 |
 | --- | --- |
-| 混合检索 | jieba + BM25、BGE-M3 向量检索、RRF 与 CrossEncoder 重排序 |
-| 多专家协作 | 调度器按问题分派技艺、历史、传承三类专家并融合回答 |
-| 知识边界 | 知识缺口检测：覆盖不足时提示，而非补造事实 |
-| 多轮对话 | 登录用户的 MySQL 会话记忆，支持同一会话中的指代追问 |
-| 本地图谱 | 65 节点、39 条关系，覆盖技艺、材料、工具、传承人、地域与朝代 |
-| v1.6 执行轨迹 | Router 输出 `rag / graph / hybrid`；Graph Agent 只读本地图谱；响应携带路线、轨迹与引用，Vue 可展开查看 |
-| v1.8 动态协作 | Router 选出的实际专家进行受上限约束的补充、质疑与回应；SSE 实时推送 DAG 节点、协作摘要与降级状态 |
-| v1.8 质量闭环 | 登录回答保存版本化规则评分；用户可点赞/点踩并补充意见；管理员可查看评估/反馈、配置内置专家 |
-| 多模态基础 | 图片/音频/文档上传、音频转写与检索、Redis 不可达时的内存降级 |
+| 混合检索 | jieba + BM25、BGE-M3 向量检索、RRF 融合与重排序；结果保留来源元数据。 |
+| 多智能体问答 | 调度器按问题分派技艺、历史、传承专家，由 LangGraph 编排融合回答。 |
+| 知识边界 | Gap Detector 在证据不足时提示知识缺口，不以模型补全替代事实。 |
+| 知识图谱 | NetworkX + pyvis 可视化；资料来源节点以“收录来源”连接对应技艺。 |
+| 公开内容 | 百科与传承人仅展示已发布记录；传承人发布必须包含公开来源证据。 |
+| 质量闭环 | 登录用户可保留会话、评价回答；管理员可维护内容、审核图谱候选。 |
+| 多媒体基础 | 支持图片、音频、文档上传与音频文本检索；Redis 不可用时降级为进程内缓存。 |
 
-## 当前架构
+## 架构
 
 ```text
 Vue 3 → FastAPI → LangGraph Workflow
-                    ├─ Router / Planner / 会话上下文
-                    ├─ Research：混合检索 + 动态注册专家协作
-                    ├─ Graph Agent：只读 data/heritage_graph.json
-                    └─ Answer：融合证据、引用、缺口提示与过程质量信号
+                    ├─ Router / 会话上下文
+                    ├─ 混合检索 / 多专家协作
+                    ├─ 本地知识图谱
+                    └─ 引用、轨迹与知识缺口提示
                          │
-              MySQL · ChromaDB · 本地图谱 · 本地媒体文件
+              MySQL · ChromaDB · 本地来源化资料
 ```
 
-会话记忆只辅助理解上下文和改写检索词，不能单独作为事实来源；图谱无命中时记录降级原因并回退检索链路。
+## 快速开始
 
-## 快速开始（Windows PowerShell）
-
-前置条件：Python 3.11+、Node.js 18+、可用的 OpenAI 兼容 LLM API Key；MySQL 用于登录、会话记忆和媒体记录。
+环境要求：Python 3.11+、Node.js 18+、MySQL。向量检索使用本地 BGE-M3 模型；未配置模型或 LLM Key 时，百科、图谱和公开数据页面仍可启动，但部分问答能力会降级。
 
 ```powershell
 git clone https://github.com/sunset9527/HeritageMind.git
@@ -49,105 +48,85 @@ python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 Copy-Item .env.example .env
-# 编辑 .env：至少配置 DEEPSEEK_API_KEY；按需配置 DATABASE_URL
+# 编辑 .env：配置 DATABASE_URL；按需填写 DEEPSEEK_API_KEY 和本地模型路径
 python -m alembic upgrade head
-
-# 终端 1：API（默认 8001）
-python api.py
-
-# 终端 2：Vue（默认 5173）
 cd frontend
 npm install
+cd ..
+```
+
+初始化公开内容。脚本由仓库内经过校验的资料清单生成百科和传承人记录；可重复执行，不会创建重复数据，也不会覆盖已有非空人工内容。
+
+```powershell
+python -m src.services.public_content_seed
+```
+
+```powershell
+# 终端 1：后端，默认 http://127.0.0.1:8001
+python -m uvicorn api:app --host 0.0.0.0 --port 8001 --reload
+
+# 终端 2：前端，默认 http://127.0.0.1:5173
+cd frontend
 npm run dev
 ```
 
 - 前端：<http://127.0.0.1:5173>
-- Swagger：<http://127.0.0.1:8001/docs>
+- API 文档：<http://127.0.0.1:8001/docs>
 
-首次使用可在前端“设置”页填写自己的 API Key；它存于浏览器本地存储并作为请求头传递。
+## 数据与评测
 
-## API 与运行说明
+### 数据治理
 
-完整端点、请求模型与交互调试以 Swagger 为准：<http://127.0.0.1:8001/docs>。
+来源化资料位于 `data/knowledge_sources/`。每条记录保存资料标题、来源机构、原始链接、采集日期、许可说明与正文摘要。`manifest.json` 是唯一清单入口，加载与导入时会校验文件路径、状态、链接格式、重复键和内容哈希。
 
-- `POST /query`：非遗问答；可选 `session_id` 继续登录用户会话。
-- `POST /feedback`：登录用户对自己的已保存回答点赞、点踩、补充意见或取消反馈。
-- `GET /admin/evaluations`、`GET /admin/feedback`、`GET/PATCH /admin/agents`：管理员质量回看与内置 Agent 配置。
-- `/admin/crafts`、`/admin/inheritors`：管理员维护百科与传承人草稿、发布与删除；传承人发布需要公开来源证据。
-- `/admin/graph-candidates/scan`：管理员手动扫描已发布百科并生成去重候选；不配置云服务器定时任务。
-- `/admin/audit-logs`：管理员查看百科、传承人和图谱候选的操作审计。
-- `GET /graph/stats`、`GET /graph/visualize`：本地图谱统计与可视化。
-- `POST /media/upload`、`GET /search/audio`：媒体上传和音频文本检索。
+百科内容与图谱资料节点均由同一份清单生成，避免检索、页面和图谱数据彼此漂移。
 
-`/query` 新增 `metadata.route`、`metadata.workflow_trace` 和 `citations`：只呈现路线、节点状态、耗时与实际使用的本地证据，不返回提示词、会话原文、密钥或内部推理。
+### 检索基线
 
-## 可复现验证
+评测集 `data/evaluation/retrieval-v1.jsonl` 有 120 条证据级问题：40 条直问、30 条混淆、25 条比较、15 条多轮追问、10 条知识库外问题。指标仅衡量检索是否找回可接受来源，**不等同于回答事实正确率**。
 
-### 检索评测
+在同一 46 条来源化资料和同一题集上的实际结果：
 
-历史 `hm100` 有 100 条题目，其中只有锚词存在的 94 条会被计入 Hit@5；它保留为历史参考，不能视为回答准确率或当前检索能力结论。
+| 方法 | Recall@1 | Recall@3 | Recall@5 | MRR | 知识库外正确拒答率 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| BM25 | 68.2% | 94.5% | 97.3% | 0.811 | 0% |
+| 向量检索 | 78.2% | 95.5% | 97.3% | 0.866 | 0% |
+| RRF | 72.7% | 97.3% | 98.2% | 0.848 | 0% |
 
-当前基线改用版本化的 `data/evaluation/retrieval-v1.jsonl`：120 条证据级题目（含 10 条知识库外问题），所有题目都会参与统计。对 46 份已发布来源化摘要运行 BM25 的真实结果为：110 条可回答题 **Recall@1 68.2%、Recall@3 94.5%、Recall@5 97.3%、MRR 0.811**；10 条库外题的正确拒答率为 **0%**。这明确暴露了拒答阈值和多轮追问仍需改进，不能将其包装为通用准确率。
+RRF 的 Top-5 召回最高，向量检索的首位证据与 MRR 更好；三种纯检索方法对库外问题都不能正确拒答。完整口径、环境与失败样本见 [评测协议](docs/evaluation-protocol-v1.md)。
 
-复现命令与完整失败样本见 [评测协议](docs/evaluation-protocol-v1.md)。
-
-### 自动化测试
+## 验证命令
 
 ```powershell
-# 系统临时目录不可写时，指定一个可写目录
-python -m pytest tests/ --basetemp E:\temp\heritagemind-pytest
+# 后端离线回归；使用当前用户的临时目录
+python -m pytest tests/ --basetemp "$env:TEMP\heritagemind-pytest"
+
+# 前端类型检查与生产构建
+cd frontend
+npm run build
 ```
 
-当前后端全量回归真实结果为 **205 passed, 1 skipped**。新增测试覆盖结构化 Router、Graph Agent、工作流路线、来源化知识包与检索评测协议，且不依赖外网、API Key、Redis、BGE 或 Whisper。
-
-v1.8 已额外实际运行 `tests/test_v18_quality_feedback_admin.py`，结果为 **11 passed**；覆盖规则评分、反馈归属与更新、管理员权限、评价持久化、Agent 配置注入和全禁用安全回退。`npx vue-tsc --noEmit` 已通过。尚未把完整模型端到端质量测试或全量构建回归宣称为已完成。
-
-## v1.8 数据库迁移说明
-
-执行 `python -m alembic upgrade head` 创建 `answer_evaluations`、`user_feedback` 与 `agent_configurations`。Windows 本地如遇 `alembic.ini` 编码问题，当前配置已使用 ASCII 注释兼容系统 GBK。
-
-对于历史本地库：若已有部分 v1.5 表但没有 `alembic_version`，不能直接从空版本升级，否则会重复创建旧表。项目的 `004` 迁移会兼容补齐缺失的 `chat_history.session_id`；应先检查现有表结构后再执行版本登记与升级。
+GitHub Actions 会运行后端测试、来源清单/指标校验与前端生产构建；不下载本地模型，也不调用外部 LLM。
 
 ## 工程导航
 
 ```text
-src/agents/       调度器、三专家与 Graph Agent
-src/workflow/     LangGraph 状态、节点与工作流图
-src/retrieval/    BM25、向量检索、RRF、重排序与查询改写
-src/graph/        NetworkX 图谱与 pyvis 可视化
-src/services/     会话记忆、缓存、媒体与音频转写
-frontend/         Vue 3、Pinia、问答与图谱页面
-data/             技艺文档与 heritage_graph.json
-tests/            离线确定性测试
-docs/             设计规格与项目文档
+src/agents/                  调度器、技艺/历史/传承专家与辩论引擎
+src/workflow/                LangGraph 状态、节点与工作流
+src/retrieval/               BM25、向量检索、RRF、重排序与文档加载
+src/graph/                   NetworkX 图谱与 pyvis 可视化
+src/services/                数据清单校验、公开内容初始化、图谱投影、会话与媒体服务
+frontend/                    Vue 3、Pinia、百科、图谱与问答页面
+data/knowledge_sources/      46 条来源化资料及其版本化清单
+data/evaluation/             120 条证据级检索评测与历史报告
+tests/                       不依赖外网和模型的确定性回归测试
+docs/                        数据治理、评测协议、设计与部署文档
 ```
 
-## v2.0 运维说明
+## 贡献约定
 
-- 首次创建管理员、手动图谱扫描以及域名到位后的静态预渲染/SEO 配置，见 [deploy/README.md](deploy/README.md)。
-- `frontend` 使用 `npm run build:ssg` 生成公开详情页的静态 HTML。真实域名尚未配置时不会写入错误的 canonical URL；域名到位后设置 `VITE_SITE_URL` 再重新构建。
-
-### v2.0 完成边界（2026-09）
-
-v2.0 的代码开发已覆盖管理后台、公开百科/传承人、手动图谱增量审核、静态预渲染/SEO 与 MCP 基础能力；其中图谱增量按当前运维决定设计为管理员手动扫描，**不在阿里云 ECS 部署 cron 或自动定时任务**。
-
-但“代码完成”不等同于“生产上线验收完成”。在声明 v2.0 正式上线前，仍必须完成：
-
-1. 将提交 `1db803e` 部署到 ECS，并确认容器健康检查与 IP 访问正常；
-2. 使用部署文档的一次性命令创建管理员账号，实际验收百科、传承人、图谱候选和审计页面；
-3. 对 Wikipedia、GitHub MCP 工具进行联网端到端验证；百度与 Web 搜索保持可配置占位；
-4. 购买并解析真实域名后，配置 HTTPS、`VITE_SITE_URL` 和正式 canonical URL，再重新构建静态页面。
-
-## 路线图
-
-已完成：用户与会话、混合检索、知识缺口检测、动态多专家协作、实时 DAG、图片/音频/文档能力、本地图谱、v1.6 结构化路由与执行轨迹、v1.8 质量反馈与 Agent 管理。
-
-后续方向：图像/音频理解、Reflection Agent、外部知识源、Agent 协作深化与反馈评估。未完成方向不作为当前能力承诺。
-
-## 贡献与反馈
-
-欢迎提交 Issue 或 Pull Request。涉及知识库与评测时，请同时说明来源、适用范围和可复现方式；不要为了提高指标而修改评测数据。
+欢迎提交 Issue 和 Pull Request。涉及知识库或指标的变更，请同时提供来源、适用范围和可复现命令；不要通过删除失败题、修改预期证据或编造数据来提高指标。
 
 ## License
 
-本仓库尚未声明开源许可证；复用前请先联系作者确认。
+当前仓库尚未声明开源许可证。复用前请先联系作者确认。
