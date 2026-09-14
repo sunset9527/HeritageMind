@@ -1,0 +1,146 @@
+{
+  "metrics": {
+    "bm25": {
+      "answerable_count": 110,
+      "out_of_scope_count": 10,
+      "recall_at_1": 0.6818181818181818,
+      "recall_at_3": 0.9454545454545454,
+      "recall_at_5": 0.9727272727272728,
+      "mrr": 0.8109090909090909,
+      "correct_rejection_rate": 0.0,
+      "by_category": {
+        "direct": {
+          "count": 40,
+          "recall_at_1": 0.825,
+          "recall_at_3": 1.0,
+          "recall_at_5": 1.0,
+          "mrr": 0.9041666666666666
+        },
+        "confusion": {
+          "count": 30,
+          "recall_at_1": 0.6333333333333333,
+          "recall_at_3": 0.9,
+          "recall_at_5": 0.9666666666666667,
+          "mrr": 0.765
+        },
+        "comparison": {
+          "count": 25,
+          "recall_at_1": 0.56,
+          "recall_at_3": 1.0,
+          "recall_at_5": 1.0,
+          "mrr": 0.78
+        },
+        "follow_up": {
+          "count": 15,
+          "recall_at_1": 0.6,
+          "recall_at_3": 0.8,
+          "recall_at_5": 0.8666666666666667,
+          "mrr": 0.7055555555555556
+        },
+        "out_of_scope": {
+          "count": 10,
+          "correct_rejection_rate": 0.0
+        }
+      }
+    },
+    "vector_bge_m3": {
+      "answerable_count": 110,
+      "out_of_scope_count": 10,
+      "recall_at_1": 0.7818181818181819,
+      "recall_at_3": 0.9545454545454546,
+      "recall_at_5": 0.9727272727272728,
+      "mrr": 0.8681818181818182,
+      "correct_rejection_rate": 0.0,
+      "by_category": {
+        "direct": {
+          "count": 40,
+          "recall_at_1": 0.85,
+          "recall_at_3": 1.0,
+          "recall_at_5": 1.0,
+          "mrr": 0.925
+        },
+        "confusion": {
+          "count": 30,
+          "recall_at_1": 0.7333333333333333,
+          "recall_at_3": 0.9333333333333333,
+          "recall_at_5": 0.9666666666666667,
+          "mrr": 0.8416666666666667
+        },
+        "comparison": {
+          "count": 25,
+          "recall_at_1": 0.84,
+          "recall_at_3": 1.0,
+          "recall_at_5": 1.0,
+          "mrr": 0.92
+        },
+        "follow_up": {
+          "count": 15,
+          "recall_at_1": 0.6,
+          "recall_at_3": 0.8,
+          "recall_at_5": 0.8666666666666667,
+          "mrr": 0.6833333333333333
+        },
+        "out_of_scope": {
+          "count": 10,
+          "correct_rejection_rate": 0.0
+        }
+      }
+    },
+    "rrf": {
+      "answerable_count": 110,
+      "out_of_scope_count": 10,
+      "recall_at_1": 0.7272727272727273,
+      "recall_at_3": 0.9727272727272728,
+      "recall_at_5": 0.9818181818181818,
+      "mrr": 0.8477272727272728,
+      "correct_rejection_rate": 0.0,
+      "by_category": {
+        "direct": {
+          "count": 40,
+          "recall_at_1": 0.825,
+          "recall_at_3": 1.0,
+          "recall_at_5": 1.0,
+          "mrr": 0.9125
+        },
+        "confusion": {
+          "count": 30,
+          "recall_at_1": 0.6666666666666666,
+          "recall_at_3": 0.9666666666666667,
+          "recall_at_5": 1.0,
+          "mrr": 0.8194444444444444
+        },
+        "comparison": {
+          "count": 25,
+          "recall_at_1": 0.64,
+          "recall_at_3": 1.0,
+          "recall_at_5": 1.0,
+          "mrr": 0.8066666666666668
+        },
+        "follow_up": {
+          "count": 15,
+          "recall_at_1": 0.7333333333333333,
+          "recall_at_3": 0.8666666666666667,
+          "recall_at_5": 0.8666666666666667,
+          "mrr": 0.8
+        },
+        "out_of_scope": {
+          "count": 10,
+          "correct_rejection_rate": 0.0
+        }
+      }
+    }
+  },
+  "configuration": {
+    "top_k": 5,
+    "candidate_k": 10,
+    "model_path": "E:/huggingface/model"
+  },
+  "run_metadata": {
+    "dataset": "data/evaluation/retrieval-v1.jsonl",
+    "dataset_case_count": 120,
+    "published_document_count": 46,
+    "run_at_utc": "2026-09-14T07:41:06.632751+00:00",
+    "git_commit": "8ff8b6abc1703723e1809feb43245c52df8e2cb4",
+    "corpus_scope": "published_curated_documents_only"
+  }
+}
