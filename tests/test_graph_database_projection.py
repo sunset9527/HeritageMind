@@ -25,3 +25,21 @@ def test_sync_published_platform_nodes_reflects_database_changes_without_unrevie
     craft.status = "draft"; db.commit()
     sync_published_platform_nodes(db, graph)
     assert graph.get_node(f"platform:craft:{craft.id}") is None
+
+
+def test_sync_published_platform_nodes_reuses_the_existing_base_craft_node():
+    from src.services.graph_projection import sync_published_platform_nodes
+
+    engine = create_engine("sqlite://", poolclass=StaticPool)
+    Base.metadata.create_all(engine)
+    db = sessionmaker(bind=engine)()
+    craft = CraftEntry(name="景泰蓝", slug="jingtailan", status="published")
+    inheritor = InheritorProfile(name="测试景泰蓝传承人", slug="test-jingtailan", craft_name="景泰蓝", status="published")
+    db.add_all([craft, inheritor]); db.commit()
+    graph = HeritageKnowledgeGraph()
+    assert graph.load_from_json()
+
+    sync_published_platform_nodes(db, graph)
+
+    assert graph.get_node(f"platform:craft:{craft.id}") is None
+    assert graph.graph.has_edge(f"platform:inheritor:{inheritor.id}", "jingtailan")

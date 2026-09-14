@@ -81,15 +81,25 @@ def sync_published_platform_nodes(db: Session, graph: HeritageKnowledgeGraph) ->
     graph.graph.remove_nodes_from(managed_node_ids)
 
     crafts = db.query(CraftEntry).filter(CraftEntry.status == "published").all()
+    base_craft_node_ids = {
+        attrs.get("name"): node_id
+        for node_id, attrs in graph.graph.nodes(data=True)
+        if attrs.get("type") == "craft"
+        and not attrs.get("properties", {}).get(MANAGED_PROPERTY)
+    }
     craft_node_ids: dict[str, str] = {}
     for craft in crafts:
-        node_id = f"platform:craft:{craft.id}"
+        # The 23 curated crafts already exist in the base graph. Reuse those
+        # nodes so importing public-page content does not create a duplicate.
+        node_id = base_craft_node_ids.get(craft.name)
+        if node_id is None:
+            node_id = f"platform:craft:{craft.id}"
+            graph.add_node(node_id, "craft", craft.name, {
+                MANAGED_PROPERTY: True,
+                "slug": craft.slug,
+                "summary": craft.summary,
+            })
         craft_node_ids[craft.name] = node_id
-        graph.add_node(node_id, "craft", craft.name, {
-            MANAGED_PROPERTY: True,
-            "slug": craft.slug,
-            "summary": craft.summary,
-        })
 
     inheritors = db.query(InheritorProfile).filter(InheritorProfile.status == "published").all()
     for inheritor in inheritors:
