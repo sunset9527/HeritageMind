@@ -29,14 +29,14 @@
 
 ## 3. 数据模型与文件组织
 
-新增或扩展模型采用 SQLAlchemy 和 Alembic：
+新增或扩展模型采用 SQLAlchemy 和 Alembic，并复用 v2.0 已有内容模型：
 
-- `knowledge_documents`：文档 ID、技艺 ID、标题、正文、文档类型、语言、来源状态、导入时间、内容哈希与发布状态；
-- `knowledge_sources`：机构、原始 URL、访问日期、许可证/版权说明与可选永久链接；
-- `knowledge_evidence`：文档段落或字符范围、对应来源、摘录和事实标签；
+- `craft_entries` 继续作为公开百科的技艺聚合实体；
+- `knowledge_documents`：关联技艺、稳定文档键、标题、正文、内容哈希、版本、来源状态与发布状态；
+- 既有 `source_evidence` 扩展为承载文档来源机构、原始 URL、访问日期、许可证/版权说明与片段定位，同时保持百科和传承人来源兼容；
 - `knowledge_ingest_runs`：导入批次、输入清单、统计、失败原因和数据集版本。
 
-文档和来源是一对多关系；证据绑定到一个文档片段和一个来源。向量库的 metadata 至少包含 `document_id`、`craft_id`、`evidence_id`、`dataset_version` 和 `publication_status`。回答引用应返回技艺名、文档标题、来源机构、URL 和对应片段，而非只返回模糊的“知识库”。
+一个技艺可关联多份文档；每份文档可关联多条来源证据。向量库的 metadata 至少包含 `document_id`、`craft_id`、`evidence_id`、`dataset_version` 和 `publication_status`。回答引用应返回技艺名、文档标题、来源机构、URL 和对应片段，而非只返回模糊的“知识库”。
 
 导入包使用 JSON 或 YAML 清单加 UTF-8 正文文件。清单定义稳定 ID、来源字段、技艺关联和审核状态；正文内容与元数据分离。导入服务以内容哈希去重，同一来源更新时创建新版本并保留旧版本审计信息。现有 `data/crafts/*.txt` 通过一次性迁移器转入这一格式，保证原文件不被原地改写。
 
