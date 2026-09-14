@@ -290,7 +290,7 @@ class TestRealDataSmoke:
         """真实 loader：所有文档的 metadata.craft_name 全部是中文名（不再回退拼音）"""
         loader = HeritageDocumentLoader()
         docs = loader.load_craft_documents()
-        assert len(docs) == 51
+        assert len(docs) == 69
         missing = [d["id"] for d in docs if d["metadata"]["craft_name"] == d["id"]]
         assert missing == [], f"仍有文档 craft_name 回退为拼音 id: {missing}"
         print(f"\n[真实数据] 已加载 {len(docs)} 篇，craft_name 中文名覆盖率 100%")
