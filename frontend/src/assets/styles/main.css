@@ -54,6 +54,8 @@
   --font-display:    'Times New Roman', 'Inter', 'SF Pro Display', 'PingFang SC', 'Noto Serif SC', serif;
   /* Windows includes STXINGKA.TTF: use it for heritage display text site-wide. */
   --font-brush:      'STXingkai', '华文行楷', 'KaiTi', serif;
+  /* Element Plus otherwise resets form controls to its own Latin font stack. */
+  --el-font-family:  'Times New Roman', 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
 }
 
 /* ================================================================
@@ -64,6 +66,10 @@
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+button, input, textarea, select {
+  font-family: var(--font-sans);
 }
 
 body {
