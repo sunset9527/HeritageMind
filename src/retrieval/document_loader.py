@@ -104,6 +104,7 @@ class HeritageDocumentLoader:
             documents.append({
                 "id": f"curated:{item.document_key}",
                 "content": item.content,
+                "char_count": len(item.content),
                 "metadata": metadata,
             })
         return documents
@@ -152,6 +153,7 @@ class HeritageDocumentLoader:
             return {
                 "id": craft_id,
                 "content": content,
+                "char_count": len(content),
                 "metadata": metadata
             }
             

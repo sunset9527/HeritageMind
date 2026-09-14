@@ -15,7 +15,9 @@ export async function switchProfile(profile: string): Promise<void> {
   await client.post('/switch-profile', { profile })
 }
 
-export async function getDocumentSummary(): Promise<any> {
-  const { data } = await client.get('/documents/summary')
+export interface DocumentSummary { total_documents: number }
+
+export async function getDocumentSummary(): Promise<DocumentSummary> {
+  const { data } = await client.get<DocumentSummary>('/documents/summary')
   return data
 }
