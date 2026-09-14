@@ -85,9 +85,11 @@ npm run dev
 
 ### 检索评测
 
-自建评测有 100 条，其中 94 条具备知识库锚点的有效题目；在当前 23 篇语料、主题区分度较高的条件下，BM25、向量检索与 RRF 的 Hit@5 均为 **94/94（100%）**。
+历史 `hm100` 有 100 条题目，其中只有锚词存在的 94 条会被计入 Hit@5；它保留为历史参考，不能视为回答准确率或当前检索能力结论。
 
-这证明的是小规模领域知识库的召回表现，不等同于通用检索准确率。脚本：`eval_retrieval_hm100.py`。
+当前基线改用版本化的 `data/evaluation/retrieval-v1.jsonl`：120 条证据级题目（含 10 条知识库外问题），所有题目都会参与统计。对 46 份已发布来源化摘要运行 BM25 的真实结果为：110 条可回答题 **Recall@1 68.2%、Recall@3 94.5%、Recall@5 97.3%、MRR 0.811**；10 条库外题的正确拒答率为 **0%**。这明确暴露了拒答阈值和多轮追问仍需改进，不能将其包装为通用准确率。
+
+复现命令与完整失败样本见 [评测协议](docs/evaluation-protocol-v1.md)。
 
 ### 自动化测试
 
@@ -96,7 +98,7 @@ npm run dev
 python -m pytest tests/ --basetemp E:\temp\heritagemind-pytest
 ```
 
-本次 v1.6 迭代真实结果为 **154 passed, 1 skipped**。新增测试覆盖结构化 Router、Graph Agent、工作流路线和响应契约，且不依赖外网、API Key、Redis、BGE 或 Whisper。
+当前后端全量回归真实结果为 **205 passed, 1 skipped**。新增测试覆盖结构化 Router、Graph Agent、工作流路线、来源化知识包与检索评测协议，且不依赖外网、API Key、Redis、BGE 或 Whisper。
 
 v1.8 已额外实际运行 `tests/test_v18_quality_feedback_admin.py`，结果为 **11 passed**；覆盖规则评分、反馈归属与更新、管理员权限、评价持久化、Agent 配置注入和全禁用安全回退。`npx vue-tsc --noEmit` 已通过。尚未把完整模型端到端质量测试或全量构建回归宣称为已完成。
 
