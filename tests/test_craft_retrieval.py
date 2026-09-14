@@ -281,19 +281,30 @@ class TestHierarchicalGrouping:
 
 
 # ---------------------------------------------------------------------------
-# 真实数据 smoke（23 篇技艺文档，不依赖 LLM / embedding）
+# 真实数据 smoke（23 篇旧技艺文档 + 12 篇来源化资料，不依赖 LLM / embedding）
 # ---------------------------------------------------------------------------
 
 class TestRealDataSmoke:
 
     def test_real_docs_craft_name_full_coverage(self):
-        """真实 loader：23 篇文档的 metadata.craft_name 全部是中文名（不再回退拼音）"""
+        """真实 loader：所有文档的 metadata.craft_name 全部是中文名（不再回退拼音）"""
         loader = HeritageDocumentLoader()
         docs = loader.load_craft_documents()
-        assert len(docs) == 23
+        assert len(docs) == 35
         missing = [d["id"] for d in docs if d["metadata"]["craft_name"] == d["id"]]
         assert missing == [], f"仍有文档 craft_name 回退为拼音 id: {missing}"
         print(f"\n[真实数据] 已加载 {len(docs)} 篇，craft_name 中文名覆盖率 100%")
+
+    def test_real_docs_include_published_curated_evidence_metadata(self):
+        """来源化资料必须带稳定文档键、来源和已发布状态，供引用链路复用。"""
+        docs = HeritageDocumentLoader().load_craft_documents()
+        curated = next(doc for doc in docs if doc["id"] == "curated:jingtailan-ihchina-001")
+
+        assert curated["metadata"]["craft_id"] == "jingtailan"
+        assert curated["metadata"]["craft_name"] == "景泰蓝"
+        assert curated["metadata"]["document_key"] == "jingtailan-ihchina-001"
+        assert curated["metadata"]["publication_status"] == "published"
+        assert curated["metadata"]["source_url"].startswith("https://www.ihchina.cn/")
 
     def test_real_docs_boost_rank1(self):
         """真实数据：query 含技艺名 → 该技艺文档必在 rank1"""

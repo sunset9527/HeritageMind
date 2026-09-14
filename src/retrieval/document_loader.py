@@ -6,10 +6,8 @@ import json
 import logging
 from typing import Dict, List, Optional, Any
 from pathlib import Path
-from langchain_community.document_loaders import TextLoader, UnstructuredMarkdownLoader
-from langchain_core.documents import Document
-
 from config import settings
+from src.services.knowledge_manifest import ManifestValidationError, load_manifest
 
 logger = logging.getLogger(__name__)
 
@@ -59,21 +57,55 @@ class HeritageDocumentLoader:
         Returns:
             文档列表，每项包含 id, content, metadata
         """
-        documents = []
+        documents: List[Dict[str, Any]] = []
         if not self.base_path.exists():
             logger.warning(f"文档目录不存在：{self.base_path}")
-            return documents
+        else:
+            # 自动扫描所有 .txt 文件
+            for file_path in sorted(self.base_path.glob("*.txt")):
+                # 从文件名提取 craft_id（去掉 .txt 后缀，拼音化作为 id）
+                craft_name = file_path.stem  # e.g. "景泰蓝"
+                craft_id = self._name_to_id(craft_name)
+                doc = self._load_single_document(file_path, craft_id)
+                if doc:
+                    documents.append(doc)
 
-        # 自动扫描所有 .txt 文件
-        for file_path in sorted(self.base_path.glob("*.txt")):
-            # 从文件名提取 craft_id（去掉 .txt 后缀，拼音化作为 id）
-            craft_name = file_path.stem  # e.g. "景泰蓝"
-            craft_id = self._name_to_id(craft_name)
-            doc = self._load_single_document(file_path, craft_id)
-            if doc:
-                documents.append(doc)
+        documents.extend(self._load_published_curated_documents())
 
         logger.info(f"已加载{len(documents)}篇技艺文档")
+        return documents
+
+    def _load_published_curated_documents(self) -> List[Dict[str, Any]]:
+        """Load only reviewed source-package documents alongside legacy craft files."""
+        manifest_path = self.base_path.parent / "knowledge_sources" / "manifest.json"
+        if not manifest_path.exists():
+            return []
+        try:
+            manifest = load_manifest(manifest_path)
+        except ManifestValidationError as error:
+            logger.warning("来源化知识包无效，已跳过：%s", error)
+            return []
+
+        documents = []
+        for item in manifest.documents:
+            if item.status != "published":
+                continue
+            craft_id = self._name_to_id(item.craft_name)
+            metadata = self._extract_metadata(item.content, craft_id)
+            metadata.update({
+                "document_key": item.document_key,
+                "dataset_version": manifest.dataset_version,
+                "publication_status": item.status,
+                "source_name": item.source_name,
+                "source_url": item.source_url,
+                "accessed_at": item.accessed_at,
+                "license_note": item.license_note,
+            })
+            documents.append({
+                "id": f"curated:{item.document_key}",
+                "content": item.content,
+                "metadata": metadata,
+            })
         return documents
 
     @staticmethod

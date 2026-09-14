@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from src.models.knowledge import KnowledgeDocument, KnowledgeIngestRun
 from src.models.platform import CraftEntry, SourceEvidence
 from src.services.knowledge_manifest import KnowledgeManifest
+from src.services.platform_content import make_slug
 
 
 @dataclass(frozen=True)
@@ -41,7 +42,17 @@ def ingest_manifest(db: Session, manifest: KnowledgeManifest, *, actor_id: int |
             version = existing.version + 1
             updated_count += 1
 
-        craft = db.query(CraftEntry).filter(CraftEntry.name == item.craft_name).one()
+        craft = db.query(CraftEntry).filter(CraftEntry.name == item.craft_name).first()
+        if craft is None:
+            craft = CraftEntry(
+                name=item.craft_name,
+                slug=make_slug(item.craft_name),
+                summary="",
+                content="",
+                status="draft",
+            )
+            db.add(craft)
+            db.flush()
         document = KnowledgeDocument(
             craft_entry_id=craft.id,
             document_key=item.document_key,

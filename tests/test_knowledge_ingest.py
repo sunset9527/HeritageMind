@@ -43,6 +43,14 @@ def _make_db():
     return db
 
 
+def _make_empty_db():
+    from src.models.knowledge import KnowledgeDocument, KnowledgeIngestRun  # noqa: F401
+
+    engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
+    Base.metadata.create_all(engine)
+    return sessionmaker(bind=engine)()
+
+
 def test_ingest_published_document_creates_source_evidence_and_is_idempotent():
     from src.models.knowledge import KnowledgeDocument, KnowledgeIngestRun
     from src.models.platform import SourceEvidence
@@ -92,3 +100,17 @@ def test_ingest_changed_document_creates_a_new_current_version():
     assert result.updated_count == 1
     assert [(row.version, row.is_current) for row in versions] == [(1, False), (2, True)]
     assert run.updated_count == 1
+
+
+def test_ingest_creates_a_draft_craft_entry_when_the_aggregate_is_missing():
+    from src.models.knowledge import KnowledgeDocument
+    from src.services.knowledge_ingest import ingest_manifest
+
+    db = _make_empty_db()
+    ingest_manifest(db, _manifest(), actor_id=None)
+
+    craft = db.query(CraftEntry).one()
+    document = db.query(KnowledgeDocument).one()
+    assert craft.name == "景泰蓝"
+    assert craft.status == "draft"
+    assert document.craft_entry_id == craft.id
