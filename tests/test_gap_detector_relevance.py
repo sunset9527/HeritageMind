@@ -26,3 +26,13 @@ def test_gap_detector_accepts_high_similarity_results_when_llm_is_unavailable():
 
     assert result.coverage_level == "sufficient"
     assert result.can_answer is True
+
+
+def test_gap_detector_uses_relevance_threshold_in_fallback_not_document_threshold():
+    detector = KnowledgeGapDetector(llm=BrokenLlm())
+    documents = [{"content": "相关资料", "similarity": 0.3} for _ in range(3)]
+
+    result = detector.detect("景泰蓝如何制作", documents)
+
+    assert result.coverage_level == "partial"
+    assert result.can_answer is True

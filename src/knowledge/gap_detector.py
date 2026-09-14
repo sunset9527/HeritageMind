@@ -57,6 +57,7 @@ class KnowledgeGapDetector:
         
         self.system_prompt = GAP_DETECTION_PROMPT
         self.threshold = settings.gap_detection_threshold
+        self.min_relevance = settings.gap_detection_min_relevance
     
     def detect(
         self,
@@ -194,7 +195,7 @@ class KnowledgeGapDetector:
         Returns:
             GapDetectionResult: 基础检测结果
         """
-        if doc_count >= 3 and avg_score >= self.threshold:
+        if doc_count >= self.threshold and avg_score >= self.min_relevance:
             return GapDetectionResult(
                 coverage_level="sufficient",
                 relevant_documents=doc_count,
@@ -204,7 +205,7 @@ class KnowledgeGapDetector:
                 confidence=0.9,
                 reasoning=f"检索到{doc_count}条相关文档，覆盖度良好"
             )
-        elif doc_count >= 1 and avg_score >= self.threshold * 0.5:
+        elif doc_count >= 1 and avg_score >= self.min_relevance * 0.5:
             return GapDetectionResult(
                 coverage_level="partial",
                 relevant_documents=doc_count,

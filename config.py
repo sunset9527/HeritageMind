@@ -100,6 +100,12 @@ class Settings(BaseSettings):
         ge=1,
         description="知识缺口检测阈值：文档数小于此值认为存在缺口"
     )
+    gap_detection_min_relevance: float = Field(
+        default=0.4,
+        ge=0.0,
+        le=1.0,
+        description="知识缺口检测的最低平均相关度，用于LLM不可用时的规则兜底"
+    )
 
     # 用户画像配置
     default_user_profile: str = Field(
