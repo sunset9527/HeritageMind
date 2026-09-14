@@ -79,7 +79,10 @@ class KnowledgeGapDetector:
         doc_contents = [doc.get("content", "")[:500] for doc in retrieved_docs if "content" in doc]
 
         # 计算文档平均相关度分数
-        scores = [doc.get("score", doc.get("relevance", 0)) for doc in retrieved_docs]
+        scores = [
+            doc.get("score", doc.get("relevance", doc.get("similarity", 0)))
+            for doc in retrieved_docs
+        ]
         avg_score = sum(scores) / len(scores) if scores else 0
 
         # === 快速路径：检索结果充足时跳过 LLM 调用，大幅提速 ===
@@ -149,10 +152,10 @@ class KnowledgeGapDetector:
             
         except json.JSONDecodeError as e:
             logger.warning(f"JSON解析失败，使用备用逻辑: {e}")
-            return self._fallback_detection(doc_count)
+            return self._fallback_detection(doc_count, avg_score)
         except Exception as e:
             logger.error(f"缺口检测失败: {e}")
-            return self._fallback_detection(doc_count)
+            return self._fallback_detection(doc_count, avg_score)
     
     def _build_detection_prompt(
         self,
@@ -181,7 +184,7 @@ class KnowledgeGapDetector:
 请进行严格评估：
 """
     
-    def _fallback_detection(self, doc_count: int) -> GapDetectionResult:
+    def _fallback_detection(self, doc_count: int, avg_score: float = 0.0) -> GapDetectionResult:
         """
         备用检测逻辑：当LLM分析失败时使用规则判断
         
@@ -191,7 +194,7 @@ class KnowledgeGapDetector:
         Returns:
             GapDetectionResult: 基础检测结果
         """
-        if doc_count >= 3:
+        if doc_count >= 3 and avg_score >= self.threshold:
             return GapDetectionResult(
                 coverage_level="sufficient",
                 relevant_documents=doc_count,
@@ -201,7 +204,7 @@ class KnowledgeGapDetector:
                 confidence=0.9,
                 reasoning=f"检索到{doc_count}条相关文档，覆盖度良好"
             )
-        elif doc_count >= 1:
+        elif doc_count >= 1 and avg_score >= self.threshold * 0.5:
             return GapDetectionResult(
                 coverage_level="partial",
                 relevant_documents=doc_count,
