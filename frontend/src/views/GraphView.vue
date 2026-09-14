@@ -17,6 +17,7 @@ const filterOptions = [
   { value: 'inheritor', label: '传承人' },
   { value: 'region', label: '地域' },
   { value: 'dynasty', label: '朝代' },
+  { value: 'source', label: '来源资料' },
 ]
 
 const nodeColors: Record<string, string> = {
@@ -26,6 +27,7 @@ const nodeColors: Record<string, string> = {
   inheritor: '#96CEB4',
   region: '#FFEAA7',
   dynasty: '#DDA0DD',
+  source: '#5C6BC0',
 }
 
 const nodeLabels: Record<string, string> = {
@@ -35,6 +37,7 @@ const nodeLabels: Record<string, string> = {
   inheritor: '传承人',
   region: '地域',
   dynasty: '朝代',
+  source: '来源资料',
 }
 
 const totalNodes = computed(() => graphStore.stats?.total_nodes ?? 0)

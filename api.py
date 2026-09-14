@@ -132,6 +132,9 @@ async def lifespan(app: FastAPI):
         builder = KnowledgeGraphBuilder()
         knowledge_graph = builder.build_initial_graph()
         knowledge_graph.save_to_json()
+
+    from src.services.graph_projection import sync_curated_source_nodes
+    sync_curated_source_nodes(knowledge_graph)
     
     # 初始化可视化器
     visualizer = HeritageGraphVisualizer(knowledge_graph)
@@ -696,8 +699,9 @@ async def upload_document(
 async def get_graph_stats(db: Session = Depends(get_db)):
     """获取知识图谱统计信息"""
     try:
-        from src.services.graph_projection import sync_published_platform_nodes
+        from src.services.graph_projection import sync_curated_source_nodes, sync_published_platform_nodes
         sync_published_platform_nodes(db, knowledge_graph)
+        sync_curated_source_nodes(knowledge_graph)
         stats = knowledge_graph.get_statistics()
         return GraphStatsResponse(**stats)
     except Exception as e:
@@ -720,8 +724,9 @@ async def visualize_graph(
     try:
         if visualizer is None:
             raise HTTPException(status_code=503, detail="可视化器未初始化")
-        from src.services.graph_projection import sync_published_platform_nodes
+        from src.services.graph_projection import sync_curated_source_nodes, sync_published_platform_nodes
         sync_published_platform_nodes(db, knowledge_graph)
+        sync_curated_source_nodes(knowledge_graph)
         
         html = visualizer.render_interactive(
             filter_type=filter_type,

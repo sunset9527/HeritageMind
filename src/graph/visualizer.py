@@ -34,6 +34,7 @@ class HeritageGraphVisualizer:
         "inheritor": "#EF6C00",     # 橙色 - 传承人
         "region": "#7B1FA2",        # 紫色 - 地域
         "dynasty": "#C62828",       # 红色 - 朝代
+        "source": "#5C6BC0",        # 靛蓝 - 来源资料
         "unknown": "#757575"        # 灰色 - 未知
     }
     
@@ -45,6 +46,7 @@ class HeritageGraphVisualizer:
         "inheritor": "传承人",
         "region": "地域",
         "dynasty": "朝代",
+        "source": "来源资料",
         "unknown": "其他"
     }
     
@@ -56,7 +58,8 @@ class HeritageGraphVisualizer:
         "originates_from": "发源于",
         "originated_in": "起源于",
         "related_to": "与...相关",
-        "influenced_by": "受...影响"
+        "influenced_by": "受...影响",
+        "has_source": "收录来源"
     }
     
     def __init__(self, graph: Optional[Any] = None):

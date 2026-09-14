@@ -39,7 +39,7 @@ function startExploring() {
 .heritage-hero { display: grid; grid-template-columns: minmax(0, 1.06fr) minmax(330px, .94fr); max-width: 1120px; min-height: 470px; margin: 44px auto 0; overflow: hidden; border: 1px solid rgba(89, 67, 41, .2); background: #efe4ce; box-shadow: 0 18px 44px rgba(76, 49, 23, .12); }
 .hero-copy { padding: 76px 52px 52px 62px; background: linear-gradient(135deg, #f7efdf 0%, #eee1c8 100%); }
 .hero-kicker { margin: 0 0 16px; color: var(--accent); font-size: .68rem; font-weight: 700; letter-spacing: .22em; }
-h1 { position: relative; display: inline-block; margin: 0; color: #26322d; font-family: 'Ma Shan Zheng', 'Zhi Mang Xing', 'STKaiti', 'KaiTi', cursive; font-size: clamp(3.4rem, 6vw, 5.2rem); font-weight: 400; letter-spacing: .07em; line-height: 1.05; transform: rotate(-1deg); transform-origin: left center; }
+h1 { position: relative; display: inline-block; margin: 0; color: #26322d; font-family: 'STXingkai', '华文行楷', 'KaiTi', serif; font-size: clamp(3.4rem, 6vw, 5.2rem); font-weight: 400; letter-spacing: .04em; line-height: 1.1; }
 .title-line { display: block; white-space: nowrap; }
 h1::after { content: ''; position: absolute; left: .14em; bottom: -.12em; width: 1.7em; height: .09em; background: var(--accent); opacity: .82; transform: rotate(-3deg); }
 .hero-intro { max-width: 390px; margin: 28px 0 24px; color: #5e5549; font-size: .9rem; line-height: 2; }

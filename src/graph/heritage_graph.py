@@ -30,7 +30,8 @@ class HeritageKnowledgeGraph:
         "tool": "工具",
         "inheritor": "传承人",
         "region": "地域",
-        "dynasty": "朝代"
+        "dynasty": "朝代",
+        "source": "来源资料"
     }
     
     # 边类型定义
@@ -41,7 +42,8 @@ class HeritageKnowledgeGraph:
         "originates_from": "发源于",
         "originated_in": "起源于",
         "related_to": "与...相关",
-        "influenced_by": "受...影响"
+        "influenced_by": "受...影响",
+        "has_source": "收录来源"
     }
     
     def __init__(self):
