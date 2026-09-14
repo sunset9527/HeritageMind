@@ -1,0 +1,1167 @@
+{
+  "metrics": {
+    "answerable_count": 110,
+    "out_of_scope_count": 10,
+    "recall_at_1": 0.6818181818181818,
+    "recall_at_3": 0.9454545454545454,
+    "recall_at_5": 0.9727272727272728,
+    "mrr": 0.8109090909090909,
+    "correct_rejection_rate": 0.0,
+    "by_category": {
+      "direct": {
+        "count": 40,
+        "recall_at_1": 0.825,
+        "recall_at_3": 1.0,
+        "recall_at_5": 1.0,
+        "mrr": 0.9041666666666666
+      },
+      "confusion": {
+        "count": 30,
+        "recall_at_1": 0.6333333333333333,
+        "recall_at_3": 0.9,
+        "recall_at_5": 0.9666666666666667,
+        "mrr": 0.765
+      },
+      "comparison": {
+        "count": 25,
+        "recall_at_1": 0.56,
+        "recall_at_3": 1.0,
+        "recall_at_5": 1.0,
+        "mrr": 0.78
+      },
+      "follow_up": {
+        "count": 15,
+        "recall_at_1": 0.6,
+        "recall_at_3": 0.8,
+        "recall_at_5": 0.8666666666666667,
+        "mrr": 0.7055555555555556
+      },
+      "out_of_scope": {
+        "count": 10,
+        "correct_rejection_rate": 0.0
+      }
+    }
+  },
+  "rankings": {
+    "d01": [
+      "curated:jingtailan-ihchina-001",
+      "curated:jingtailan-beijing-001",
+      "curated:miaolaran-ihchina-001",
+      "curated:zhubian-unesco-001",
+      "curated:piying-ihchina-001"
+    ],
+    "d02": [
+      "curated:suxiu-suzhou-001",
+      "curated:zhubian-unesco-001",
+      "curated:suxiu-ihchina-001",
+      "curated:nirenzhang-tianjin-001",
+      "curated:longquan-ihchina-001"
+    ],
+    "d03": [
+      "curated:longquan-ihchina-001",
+      "curated:longquan-unesco-001",
+      "curated:ruci-ihchina-001",
+      "curated:junci-ihchina-001",
+      "curated:zhubian-unesco-001"
+    ],
+    "d04": [
+      "curated:yunjin-ihchina-001",
+      "curated:yunjin-unesco-001",
+      "curated:kesi-suzhouich-001",
+      "curated:longquan-ihchina-001",
+      "curated:nirenzhang-tianjin-001"
+    ],
+    "d05": [
+      "curated:jingju-ihchina-001",
+      "curated:jingju-unesco-001",
+      "curated:nirenzhang-tianjin-001",
+      "curated:nirenzhang-tianjintourism-001",
+      "curated:nianhua-kaifeng-001"
+    ],
+    "d06": [
+      "curated:piying-ihchina-001",
+      "curated:piying-unesco-001",
+      "curated:tangsancai-luoyang-001",
+      "curated:jingju-ihchina-001",
+      "curated:jingju-unesco-001"
+    ],
+    "d07": [
+      "curated:yixing-ihchina-001",
+      "curated:yixing-yixinggov-001",
+      "curated:zhubian-unesco-001",
+      "curated:wuhu-wuhugov-001",
+      "curated:suxiu-suzhou-001"
+    ],
+    "d08": [
+      "curated:wuhu-ihchina-001",
+      "curated:wuhu-wuhugov-001",
+      "curated:suxiu-suzhou-001",
+      "curated:qiqi-chongqinggov-001",
+      "curated:jianzhi-ihchina-001"
+    ],
+    "d09": [
+      "curated:shujin-ihchina-001",
+      "curated:shujin-mct-001",
+      "curated:yunjin-ihchina-001",
+      "curated:jingdezhen-mct-001",
+      "curated:zhuangjin-mct-001"
+    ],
+    "d10": [
+      "curated:jianzhi-ihchina-001",
+      "curated:jianzhi-mct-001",
+      "curated:yunjin-unesco-001",
+      "curated:longquan-ihchina-001",
+      "curated:zhubian-chongqing-001"
+    ],
+    "d11": [
+      "curated:jingdezhen-jdzgov-001",
+      "curated:jingdezhen-mct-001",
+      "curated:yixing-ihchina-001",
+      "curated:junci-ihchina-001",
+      "curated:shujin-ihchina-001"
+    ],
+    "d12": [
+      "curated:dongyang-ihchina-001",
+      "curated:dongyang-mct-001",
+      "curated:suxiu-suzhou-001",
+      "curated:qiqi-chongqinggazetteer-001",
+      "curated:yixing-yixinggov-001"
+    ],
+    "d13": [
+      "curated:miaolaran-ihchina-001",
+      "curated:miaolaran-neac-001",
+      "curated:jingtailan-ihchina-001",
+      "curated:jingtailan-beijing-001",
+      "curated:dongyang-mct-001"
+    ],
+    "d14": [
+      "curated:nianhua-ihchina-001",
+      "curated:nianhua-kaifeng-001",
+      "curated:nirenzhang-tianjin-001",
+      "curated:piying-ihchina-001",
+      "curated:jingdezhen-jdzgov-001"
+    ],
+    "d15": [
+      "curated:kesi-suzhouich-001",
+      "curated:kesi-suzhougazetteer-001",
+      "curated:yunjin-ihchina-001",
+      "curated:suxiu-ihchina-001",
+      "curated:zhubian-chongqing-001"
+    ],
+    "d16": [
+      "curated:zhubian-unesco-001",
+      "curated:zhubian-chongqing-001",
+      "curated:longquan-unesco-001",
+      "curated:tangsancai-luoyang-001",
+      "curated:dongyang-mct-001"
+    ],
+    "d17": [
+      "curated:yudiao-liwan-001",
+      "curated:yudiao-gzwxb-001",
+      "curated:zhubian-unesco-001",
+      "curated:suxiu-suzhou-001",
+      "curated:longquan-ihchina-001"
+    ],
+    "d18": [
+      "curated:qiqi-chongqinggov-001",
+      "curated:qiqi-chongqinggazetteer-001",
+      "curated:suxiu-suzhou-001",
+      "curated:zhubian-unesco-001",
+      "curated:jingtailan-ihchina-001"
+    ],
+    "d19": [
+      "curated:tangsancai-mct-001",
+      "curated:longquan-unesco-001",
+      "curated:tangsancai-luoyang-001",
+      "curated:jingdezhen-jdzgov-001",
+      "curated:junci-ihchina-001"
+    ],
+    "d20": [
+      "curated:junci-ihchina-001",
+      "curated:junci-mct-001",
+      "curated:zhubian-unesco-001",
+      "curated:suxiu-suzhou-001",
+      "curated:longquan-ihchina-001"
+    ],
+    "d21": [
+      "curated:ruci-ruzhou-001",
+      "curated:suxiu-suzhou-001",
+      "curated:ruci-ihchina-001",
+      "curated:tangsancai-mct-001",
+      "curated:zhubian-unesco-001"
+    ],
+    "d22": [
+      "curated:nirenzhang-tianjin-001",
+      "curated:nirenzhang-tianjintourism-001",
+      "curated:wuhu-wuhugov-001",
+      "curated:zhubian-unesco-001",
+      "curated:suxiu-suzhou-001"
+    ],
+    "d23": [
+      "curated:zhuangjin-gqb-001",
+      "curated:zhuangjin-mct-001",
+      "curated:suxiu-suzhou-001",
+      "curated:shujin-ihchina-001",
+      "curated:yunjin-ihchina-001"
+    ],
+    "d24": [
+      "curated:jingtailan-beijing-001",
+      "curated:jingtailan-ihchina-001",
+      "curated:longquan-unesco-001",
+      "curated:jingju-unesco-001",
+      "curated:yunjin-unesco-001"
+    ],
+    "d25": [
+      "curated:suxiu-suzhou-001",
+      "curated:tangsancai-luoyang-001",
+      "curated:shujin-mct-001",
+      "curated:dongyang-mct-001",
+      "curated:jingdezhen-mct-001"
+    ],
+    "d26": [
+      "curated:longquan-ihchina-001",
+      "curated:longquan-unesco-001",
+      "curated:dongyang-mct-001",
+      "curated:yunjin-unesco-001",
+      "curated:jingju-unesco-001"
+    ],
+    "d27": [
+      "curated:yunjin-unesco-001",
+      "curated:yunjin-ihchina-001",
+      "curated:suxiu-suzhou-001",
+      "curated:tangsancai-mct-001",
+      "curated:junci-mct-001"
+    ],
+    "d28": [
+      "curated:jingju-unesco-001",
+      "curated:jingju-ihchina-001",
+      "curated:jianzhi-mct-001",
+      "curated:yunjin-unesco-001",
+      "curated:longquan-unesco-001"
+    ],
+    "d29": [
+      "curated:piying-unesco-001",
+      "curated:piying-ihchina-001",
+      "curated:suxiu-ihchina-001",
+      "curated:dongyang-ihchina-001",
+      "curated:nirenzhang-tianjintourism-001"
+    ],
+    "d30": [
+      "curated:yixing-ihchina-001",
+      "curated:yixing-yixinggov-001",
+      "curated:yudiao-liwan-001",
+      "curated:dongyang-ihchina-001",
+      "curated:ruci-ruzhou-001"
+    ],
+    "d31": [
+      "curated:wuhu-wuhugov-001",
+      "curated:wuhu-ihchina-001",
+      "curated:zhubian-unesco-001",
+      "curated:nianhua-kaifeng-001",
+      "curated:jianzhi-mct-001"
+    ],
+    "d32": [
+      "curated:shujin-mct-001",
+      "curated:dongyang-mct-001",
+      "curated:shujin-ihchina-001",
+      "curated:junci-mct-001",
+      "curated:tangsancai-luoyang-001"
+    ],
+    "d33": [
+      "curated:jianzhi-mct-001",
+      "curated:jianzhi-ihchina-001",
+      "curated:suxiu-suzhou-001",
+      "curated:zhubian-unesco-001",
+      "curated:nirenzhang-tianjintourism-001"
+    ],
+    "d34": [
+      "curated:jingdezhen-jdzgov-001",
+      "curated:jingdezhen-mct-001",
+      "curated:suxiu-suzhou-001",
+      "curated:tangsancai-luoyang-001",
+      "curated:shujin-mct-001"
+    ],
+    "d35": [
+      "curated:dongyang-mct-001",
+      "curated:dongyang-ihchina-001",
+      "curated:tangsancai-luoyang-001",
+      "curated:jingdezhen-mct-001",
+      "curated:shujin-mct-001"
+    ],
+    "d36": [
+      "curated:miaolaran-neac-001",
+      "curated:miaolaran-ihchina-001",
+      "curated:dongyang-ihchina-001",
+      "curated:wuhu-wuhugov-001",
+      "curated:zhuangjin-mct-001"
+    ],
+    "d37": [
+      "curated:nianhua-kaifeng-001",
+      "curated:nianhua-ihchina-001",
+      "curated:tangsancai-luoyang-001",
+      "curated:dongyang-mct-001",
+      "curated:shujin-mct-001"
+    ],
+    "d38": [
+      "curated:kesi-suzhougazetteer-001",
+      "curated:kesi-suzhouich-001",
+      "curated:suxiu-suzhou-001",
+      "curated:qiqi-chongqinggazetteer-001",
+      "curated:yixing-yixinggov-001"
+    ],
+    "d39": [
+      "curated:zhubian-chongqing-001",
+      "curated:zhubian-unesco-001",
+      "curated:yixing-yixinggov-001",
+      "curated:longquan-ihchina-001",
+      "curated:nirenzhang-tianjin-001"
+    ],
+    "d40": [
+      "curated:yudiao-liwan-001",
+      "curated:yudiao-gzwxb-001",
+      "curated:suxiu-suzhou-001",
+      "curated:dongyang-ihchina-001",
+      "curated:nianhua-ihchina-001"
+    ],
+    "c01": [
+      "curated:wuhu-ihchina-001",
+      "curated:wuhu-wuhugov-001",
+      "curated:piying-unesco-001",
+      "curated:qiqi-chongqinggazetteer-001",
+      "curated:zhubian-chongqing-001"
+    ],
+    "c02": [
+      "curated:jianzhi-ihchina-001",
+      "curated:jianzhi-mct-001",
+      "curated:wuhu-ihchina-001",
+      "curated:miaolaran-ihchina-001",
+      "curated:shujin-ihchina-001"
+    ],
+    "c03": [
+      "curated:miaolaran-ihchina-001",
+      "curated:miaolaran-neac-001",
+      "curated:suxiu-ihchina-001",
+      "curated:ruci-ruzhou-001",
+      "curated:yixing-ihchina-001"
+    ],
+    "c04": [
+      "curated:yunjin-ihchina-001",
+      "curated:kesi-suzhouich-001",
+      "curated:kesi-suzhougazetteer-001",
+      "curated:yunjin-unesco-001",
+      "curated:qiqi-chongqinggov-001"
+    ],
+    "c05": [
+      "curated:junci-ihchina-001",
+      "curated:jingdezhen-jdzgov-001",
+      "curated:jingju-ihchina-001",
+      "curated:ruci-ruzhou-001",
+      "curated:jingtailan-ihchina-001"
+    ],
+    "c06": [
+      "curated:ruci-ruzhou-001",
+      "curated:jingdezhen-jdzgov-001",
+      "curated:ruci-ihchina-001",
+      "curated:tangsancai-mct-001",
+      "curated:junci-ihchina-001"
+    ],
+    "c07": [
+      "curated:jingtailan-beijing-001",
+      "curated:jingtailan-ihchina-001",
+      "curated:tangsancai-mct-001",
+      "curated:tangsancai-luoyang-001",
+      "curated:qiqi-chongqinggov-001"
+    ],
+    "c08": [
+      "curated:tangsancai-mct-001",
+      "curated:yudiao-liwan-001",
+      "curated:longquan-ihchina-001",
+      "curated:jingdezhen-jdzgov-001",
+      "curated:junci-ihchina-001"
+    ],
+    "c09": [
+      "curated:yixing-yixinggov-001",
+      "curated:yixing-ihchina-001",
+      "curated:jingdezhen-jdzgov-001",
+      "curated:jingtailan-ihchina-001",
+      "curated:kesi-suzhouich-001"
+    ],
+    "c10": [
+      "curated:yudiao-liwan-001",
+      "curated:yudiao-gzwxb-001",
+      "curated:nirenzhang-tianjin-001",
+      "curated:piying-ihchina-001",
+      "curated:zhuangjin-gqb-001"
+    ],
+    "c11": [
+      "curated:dongyang-mct-001",
+      "curated:dongyang-ihchina-001",
+      "curated:wuhu-ihchina-001",
+      "curated:zhubian-unesco-001",
+      "curated:ruci-ruzhou-001"
+    ],
+    "c12": [
+      "curated:nianhua-ihchina-001",
+      "curated:nianhua-kaifeng-001",
+      "curated:dongyang-ihchina-001",
+      "curated:wuhu-ihchina-001",
+      "curated:wuhu-wuhugov-001"
+    ],
+    "c13": [
+      "curated:nirenzhang-tianjin-001",
+      "curated:piying-unesco-001",
+      "curated:jingju-unesco-001",
+      "curated:nirenzhang-tianjintourism-001",
+      "curated:piying-ihchina-001"
+    ],
+    "c14": [
+      "curated:piying-ihchina-001",
+      "curated:jingju-ihchina-001",
+      "curated:piying-unesco-001",
+      "curated:nirenzhang-tianjin-001",
+      "curated:zhubian-chongqing-001"
+    ],
+    "c15": [
+      "curated:zhuangjin-mct-001",
+      "curated:zhuangjin-gqb-001",
+      "curated:kesi-suzhouich-001",
+      "curated:jianzhi-mct-001",
+      "curated:shujin-ihchina-001"
+    ],
+    "c16": [
+      "curated:shujin-ihchina-001",
+      "curated:yunjin-unesco-001",
+      "curated:yunjin-ihchina-001",
+      "curated:zhuangjin-mct-001",
+      "curated:shujin-mct-001"
+    ],
+    "c17": [
+      "curated:jingdezhen-jdzgov-001",
+      "curated:jingdezhen-mct-001",
+      "curated:yixing-yixinggov-001",
+      "curated:yixing-ihchina-001",
+      "curated:jingtailan-ihchina-001"
+    ],
+    "c18": [
+      "curated:kesi-suzhougazetteer-001",
+      "curated:kesi-suzhouich-001",
+      "curated:zhuangjin-mct-001",
+      "curated:yunjin-unesco-001",
+      "curated:yunjin-ihchina-001"
+    ],
+    "c19": [
+      "curated:kesi-suzhougazetteer-001",
+      "curated:kesi-suzhouich-001",
+      "curated:suxiu-suzhou-001",
+      "curated:suxiu-ihchina-001",
+      "curated:piying-ihchina-001"
+    ],
+    "c20": [
+      "curated:jingju-ihchina-001",
+      "curated:jingju-unesco-001",
+      "curated:wuhu-ihchina-001",
+      "curated:junci-ihchina-001",
+      "curated:jianzhi-ihchina-001"
+    ],
+    "c21": [
+      "curated:qiqi-chongqinggov-001",
+      "curated:qiqi-chongqinggazetteer-001",
+      "curated:jingtailan-ihchina-001",
+      "curated:jingdezhen-jdzgov-001",
+      "curated:piying-ihchina-001"
+    ],
+    "c22": [
+      "curated:kesi-suzhouich-001",
+      "curated:yudiao-liwan-001",
+      "curated:longquan-ihchina-001",
+      "curated:wuhu-ihchina-001",
+      "curated:miaolaran-neac-001"
+    ],
+    "c23": [
+      "curated:jingtailan-beijing-001",
+      "curated:wuhu-ihchina-001",
+      "curated:wuhu-wuhugov-001",
+      "curated:jingtailan-ihchina-001",
+      "curated:piying-ihchina-001"
+    ],
+    "c24": [
+      "curated:miaolaran-neac-001",
+      "curated:miaolaran-ihchina-001",
+      "curated:yixing-ihchina-001",
+      "curated:zhuangjin-gqb-001",
+      "curated:jianzhi-ihchina-001"
+    ],
+    "c25": [
+      "curated:jianzhi-ihchina-001",
+      "curated:jianzhi-mct-001",
+      "curated:wuhu-ihchina-001",
+      "curated:jingju-ihchina-001",
+      "curated:nirenzhang-tianjin-001"
+    ],
+    "c26": [
+      "curated:junci-mct-001",
+      "curated:ruci-ihchina-001",
+      "curated:suxiu-ihchina-001",
+      "curated:zhubian-chongqing-001",
+      "curated:junci-ihchina-001"
+    ],
+    "c27": [
+      "curated:ruci-ihchina-001",
+      "curated:ruci-ruzhou-001",
+      "curated:suxiu-ihchina-001",
+      "curated:longquan-ihchina-001",
+      "curated:tangsancai-luoyang-001"
+    ],
+    "c28": [
+      "curated:tangsancai-mct-001",
+      "curated:jingdezhen-jdzgov-001",
+      "curated:jingju-ihchina-001",
+      "curated:piying-ihchina-001",
+      "curated:yudiao-liwan-001"
+    ],
+    "c29": [
+      "curated:yudiao-gzwxb-001",
+      "curated:yudiao-liwan-001",
+      "curated:zhuangjin-gqb-001",
+      "curated:nianhua-ihchina-001",
+      "curated:wuhu-ihchina-001"
+    ],
+    "c30": [
+      "curated:zhuangjin-mct-001",
+      "curated:zhuangjin-gqb-001",
+      "curated:yudiao-liwan-001",
+      "curated:piying-ihchina-001",
+      "curated:shujin-ihchina-001"
+    ],
+    "p01": [
+      "curated:wuhu-ihchina-001",
+      "curated:wuhu-wuhugov-001",
+      "curated:zhubian-unesco-001",
+      "curated:jingtailan-ihchina-001",
+      "curated:jingtailan-beijing-001"
+    ],
+    "p02": [
+      "curated:miaolaran-ihchina-001",
+      "curated:miaolaran-neac-001",
+      "curated:suxiu-suzhou-001",
+      "curated:zhuangjin-gqb-001",
+      "curated:suxiu-ihchina-001"
+    ],
+    "p03": [
+      "curated:junci-ihchina-001",
+      "curated:longquan-unesco-001",
+      "curated:longquan-ihchina-001",
+      "curated:junci-mct-001",
+      "curated:tangsancai-mct-001"
+    ],
+    "p04": [
+      "curated:yunjin-ihchina-001",
+      "curated:yunjin-unesco-001",
+      "curated:shujin-ihchina-001",
+      "curated:shujin-mct-001",
+      "curated:dongyang-mct-001"
+    ],
+    "p05": [
+      "curated:jingju-unesco-001",
+      "curated:piying-ihchina-001",
+      "curated:piying-unesco-001",
+      "curated:jingju-ihchina-001",
+      "curated:zhubian-chongqing-001"
+    ],
+    "p06": [
+      "curated:yixing-ihchina-001",
+      "curated:yixing-yixinggov-001",
+      "curated:jingdezhen-jdzgov-001",
+      "curated:jingdezhen-mct-001",
+      "curated:jingtailan-ihchina-001"
+    ],
+    "p07": [
+      "curated:nianhua-kaifeng-001",
+      "curated:nianhua-ihchina-001",
+      "curated:jianzhi-ihchina-001",
+      "curated:jianzhi-mct-001",
+      "curated:wuhu-ihchina-001"
+    ],
+    "p08": [
+      "curated:kesi-suzhouich-001",
+      "curated:zhuangjin-gqb-001",
+      "curated:kesi-suzhougazetteer-001",
+      "curated:zhuangjin-mct-001",
+      "curated:shujin-mct-001"
+    ],
+    "p09": [
+      "curated:dongyang-ihchina-001",
+      "curated:dongyang-mct-001",
+      "curated:zhubian-unesco-001",
+      "curated:zhubian-chongqing-001",
+      "curated:jianzhi-mct-001"
+    ],
+    "p10": [
+      "curated:qiqi-chongqinggov-001",
+      "curated:qiqi-chongqinggazetteer-001",
+      "curated:yudiao-gzwxb-001",
+      "curated:yudiao-liwan-001",
+      "curated:yixing-ihchina-001"
+    ],
+    "p11": [
+      "curated:junci-ihchina-001",
+      "curated:tangsancai-mct-001",
+      "curated:tangsancai-luoyang-001",
+      "curated:junci-mct-001",
+      "curated:wuhu-wuhugov-001"
+    ],
+    "p12": [
+      "curated:nirenzhang-tianjintourism-001",
+      "curated:nirenzhang-tianjin-001",
+      "curated:piying-ihchina-001",
+      "curated:piying-unesco-001",
+      "curated:zhubian-chongqing-001"
+    ],
+    "p13": [
+      "curated:kesi-suzhougazetteer-001",
+      "curated:kesi-suzhouich-001",
+      "curated:suxiu-suzhou-001",
+      "curated:suxiu-ihchina-001",
+      "curated:zhubian-unesco-001"
+    ],
+    "p14": [
+      "curated:tangsancai-luoyang-001",
+      "curated:tangsancai-mct-001",
+      "curated:jingtailan-ihchina-001",
+      "curated:jingtailan-beijing-001",
+      "curated:wuhu-wuhugov-001"
+    ],
+    "p15": [
+      "curated:longquan-ihchina-001",
+      "curated:longquan-unesco-001",
+      "curated:ruci-ihchina-001",
+      "curated:ruci-ruzhou-001",
+      "curated:zhubian-unesco-001"
+    ],
+    "p16": [
+      "curated:shujin-ihchina-001",
+      "curated:shujin-mct-001",
+      "curated:zhuangjin-gqb-001",
+      "curated:zhuangjin-mct-001",
+      "curated:zhubian-chongqing-001"
+    ],
+    "p17": [
+      "curated:jianzhi-ihchina-001",
+      "curated:miaolaran-neac-001",
+      "curated:miaolaran-ihchina-001",
+      "curated:jianzhi-mct-001",
+      "curated:zhuangjin-mct-001"
+    ],
+    "p18": [
+      "curated:jingdezhen-mct-001",
+      "curated:yixing-yixinggov-001",
+      "curated:yixing-ihchina-001",
+      "curated:jingdezhen-jdzgov-001",
+      "curated:tangsancai-luoyang-001"
+    ],
+    "p19": [
+      "curated:zhubian-chongqing-001",
+      "curated:yudiao-gzwxb-001",
+      "curated:yudiao-liwan-001",
+      "curated:zhubian-unesco-001",
+      "curated:suxiu-suzhou-001"
+    ],
+    "p20": [
+      "curated:wuhu-ihchina-001",
+      "curated:wuhu-wuhugov-001",
+      "curated:dongyang-ihchina-001",
+      "curated:dongyang-mct-001",
+      "curated:yudiao-gzwxb-001"
+    ],
+    "p21": [
+      "curated:yunjin-ihchina-001",
+      "curated:yunjin-unesco-001",
+      "curated:kesi-suzhouich-001",
+      "curated:kesi-suzhougazetteer-001",
+      "curated:yudiao-liwan-001"
+    ],
+    "p22": [
+      "curated:nirenzhang-tianjintourism-001",
+      "curated:jingju-unesco-001",
+      "curated:nirenzhang-tianjin-001",
+      "curated:jingju-ihchina-001",
+      "curated:miaolaran-neac-001"
+    ],
+    "p23": [
+      "curated:nianhua-ihchina-001",
+      "curated:nianhua-kaifeng-001",
+      "curated:jianzhi-mct-001",
+      "curated:jianzhi-ihchina-001",
+      "curated:suxiu-ihchina-001"
+    ],
+    "p24": [
+      "curated:yudiao-gzwxb-001",
+      "curated:yudiao-liwan-001",
+      "curated:qiqi-chongqinggov-001",
+      "curated:qiqi-chongqinggazetteer-001",
+      "curated:dongyang-mct-001"
+    ],
+    "p25": [
+      "curated:junci-mct-001",
+      "curated:tangsancai-mct-001",
+      "curated:junci-ihchina-001",
+      "curated:tangsancai-luoyang-001",
+      "curated:zhuangjin-mct-001"
+    ],
+    "f01": [
+      "curated:yixing-ihchina-001",
+      "curated:wuhu-ihchina-001",
+      "curated:tangsancai-mct-001",
+      "curated:jingtailan-ihchina-001",
+      "curated:jingju-unesco-001"
+    ],
+    "f02": [
+      "curated:longquan-ihchina-001",
+      "curated:wuhu-ihchina-001",
+      "curated:kesi-suzhouich-001",
+      "curated:longquan-unesco-001",
+      "curated:tangsancai-mct-001"
+    ],
+    "f03": [
+      "curated:jianzhi-ihchina-001",
+      "curated:wuhu-ihchina-001",
+      "curated:jianzhi-mct-001",
+      "curated:jingtailan-beijing-001",
+      "curated:zhuangjin-gqb-001"
+    ],
+    "f04": [
+      "curated:jingdezhen-jdzgov-001",
+      "curated:yunjin-unesco-001",
+      "curated:jingju-unesco-001",
+      "curated:tangsancai-mct-001",
+      "curated:jianzhi-mct-001"
+    ],
+    "f05": [
+      "curated:zhuangjin-gqb-001",
+      "curated:wuhu-wuhugov-001",
+      "curated:kesi-suzhouich-001",
+      "curated:kesi-suzhougazetteer-001",
+      "curated:suxiu-ihchina-001"
+    ],
+    "f06": [
+      "curated:jingtailan-beijing-001",
+      "curated:jingtailan-ihchina-001",
+      "curated:longquan-unesco-001",
+      "curated:jingdezhen-jdzgov-001",
+      "curated:jianzhi-mct-001"
+    ],
+    "f07": [
+      "curated:miaolaran-ihchina-001",
+      "curated:suxiu-ihchina-001",
+      "curated:jingju-unesco-001",
+      "curated:jianzhi-mct-001",
+      "curated:dongyang-mct-001"
+    ],
+    "f08": [
+      "curated:nirenzhang-tianjin-001",
+      "curated:nirenzhang-tianjintourism-001",
+      "curated:wuhu-wuhugov-001",
+      "curated:jingtailan-beijing-001",
+      "curated:junci-ihchina-001"
+    ],
+    "f09": [
+      "curated:shujin-ihchina-001",
+      "curated:yunjin-unesco-001",
+      "curated:jingdezhen-jdzgov-001",
+      "curated:jingju-unesco-001",
+      "curated:miaolaran-ihchina-001"
+    ],
+    "f10": [
+      "curated:ruci-ruzhou-001",
+      "curated:yixing-ihchina-001",
+      "curated:ruci-ihchina-001",
+      "curated:jingdezhen-jdzgov-001",
+      "curated:piying-ihchina-001"
+    ],
+    "f11": [
+      "curated:wuhu-ihchina-001",
+      "curated:jingtailan-beijing-001",
+      "curated:wuhu-wuhugov-001",
+      "curated:jianzhi-mct-001",
+      "curated:piying-ihchina-001"
+    ],
+    "f12": [
+      "curated:yudiao-liwan-001",
+      "curated:qiqi-chongqinggov-001",
+      "curated:nianhua-kaifeng-001",
+      "curated:zhuangjin-mct-001",
+      "curated:dongyang-ihchina-001"
+    ],
+    "f13": [
+      "curated:qiqi-chongqinggov-001",
+      "curated:qiqi-chongqinggazetteer-001",
+      "curated:zhubian-unesco-001",
+      "curated:suxiu-suzhou-001",
+      "curated:jianzhi-mct-001"
+    ],
+    "f14": [
+      "curated:jingju-unesco-001",
+      "curated:ruci-ruzhou-001",
+      "curated:dongyang-mct-001",
+      "curated:jingtailan-beijing-001",
+      "curated:shujin-mct-001"
+    ],
+    "f15": [
+      "curated:suxiu-suzhou-001",
+      "curated:zhuangjin-gqb-001",
+      "curated:kesi-suzhouich-001",
+      "curated:yunjin-unesco-001",
+      "curated:zhubian-unesco-001"
+    ],
+    "o01": [
+      "curated:jingju-unesco-001",
+      "curated:suxiu-ihchina-001",
+      "curated:zhubian-chongqing-001",
+      "curated:junci-ihchina-001",
+      "curated:zhuangjin-gqb-001"
+    ],
+    "o02": [
+      "curated:jingju-unesco-001",
+      "curated:jingtailan-ihchina-001",
+      "curated:zhubian-chongqing-001",
+      "curated:junci-ihchina-001",
+      "curated:zhuangjin-gqb-001"
+    ],
+    "o03": [
+      "curated:jianzhi-mct-001",
+      "curated:yunjin-unesco-001",
+      "curated:nirenzhang-tianjintourism-001",
+      "curated:jingju-unesco-001",
+      "curated:longquan-unesco-001"
+    ],
+    "o04": [
+      "curated:longquan-unesco-001",
+      "curated:qiqi-chongqinggov-001",
+      "curated:nianhua-kaifeng-001",
+      "curated:jianzhi-mct-001",
+      "curated:yunjin-unesco-001"
+    ],
+    "o05": [
+      "curated:zhubian-chongqing-001",
+      "curated:yudiao-gzwxb-001",
+      "curated:tangsancai-mct-001",
+      "curated:tangsancai-luoyang-001",
+      "curated:junci-ihchina-001"
+    ],
+    "o06": [
+      "curated:suxiu-suzhou-001",
+      "curated:zhubian-unesco-001",
+      "curated:jingtailan-ihchina-001",
+      "curated:jingtailan-beijing-001",
+      "curated:suxiu-ihchina-001"
+    ],
+    "o07": [
+      "curated:tangsancai-luoyang-001",
+      "curated:dongyang-mct-001",
+      "curated:shujin-mct-001",
+      "curated:jingdezhen-mct-001",
+      "curated:jingtailan-ihchina-001"
+    ],
+    "o08": [
+      "curated:suxiu-ihchina-001",
+      "curated:zhubian-chongqing-001",
+      "curated:nianhua-kaifeng-001",
+      "curated:kesi-suzhouich-001",
+      "curated:jianzhi-ihchina-001"
+    ],
+    "o09": [
+      "curated:zhubian-chongqing-001",
+      "curated:yudiao-gzwxb-001",
+      "curated:tangsancai-mct-001",
+      "curated:tangsancai-luoyang-001",
+      "curated:junci-ihchina-001"
+    ],
+    "o10": [
+      "curated:tangsancai-luoyang-001",
+      "curated:dongyang-mct-001",
+      "curated:shujin-mct-001",
+      "curated:jingdezhen-mct-001",
+      "curated:jingtailan-ihchina-001"
+    ]
+  },
+  "rejected": {
+    "d01": false,
+    "d02": false,
+    "d03": false,
+    "d04": false,
+    "d05": false,
+    "d06": false,
+    "d07": false,
+    "d08": false,
+    "d09": false,
+    "d10": false,
+    "d11": false,
+    "d12": false,
+    "d13": false,
+    "d14": false,
+    "d15": false,
+    "d16": false,
+    "d17": false,
+    "d18": false,
+    "d19": false,
+    "d20": false,
+    "d21": false,
+    "d22": false,
+    "d23": false,
+    "d24": false,
+    "d25": false,
+    "d26": false,
+    "d27": false,
+    "d28": false,
+    "d29": false,
+    "d30": false,
+    "d31": false,
+    "d32": false,
+    "d33": false,
+    "d34": false,
+    "d35": false,
+    "d36": false,
+    "d37": false,
+    "d38": false,
+    "d39": false,
+    "d40": false,
+    "c01": false,
+    "c02": false,
+    "c03": false,
+    "c04": false,
+    "c05": false,
+    "c06": false,
+    "c07": false,
+    "c08": false,
+    "c09": false,
+    "c10": false,
+    "c11": false,
+    "c12": false,
+    "c13": false,
+    "c14": false,
+    "c15": false,
+    "c16": false,
+    "c17": false,
+    "c18": false,
+    "c19": false,
+    "c20": false,
+    "c21": false,
+    "c22": false,
+    "c23": false,
+    "c24": false,
+    "c25": false,
+    "c26": false,
+    "c27": false,
+    "c28": false,
+    "c29": false,
+    "c30": false,
+    "p01": false,
+    "p02": false,
+    "p03": false,
+    "p04": false,
+    "p05": false,
+    "p06": false,
+    "p07": false,
+    "p08": false,
+    "p09": false,
+    "p10": false,
+    "p11": false,
+    "p12": false,
+    "p13": false,
+    "p14": false,
+    "p15": false,
+    "p16": false,
+    "p17": false,
+    "p18": false,
+    "p19": false,
+    "p20": false,
+    "p21": false,
+    "p22": false,
+    "p23": false,
+    "p24": false,
+    "p25": false,
+    "f01": false,
+    "f02": false,
+    "f03": false,
+    "f04": false,
+    "f05": false,
+    "f06": false,
+    "f07": false,
+    "f08": false,
+    "f09": false,
+    "f10": false,
+    "f11": false,
+    "f12": false,
+    "f13": false,
+    "f14": false,
+    "f15": false,
+    "o01": false,
+    "o02": false,
+    "o03": false,
+    "o04": false,
+    "o05": false,
+    "o06": false,
+    "o07": false,
+    "o08": false,
+    "o09": false,
+    "o10": false
+  },
+  "failures": [
+    {
+      "id": "c22",
+      "reason": "evidence_not_retrieved",
+      "ranking": [
+        "curated:kesi-suzhouich-001",
+        "curated:yudiao-liwan-001",
+        "curated:longquan-ihchina-001",
+        "curated:wuhu-ihchina-001",
+        "curated:miaolaran-neac-001"
+      ]
+    },
+    {
+      "id": "f02",
+      "reason": "evidence_not_retrieved",
+      "ranking": [
+        "curated:longquan-ihchina-001",
+        "curated:wuhu-ihchina-001",
+        "curated:kesi-suzhouich-001",
+        "curated:longquan-unesco-001",
+        "curated:tangsancai-mct-001"
+      ]
+    },
+    {
+      "id": "f14",
+      "reason": "evidence_not_retrieved",
+      "ranking": [
+        "curated:jingju-unesco-001",
+        "curated:ruci-ruzhou-001",
+        "curated:dongyang-mct-001",
+        "curated:jingtailan-beijing-001",
+        "curated:shujin-mct-001"
+      ]
+    },
+    {
+      "id": "o01",
+      "reason": "not_rejected",
+      "ranking": [
+        "curated:jingju-unesco-001",
+        "curated:suxiu-ihchina-001",
+        "curated:zhubian-chongqing-001",
+        "curated:junci-ihchina-001",
+        "curated:zhuangjin-gqb-001"
+      ]
+    },
+    {
+      "id": "o02",
+      "reason": "not_rejected",
+      "ranking": [
+        "curated:jingju-unesco-001",
+        "curated:jingtailan-ihchina-001",
+        "curated:zhubian-chongqing-001",
+        "curated:junci-ihchina-001",
+        "curated:zhuangjin-gqb-001"
+      ]
+    },
+    {
+      "id": "o03",
+      "reason": "not_rejected",
+      "ranking": [
+        "curated:jianzhi-mct-001",
+        "curated:yunjin-unesco-001",
+        "curated:nirenzhang-tianjintourism-001",
+        "curated:jingju-unesco-001",
+        "curated:longquan-unesco-001"
+      ]
+    },
+    {
+      "id": "o04",
+      "reason": "not_rejected",
+      "ranking": [
+        "curated:longquan-unesco-001",
+        "curated:qiqi-chongqinggov-001",
+        "curated:nianhua-kaifeng-001",
+        "curated:jianzhi-mct-001",
+        "curated:yunjin-unesco-001"
+      ]
+    },
+    {
+      "id": "o05",
+      "reason": "not_rejected",
+      "ranking": [
+        "curated:zhubian-chongqing-001",
+        "curated:yudiao-gzwxb-001",
+        "curated:tangsancai-mct-001",
+        "curated:tangsancai-luoyang-001",
+        "curated:junci-ihchina-001"
+      ]
+    },
+    {
+      "id": "o06",
+      "reason": "not_rejected",
+      "ranking": [
+        "curated:suxiu-suzhou-001",
+        "curated:zhubian-unesco-001",
+        "curated:jingtailan-ihchina-001",
+        "curated:jingtailan-beijing-001",
+        "curated:suxiu-ihchina-001"
+      ]
+    },
+    {
+      "id": "o07",
+      "reason": "not_rejected",
+      "ranking": [
+        "curated:tangsancai-luoyang-001",
+        "curated:dongyang-mct-001",
+        "curated:shujin-mct-001",
+        "curated:jingdezhen-mct-001",
+        "curated:jingtailan-ihchina-001"
+      ]
+    },
+    {
+      "id": "o08",
+      "reason": "not_rejected",
+      "ranking": [
+        "curated:suxiu-ihchina-001",
+        "curated:zhubian-chongqing-001",
+        "curated:nianhua-kaifeng-001",
+        "curated:kesi-suzhouich-001",
+        "curated:jianzhi-ihchina-001"
+      ]
+    },
+    {
+      "id": "o09",
+      "reason": "not_rejected",
+      "ranking": [
+        "curated:zhubian-chongqing-001",
+        "curated:yudiao-gzwxb-001",
+        "curated:tangsancai-mct-001",
+        "curated:tangsancai-luoyang-001",
+        "curated:junci-ihchina-001"
+      ]
+    },
+    {
+      "id": "o10",
+      "reason": "not_rejected",
+      "ranking": [
+        "curated:tangsancai-luoyang-001",
+        "curated:dongyang-mct-001",
+        "curated:shujin-mct-001",
+        "curated:jingdezhen-mct-001",
+        "curated:jingtailan-ihchina-001"
+      ]
+    }
+  ],
+  "configuration": {
+    "method": "bm25",
+    "top_k": 5,
+    "rejection_threshold": 0.0
+  },
+  "run_metadata": {
+    "dataset": "data/evaluation/retrieval-v1.jsonl",
+    "dataset_case_count": 120,
+    "published_document_count": 46,
+    "run_at_utc": "2026-09-14T07:33:39.943159+00:00",
+    "git_commit": "a23e2399fd33f52847820a3b607eddb4ca772336",
+    "corpus_scope": "published_curated_documents_only"
+  }
+}
