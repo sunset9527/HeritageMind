@@ -693,9 +693,11 @@ async def upload_document(
 # ============================================================================
 
 @app.get("/graph/stats", response_model=GraphStatsResponse)
-async def get_graph_stats():
+async def get_graph_stats(db: Session = Depends(get_db)):
     """获取知识图谱统计信息"""
     try:
+        from src.services.graph_projection import sync_published_platform_nodes
+        sync_published_platform_nodes(db, knowledge_graph)
         stats = knowledge_graph.get_statistics()
         return GraphStatsResponse(**stats)
     except Exception as e:
@@ -706,7 +708,8 @@ async def get_graph_stats():
 @app.get("/graph/visualize")
 async def visualize_graph(
     filter_type: Optional[str] = None,
-    layout: str = "force"
+    layout: str = "force",
+    db: Session = Depends(get_db),
 ):
     """
     获取交互式图谱HTML
@@ -717,6 +720,8 @@ async def visualize_graph(
     try:
         if visualizer is None:
             raise HTTPException(status_code=503, detail="可视化器未初始化")
+        from src.services.graph_projection import sync_published_platform_nodes
+        sync_published_platform_nodes(db, knowledge_graph)
         
         html = visualizer.render_interactive(
             filter_type=filter_type,

@@ -82,5 +82,5 @@ function isActive(path: string) {
 <style scoped>
 .heritage-header { background: rgba(247, 239, 222, .88); border-bottom: 1px solid rgba(84, 61, 34, .16); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
 .heritage-nav { position: relative; }.heritage-nav::after { content: ''; position: absolute; bottom: -1px; left: 24px; width: 88px; height: 2px; background: var(--accent); }
-.brand-name { color: var(--text); font-family: var(--font-brush); font-size: 1.5rem; font-weight: 400; letter-spacing: .08em; }.nav-link { border-bottom: 2px solid transparent; }.nav-link.router-link-active { border-bottom-color: var(--accent); }
+.brand-name { color: var(--text); font-family: 'Times New Roman', serif; font-size: 1.25rem; font-weight: 700; letter-spacing: .04em; }.nav-link { border-bottom: 2px solid transparent; }.nav-link.router-link-active { border-bottom-color: var(--accent); }
 </style>
