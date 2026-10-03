@@ -1,0 +1,28 @@
+{
+  "version": "image-v1-2026-10-03",
+  "images": [
+    {"craft_name":"剪纸","image_url":"/crafts/剪纸.jpg","source_page_url":"","source_name":"本地历史资源","source_kind":"legacy_local","status":"legacy_local","accessed_at":"2026-10-03","license_note":"既有本地展示资源。"},
+    {"craft_name":"京剧","image_url":"/crafts/京剧.jpg","source_page_url":"","source_name":"本地历史资源","source_kind":"legacy_local","status":"legacy_local","accessed_at":"2026-10-03","license_note":"既有本地展示资源。"},
+    {"craft_name":"东阳木雕","image_url":"/crafts/东阳木雕.jpg","source_page_url":"","source_name":"本地历史资源","source_kind":"legacy_local","status":"legacy_local","accessed_at":"2026-10-03","license_note":"既有本地展示资源。"},
+    {"craft_name":"景德镇瓷器","image_url":"/crafts/景德镇瓷器.jpg","source_page_url":"","source_name":"本地历史资源","source_kind":"legacy_local","status":"legacy_local","accessed_at":"2026-10-03","license_note":"既有本地展示资源。"},
+    {"craft_name":"宜兴紫砂","image_url":"/crafts/宜兴紫砂.jpg","source_page_url":"","source_name":"本地历史资源","source_kind":"legacy_local","status":"legacy_local","accessed_at":"2026-10-03","license_note":"既有本地展示资源。"},
+    {"craft_name":"壮锦","image_url":"/crafts/壮锦.jpg","source_page_url":"","source_name":"本地历史资源","source_kind":"legacy_local","status":"legacy_local","accessed_at":"2026-10-03","license_note":"既有本地展示资源。"},
+    {"craft_name":"唐三彩","image_url":"/crafts/唐三彩.jpg","source_page_url":"","source_name":"本地历史资源","source_kind":"legacy_local","status":"legacy_local","accessed_at":"2026-10-03","license_note":"既有本地展示资源。"},
+    {"craft_name":"南京云锦","image_url":"/crafts/南京云锦.jpg","source_page_url":"","source_name":"本地历史资源","source_kind":"legacy_local","status":"legacy_local","accessed_at":"2026-10-03","license_note":"既有本地展示资源。"},
+    {"craft_name":"汝瓷","image_url":"/crafts/汝瓷.jpg","source_page_url":"","source_name":"本地历史资源","source_kind":"legacy_local","status":"legacy_local","accessed_at":"2026-10-03","license_note":"既有本地展示资源。"},
+    {"craft_name":"木版年画","image_url":"/crafts/木版年画.jpg","source_page_url":"","source_name":"本地历史资源","source_kind":"legacy_local","status":"legacy_local","accessed_at":"2026-10-03","license_note":"既有本地展示资源。"},
+    {"craft_name":"景泰蓝","image_url":"/crafts/景泰蓝.jpg","source_page_url":"","source_name":"本地历史资源","source_kind":"legacy_local","status":"legacy_local","accessed_at":"2026-10-03","license_note":"既有本地展示资源。"},
+    {"craft_name":"泥人张","image_url":"/crafts/泥人张.jpg","source_page_url":"","source_name":"本地历史资源","source_kind":"legacy_local","status":"legacy_local","accessed_at":"2026-10-03","license_note":"既有本地展示资源。"},
+    {"craft_name":"漆器","image_url":"/crafts/漆器.jpg","source_page_url":"","source_name":"本地历史资源","source_kind":"legacy_local","status":"legacy_local","accessed_at":"2026-10-03","license_note":"既有本地展示资源。"},
+    {"craft_name":"龙泉青瓷","image_url":"/crafts/龙泉青瓷.jpg","source_page_url":"","source_name":"本地历史资源","source_kind":"legacy_local","status":"legacy_local","accessed_at":"2026-10-03","license_note":"既有本地展示资源。"},
+    {"craft_name":"钧瓷","image_url":"/crafts/钧瓷.jpg","source_page_url":"","source_name":"本地历史资源","source_kind":"legacy_local","status":"legacy_local","accessed_at":"2026-10-03","license_note":"既有本地展示资源。"},
+    {"craft_name":"蜀锦","image_url":"/crafts/蜀锦.jpg","source_page_url":"","source_name":"本地历史资源","source_kind":"legacy_local","status":"legacy_local","accessed_at":"2026-10-03","license_note":"既有本地展示资源。"},
+    {"craft_name":"苗族蜡染","image_url":"/crafts/苗族蜡染.jpg","source_page_url":"","source_name":"本地历史资源","source_kind":"legacy_local","status":"legacy_local","accessed_at":"2026-10-03","license_note":"既有本地展示资源。"},
+    {"craft_name":"苏绣","image_url":"/crafts/苏绣.jpg","source_page_url":"","source_name":"本地历史资源","source_kind":"legacy_local","status":"legacy_local","accessed_at":"2026-10-03","license_note":"既有本地展示资源。"},
+    {"craft_name":"芜湖铁画","image_url":"/crafts/芜湖铁画.jpg","source_page_url":"","source_name":"本地历史资源","source_kind":"legacy_local","status":"legacy_local","accessed_at":"2026-10-03","license_note":"既有本地展示资源。"},
+    {"craft_name":"缂丝","image_url":"/crafts/缂丝.jpg","source_page_url":"","source_name":"本地历史资源","source_kind":"legacy_local","status":"legacy_local","accessed_at":"2026-10-03","license_note":"既有本地展示资源。"},
+    {"craft_name":"竹编","image_url":"/crafts/竹编.jpg","source_page_url":"","source_name":"本地历史资源","source_kind":"legacy_local","status":"legacy_local","accessed_at":"2026-10-03","license_note":"既有本地展示资源。"},
+    {"craft_name":"皮影戏","image_url":"/crafts/皮影戏.jpg","source_page_url":"","source_name":"本地历史资源","source_kind":"legacy_local","status":"legacy_local","accessed_at":"2026-10-03","license_note":"既有本地展示资源。"},
+    {"craft_name":"玉雕","image_url":"/crafts/玉雕.jpg","source_page_url":"","source_name":"本地历史资源","source_kind":"legacy_local","status":"legacy_local","accessed_at":"2026-10-03","license_note":"既有本地展示资源。"}
+  ]
+}

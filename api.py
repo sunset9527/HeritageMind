@@ -4,6 +4,7 @@ FastAPI后端服务 - 非遗知识问答系统API
 
 import asyncio
 import logging
+from pathlib import Path
 from uuid import uuid4
 from typing import Optional, List, Dict, Any
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Depends, Header, status, Request
@@ -78,6 +79,7 @@ from src.models.favorite import Favorite
 from src.models.platform import AuditLog, CraftEntry, GraphChangeCandidate, InheritorProfile, SourceEvidence
 from src.services.graph_curation import merge_approved_candidate
 from src.services.platform_content import approve_graph_candidate, make_slug, reject_graph_candidate
+from src.services.encyclopedia_images import load_image_manifest, resolve_encyclopedia_image
 from src.services.ai_search import AiSearchService
 from src.services.mcp_tools import search_web
 from src.retrieval.multimodal_search import search_images_by_text, search_similar_images, index_all_images
@@ -1635,6 +1637,31 @@ async def reset_admin_agent_override(
 # v2.0 公开百科、传承人档案与图谱候选审核
 # ============================================================================
 
+IMAGE_MANIFEST_PATH = Path(__file__).resolve().parent / "data" / "knowledge_sources" / "image_manifest.json"
+
+
+def _load_public_encyclopedia_images() -> dict[str, dict[str, Any]]:
+    if not IMAGE_MANIFEST_PATH.exists():
+        return {}
+    return load_image_manifest(IMAGE_MANIFEST_PATH)
+
+
+def _serialize_encyclopedia_entry(
+    row: CraftEntry,
+    images: dict[str, dict[str, Any]],
+    *,
+    include_content: bool = False,
+) -> Dict[str, Any]:
+    entry = {
+        "name": row.name,
+        "slug": row.slug,
+        "summary": row.summary,
+        "image": resolve_encyclopedia_image(images, row.name),
+    }
+    if include_content:
+        entry["content"] = row.content
+    return entry
+
 def _serialize_inheritor(row: InheritorProfile, db: Session) -> Dict[str, Any]:
     sources = db.query(SourceEvidence).filter(
         SourceEvidence.subject_type == "inheritor", SourceEvidence.subject_id == row.id
@@ -1651,7 +1678,8 @@ def _serialize_inheritor(row: InheritorProfile, db: Session) -> Dict[str, Any]:
 async def list_encyclopedia(db: Session = Depends(get_db)):
     """List only published craft entries for the public encyclopedia."""
     rows = db.query(CraftEntry).filter(CraftEntry.status == "published").order_by(CraftEntry.name).all()
-    return {"items": [{"name": row.name, "slug": row.slug, "summary": row.summary} for row in rows]}
+    images = _load_public_encyclopedia_images()
+    return {"items": [_serialize_encyclopedia_entry(row, images) for row in rows]}
 
 
 @app.post("/search/ai")
@@ -1673,7 +1701,11 @@ async def get_encyclopedia_entry(slug: str, db: Session = Depends(get_db)):
     row = db.query(CraftEntry).filter(CraftEntry.slug == slug, CraftEntry.status == "published").first()
     if row is None:
         raise HTTPException(status_code=404, detail="技艺百科条目不存在")
-    return {"name": row.name, "slug": row.slug, "summary": row.summary, "content": row.content}
+    return _serialize_encyclopedia_entry(
+        row,
+        _load_public_encyclopedia_images(),
+        include_content=True,
+    )
 
 
 @app.get("/inheritors")

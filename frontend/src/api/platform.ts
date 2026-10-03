@@ -1,7 +1,8 @@
 import client from './client'
 import type { CraftItem } from '@/types'
 
-export interface CraftEntry { name: string; slug: string; summary: string; content?: string }
+export interface CraftImage { url: string | null; status: 'verified' | 'legacy_local' | 'pending_review' | 'unavailable' }
+export interface CraftEntry { name: string; slug: string; summary: string; content?: string; image: CraftImage }
 export interface Source { name: string; url: string; evidence: string }
 export interface Inheritor { name: string; slug: string; craft_name: string; region: string; recognition: string; biography: string; lineage: string; representative_works: string; sources: Source[] }
 export interface DocumentSummary { total_documents: number }
