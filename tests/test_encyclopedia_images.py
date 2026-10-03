@@ -134,3 +134,7 @@ def test_production_manifest_publishes_audited_mct_photos():
         "url": "https://www.mct.gov.cn/whzx/tpxw/201111/W020171202504345062869.jpg",
         "status": "verified",
     }
+    assert resolve_encyclopedia_image(images, "侗族大歌") == {
+        "url": "https://www.mct.gov.cn/whzx/tpxw/201111/W020171202504523376569.jpg",
+        "status": "verified",
+    }
