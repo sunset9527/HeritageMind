@@ -20,14 +20,18 @@ def test_curated_knowledge_sources_v1_has_two_published_sources_per_expanded_cra
     manifest_path = Path(__file__).parents[1] / "data" / "knowledge_sources" / "manifest.json"
     manifest = load_manifest(manifest_path)
 
-    counts = Counter(item.craft_name for item in manifest.documents)
+    deep_sources = [
+        item for item in manifest.documents
+        if not item.document_key.startswith("mct-first-batch-")
+    ]
+    counts = Counter(item.craft_name for item in deep_sources)
     source_hosts = defaultdict(set)
-    for item in manifest.documents:
+    for item in deep_sources:
         source_hosts[item.craft_name].add(urlparse(item.source_url).netloc)
 
-    assert len(manifest.documents) == 46
+    assert len(deep_sources) == 46
     assert set(counts) == EXPANDED_CRAFTS
     assert all(counts[craft] == 2 for craft in EXPANDED_CRAFTS)
     assert all(len(source_hosts[craft]) == 2 for craft in EXPANDED_CRAFTS)
-    assert all(item.status == "published" for item in manifest.documents)
-    assert all("摘要" in item.content for item in manifest.documents)
+    assert all(item.status == "published" for item in deep_sources)
+    assert all("摘要" in item.content for item in deep_sources)

@@ -1,4 +1,6 @@
 from src.graph.heritage_graph import HeritageKnowledgeGraph
+from src.services.knowledge_manifest import load_manifest
+from src.services.graph_projection import CURATED_MANIFEST_PATH
 
 
 def test_sync_curated_sources_projects_each_published_document_to_its_craft():
@@ -9,7 +11,8 @@ def test_sync_curated_sources_projects_each_published_document_to_its_craft():
 
     source_count = sync_curated_source_nodes(graph)
 
-    assert source_count == 46
+    manifest = load_manifest(CURATED_MANIFEST_PATH)
+    assert source_count == len([item for item in manifest.documents if item.status == "published"])
     source_id = "curated:source:jingtailan-ihchina-001"
     source = graph.get_node(source_id)
     assert source["type"] == "source"

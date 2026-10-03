@@ -16,13 +16,19 @@ def test_seed_curated_craft_entries_publishes_all_manifest_crafts_with_source_ev
     Base.metadata.create_all(engine)
     db = sessionmaker(bind=engine)()
     manifest = load_manifest(Path(__file__).parents[1] / "data" / "knowledge_sources" / "manifest.json")
+    published_documents = [item for item in manifest.documents if item.status == "published"]
+    published_crafts = {item.craft_name for item in published_documents}
 
-    assert seed_curated_craft_entries(db, manifest) == {"created": 23, "updated": 0, "skipped": 0}
-    assert db.query(CraftEntry).filter_by(status="published").count() == 23
-    assert db.query(SourceEvidence).filter_by(subject_type="craft").count() == 46
+    assert seed_curated_craft_entries(db, manifest) == {
+        "created": len(published_crafts), "updated": 0, "skipped": 0,
+    }
+    assert db.query(CraftEntry).filter_by(status="published").count() == len(published_crafts)
+    assert db.query(SourceEvidence).filter_by(subject_type="craft").count() == len(published_documents)
 
     jingtailan = db.query(CraftEntry).filter_by(name="景泰蓝").one()
     assert jingtailan.summary.startswith("景泰蓝制作技艺")
     assert "资料来源" in jingtailan.content
     assert "https://www.ihchina.cn/art/detail/id/14341.html" in jingtailan.content
-    assert seed_curated_craft_entries(db, manifest) == {"created": 0, "updated": 0, "skipped": 23}
+    assert seed_curated_craft_entries(db, manifest) == {
+        "created": 0, "updated": 0, "skipped": len(published_crafts),
+    }

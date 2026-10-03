@@ -14,6 +14,7 @@ P2优化测试：⑤技艺名精确匹配置顶 + ①「技艺→工序→细节
 
 import os
 import sys
+from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -31,6 +32,7 @@ from src.retrieval.grouping import (
     build_grouped_context,
 )
 from src.retrieval.document_loader import HeritageDocumentLoader
+from src.services.knowledge_manifest import load_manifest
 
 # ---------------------------------------------------------------------------
 # 工具函数
@@ -285,7 +287,7 @@ class TestHierarchicalGrouping:
 
 
 # ---------------------------------------------------------------------------
-# 真实数据 smoke（23 篇旧技艺文档 + 12 篇来源化资料，不依赖 LLM / embedding）
+# 真实数据 smoke（23 篇旧技艺文档 + 当前来源化资料，不依赖 LLM / embedding）
 # ---------------------------------------------------------------------------
 
 class TestRealDataSmoke:
@@ -294,7 +296,8 @@ class TestRealDataSmoke:
         """真实 loader：所有文档的 metadata.craft_name 全部是中文名（不再回退拼音）"""
         loader = HeritageDocumentLoader()
         docs = loader.load_craft_documents()
-        assert len(docs) == 69
+        manifest = load_manifest(Path(__file__).parents[1] / "data" / "knowledge_sources" / "manifest.json")
+        assert len(docs) == 23 + len(manifest.documents)
         missing = [d["id"] for d in docs if d["metadata"]["craft_name"] == d["id"]]
         assert missing == [], f"仍有文档 craft_name 回退为拼音 id: {missing}"
         print(f"\n[真实数据] 已加载 {len(docs)} 篇，craft_name 中文名覆盖率 100%")
