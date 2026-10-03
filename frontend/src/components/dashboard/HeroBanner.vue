@@ -1,11 +1,26 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useChatStore } from '@/stores/chat'
+import { getCrafts, getDocumentSummary, type DocumentSummary } from '@/api/meta'
+import type { CraftItem } from '@/types'
 
 const router = useRouter()
 const chat = useChatStore()
 const question = ref('')
+const crafts = ref<CraftItem[]>()
+const summary = ref<DocumentSummary>()
+
+const knowledgeProof = computed(() => [
+  { value: typeof summary.value?.total_documents === 'number' ? String(summary.value.total_documents) : '—', label: '已加载文档' },
+  { value: crafts.value ? String(crafts.value.length) : '—', label: '非遗项目' },
+  { value: '可核查', label: '资料治理' },
+])
+
+onMounted(async () => {
+  try { crafts.value = await getCrafts() } catch { /* Show an honest placeholder until the catalog is available. */ }
+  try { summary.value = await getDocumentSummary() } catch { /* Show an honest placeholder until the summary is available. */ }
+})
 
 function startExploring() {
   const value = question.value.trim()
@@ -27,9 +42,7 @@ function startExploring() {
         <button type="submit">开始探索 <span aria-hidden="true">→</span></button>
       </form>
       <dl data-testid="knowledge-proof" class="knowledge-proof" aria-label="平台知识库规模">
-        <div><dt>500+</dt><dd>来源化资料</dd></div>
-        <div><dt>100</dt><dd>非遗项目</dd></div>
-        <div><dt>4</dt><dd>权威来源类型</dd></div>
+        <div v-for="item in knowledgeProof" :key="item.label"><dt>{{ item.value }}</dt><dd>{{ item.label }}</dd></div>
       </dl>
     </div>
     <figure class="hero-art">
@@ -40,7 +53,7 @@ function startExploring() {
 </template>
 
 <style scoped>
-.editorial-hero { display:grid; grid-template-columns:minmax(0,1fr) minmax(390px,.94fr); max-width:1220px; min-height:568px; margin:34px auto 0; overflow:hidden; background:#1c2016; color:#f4f0e7; }
+.editorial-hero { display:grid; grid-template-columns:minmax(0,1fr) minmax(390px,.94fr); max-width:1120px; min-height:568px; margin:34px auto 0; overflow:hidden; background:#1c2016; color:#f4f0e7; }
 .hero-copy { display:flex; flex-direction:column; justify-content:center; padding:74px 46px 58px 66px; }
 .hero-kicker { margin:0 0 19px; color:#c8aa73; font-size:.66rem; font-weight:700; letter-spacing:.2em; }
 h1 { margin:0; font-family:var(--font-sans); font-size:clamp(2.25rem,3.4vw,3.6rem); font-weight:400; letter-spacing:.025em; line-height:1.18; }
