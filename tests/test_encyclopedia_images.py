@@ -120,7 +120,7 @@ def test_production_image_manifest_covers_every_existing_local_craft_image():
     } == local_crafts
 
 
-def test_production_manifest_publishes_only_the_audited_mct_photo():
+def test_production_manifest_publishes_audited_mct_photos():
     from src.services.encyclopedia_images import load_image_manifest, resolve_encyclopedia_image
 
     root = Path(__file__).parents[1]
@@ -128,5 +128,9 @@ def test_production_manifest_publishes_only_the_audited_mct_photo():
 
     assert resolve_encyclopedia_image(images, "靖州苗族歌鼟") == {
         "url": "https://www.mct.gov.cn/whzx/tpxw/201003/W020171202503482457873.jpg",
+        "status": "verified",
+    }
+    assert resolve_encyclopedia_image(images, "布洛陀") == {
+        "url": "https://www.mct.gov.cn/whzx/tpxw/201111/W020171202504345062869.jpg",
         "status": "verified",
     }
