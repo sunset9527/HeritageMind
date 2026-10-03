@@ -70,7 +70,7 @@ function isActive(path: string) {
           v-else
           to="/login"
           class="ml-1 px-4 py-1.5 text-[13px] font-medium rounded-full transition-all no-underline"
-          style="background: var(--text); color: #fff"
+          style="background: var(--accent); color: #1c2016"
         >
           登录
         </router-link>
@@ -80,7 +80,7 @@ function isActive(path: string) {
 </template>
 
 <style scoped>
-.heritage-header { background: rgba(244, 240, 231, .91); border-bottom: 1px solid rgba(37, 41, 31, .14); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+.heritage-header { background: rgba(28, 32, 22, .88); border-bottom: 1px solid rgba(244, 240, 231, .16); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
 .heritage-nav { position: relative; }.heritage-nav::after { content: ''; position: absolute; bottom: -1px; left: 24px; width: 88px; height: 2px; background: var(--accent); }
 .brand-name { color: var(--text); font-family: var(--font-sans); font-size: 1.25rem; font-weight: 400; letter-spacing: .04em; }.nav-link { border-bottom: 2px solid transparent; }.nav-link.router-link-active { border-bottom-color: var(--accent); }
 </style>

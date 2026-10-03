@@ -56,7 +56,7 @@ async function handleLogin() {
       <button
         @click="handleLogin"
         :disabled="auth.loading"
-        class="w-full py-2.5 rounded-full bg-[var(--text)] text-white font-semibold text-sm hover:opacity-90 disabled:opacity-50 transition-opacity"
+        class="w-full py-2.5 rounded-full bg-[var(--accent)] text-[#1c2016] font-semibold text-sm hover:opacity-90 disabled:opacity-50 transition-opacity"
       >
         {{ auth.loading ? '登录中…' : '登录' }}
       </button>

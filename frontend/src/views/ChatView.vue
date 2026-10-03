@@ -16,6 +16,7 @@ import MarkdownContent from '@/components/chat/MarkdownContent.vue'
 import WorkflowTrace from '@/components/chat/WorkflowTrace.vue'
 import RealtimeWorkflowDag from '@/components/chat/RealtimeWorkflowDag.vue'
 import AnswerFeedback from '@/components/chat/AnswerFeedback.vue'
+import EditorialPageShell from '@/components/layout/EditorialPageShell.vue'
 
 const chatStore = useChatStore()
 const auth = useAuthStore()
@@ -101,7 +102,8 @@ function agentChipIcon(id: string) { return chipColors[id]?.icon || '💬' }
 </script>
 
 <template>
-  <div class="flex h-[calc(100vh-52px)]">
+  <EditorialPageShell scene="indigo" class="chat-page">
+  <div class="flex min-h-[calc(100dvh-52px)]">
     <!-- Sidebar — collapsible -->
     <Transition name="slide">
       <aside
@@ -287,7 +289,7 @@ function agentChipIcon(id: string) { return chipColors[id]?.icon || '💬' }
             @click="handleSend()"
             :disabled="chatStore.isSending || !input.trim() || !settings.canQuery()"
             class="px-6 py-3 rounded-2xl text-[14px] font-semibold transition-all duration-300 border-0 cursor-pointer disabled:opacity-30"
-            style="background: var(--text); color: #fff"
+            style="background: var(--accent); color: #1c2016"
           >
             发送
           </button>
@@ -307,10 +309,11 @@ function agentChipIcon(id: string) { return chipColors[id]?.icon || '💬' }
       <div v-else class="caption text-center pt-8">提问后展示</div>
     </aside>
   </div>
+  </EditorialPageShell>
 </template>
 
 <style scoped>
-.chat-toolbar { background: #f7efdf; border-color: rgba(84, 61, 34, .16) !important; }
+.chat-page :deep(.scene-content){max-width:none;padding:0}.chat-toolbar { background:rgba(28,32,22,.82);border-color:rgba(244,240,231,.18)!important;backdrop-filter:blur(12px); }
 .chat-title { color: var(--accent); font-family: var(--font-brush); font-size: 1.5rem; letter-spacing: .1em; }
 .slide-enter-active, .slide-leave-active { transition: all 0.3s ease; }
 .slide-enter-from, .slide-leave-to { opacity: 0; transform: translateX(-16px); }

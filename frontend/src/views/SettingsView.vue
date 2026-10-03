@@ -63,7 +63,7 @@ function saveSettings() {
           <button v-for="p in settings.getProviders()" :key="p"
             @click="form.provider = p; form.baseUrl = settings.getProviderBaseUrl(p); if (settings.getProviderModels(p).length) form.model = settings.getProviderModels(p)[0]"
             class="px-4 py-2 rounded-full text-sm font-medium transition-all"
-            :class="form.provider === p ? 'bg-[var(--text)] text-white' : 'bg-gray-100 text-[var(--text2)] hover:bg-gray-200'">
+            :class="form.provider === p ? 'bg-[var(--accent)] text-[#1c2016]' : 'bg-gray-100 text-[var(--text2)] hover:bg-gray-200'">
             {{ p }}
           </button>
         </div>
@@ -122,8 +122,8 @@ function saveSettings() {
     <!-- Save -->
     <div class="text-center">
       <button @click="saveSettings"
-        class="px-12 py-3 rounded-full text-white font-semibold text-sm transition-all border-0 cursor-pointer"
-        style="background: var(--accent); box-shadow: 0 2px 8px rgba(196,69,54,0.3)"
+        class="px-12 py-3 rounded-full text-[#1c2016] font-semibold text-sm transition-all border-0 cursor-pointer"
+        style="background: var(--accent); box-shadow: 0 2px 8px rgba(212,183,126,0.22)"
       >
         保存设置
       </button>

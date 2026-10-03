@@ -68,7 +68,7 @@ async function handleRegister() {
       <button
         @click="handleRegister"
         :disabled="auth.loading"
-        class="w-full py-2.5 rounded-full bg-[var(--accent)] text-white font-semibold text-sm hover:opacity-90 disabled:opacity-50 transition-opacity"
+        class="w-full py-2.5 rounded-full bg-[var(--accent)] text-[#1c2016] font-semibold text-sm hover:opacity-90 disabled:opacity-50 transition-opacity"
       >
         {{ auth.loading ? '注册中…' : '注册' }}
       </button>

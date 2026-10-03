@@ -41,6 +41,7 @@ describe('HeroBanner', () => {
   it('keeps the editorial artwork as a stable, accessible hero asset', () => {
     const wrapper = mount(HeroBanner)
 
+    expect(wrapper.get('section').attributes('data-scene')).toBe('indigo')
     const artwork = wrapper.get('[data-testid="hero-art-image"]')
     expect(artwork.attributes('src')).toBe('/editorial/hero-archive-textile-v1.png')
     expect(artwork.attributes('alt')).toContain('靛染线轴')

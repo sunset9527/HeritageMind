@@ -31,7 +31,7 @@ function startExploring() {
 </script>
 
 <template>
-  <section class="editorial-hero" aria-labelledby="hero-title">
+  <section class="editorial-hero" data-scene="indigo" aria-labelledby="hero-title">
     <div class="hero-copy">
       <p class="hero-kicker">CHINESE INTANGIBLE CULTURAL HERITAGE</p>
       <h1 id="hero-title">让传统拥有<br><em>可被追溯的现在</em></h1>
@@ -53,7 +53,7 @@ function startExploring() {
 </template>
 
 <style scoped>
-.editorial-hero { display:grid; grid-template-columns:minmax(0,1fr) minmax(390px,.94fr); max-width:1120px; min-height:568px; margin:34px auto 0; overflow:hidden; background:#1c2016; color:#f4f0e7; }
+.editorial-hero { display:grid; grid-template-columns:minmax(0,1fr) minmax(390px,.94fr); max-width:1220px; min-height:568px; margin:34px auto 0; overflow:hidden; background:#1c2016; color:#f4f0e7; }
 .hero-copy { display:flex; flex-direction:column; justify-content:center; padding:74px 46px 58px 66px; }
 .hero-kicker { margin:0 0 19px; color:#c8aa73; font-size:.66rem; font-weight:700; letter-spacing:.2em; }
 h1 { margin:0; font-family:var(--font-sans); font-size:clamp(2.25rem,3.4vw,3.6rem); font-weight:400; letter-spacing:.025em; line-height:1.18; }

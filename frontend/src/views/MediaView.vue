@@ -80,7 +80,7 @@ function formatSize(bytes: number) {
           <input v-model="form.title" placeholder="文件描述" class="text-sm border rounded-lg px-3 py-2 bg-white w-40" />
         </div>
         <label class="px-5 py-2 rounded-full text-sm font-semibold cursor-pointer transition-colors"
-               :class="form.craft_name ? 'bg-[var(--text)] text-white hover:opacity-90' : 'bg-gray-200 text-gray-400 cursor-not-allowed'">
+               :class="form.craft_name ? 'bg-[var(--accent)] text-[#1c2016] hover:opacity-90' : 'bg-gray-200 text-gray-400 cursor-not-allowed'">
           {{ uploading ? '上传中...' : '选择文件' }}
           <input type="file" :accept="form.media_type === 'image' ? 'image/*' : 'audio/*'"
                  class="hidden" @change="handleUpload" :disabled="!form.craft_name || uploading" />

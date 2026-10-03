@@ -10,17 +10,17 @@
 
 :root {
   /* Background — 宣纸般温润的底色 */
-  --bg:              #F4F0E7;
-  --bg-warm:         #EAE3D4;
+  --bg:              #1C2016;
+  --bg-warm:         #293025;
 
   /* Surface — 纯粹的白，微微暖调 */
-  --surface:         #FBF8F0;
-  --surface-hover:   #F3EEDF;
+  --surface:         #293025;
+  --surface-hover:   #343b2e;
 
   /* Text — 墨色，从不纯黑 */
-  --text:            #25291F;
-  --text-secondary:  #626759;
-  --text-tertiary:   #8A8D81;
+  --text:            #F4F0E7;
+  --text-secondary:  #D3D8CC;
+  --text-tertiary:   #ADB4A8;
 
   /* Accent — 朱砂红，非遗的灵魂色 */
   --accent:          #9B8050;
@@ -34,13 +34,13 @@
   --synth:           #756D62;
 
   /* Border — 若有若无的边 */
-  --border:          rgba(0, 0, 0, 0.05);
-  --border-strong:   rgba(0, 0, 0, 0.08);
+  --border:          rgba(244, 240, 231, 0.14);
+  --border-strong:   rgba(244, 240, 231, 0.24);
 
   /* Shadow — 极轻柔 */
-  --shadow-sm:       0 1px 2px rgba(0, 0, 0, 0.03);
-  --shadow-md:       0 4px 16px rgba(0, 0, 0, 0.04);
-  --shadow-lg:       0 12px 40px rgba(0, 0, 0, 0.06);
+  --shadow-sm:       0 1px 2px rgba(0, 0, 0, 0.18);
+  --shadow-md:       0 8px 24px rgba(0, 0, 0, 0.22);
+  --shadow-lg:       0 18px 46px rgba(0, 0, 0, 0.28);
 
   /* Radius — 温润的圆角 */
   --radius-sm:       10px;
@@ -384,12 +384,32 @@ h1, h2, h3, h4 {
 .section-gap     { margin-bottom: 64px; }
 
 /* Shared page language: every product page carries the same paper, ink and seal hierarchy. */
-.heritage-page { position: relative; }
+.heritage-page { position: relative; color: var(--text); }
 .page-kicker { margin: 0 0 7px; color: var(--accent); font-size: .68rem; font-weight: 700; letter-spacing: .22em; }
-.page-title { margin: 0; color: #28332d; font-family: var(--font-brush); font-size: clamp(2.7rem, 5vw, 4.2rem); font-weight: 400; letter-spacing: .12em; line-height: 1.05; }
+.page-title { margin: 0; color: var(--text); font-family: var(--font-brush); font-size: clamp(2.7rem, 5vw, 4.2rem); font-weight: 400; letter-spacing: .12em; line-height: 1.05; }
 .page-intro { margin: 13px 0 28px; color: var(--text-secondary); font-size: .88rem; line-height: 1.8; }
-.heritage-page .setting-section { background: #fffaf0; border-color: rgba(82, 61, 36, .17); box-shadow: 0 10px 26px rgba(69, 47, 23, .05); }
+.heritage-page .setting-section { background: rgba(41, 48, 37, .92); border-color: var(--border); box-shadow: var(--shadow-md); }
 .heritage-page .setting-section h3 { font-family: var(--font-brush); font-size: 1.6rem; font-weight: 400; letter-spacing: .08em; }
+
+/* Public routes live on a continuous editorial field. Paper is reserved for focused reading. */
+.editorial-page-shell .card,
+.editorial-page-shell .setting-section,
+.editorial-page-shell .timeline-node {
+  background: rgba(41, 48, 37, .92);
+  border-color: var(--border);
+  color: var(--text);
+}
+.editorial-page-shell input,
+.editorial-page-shell select,
+.editorial-page-shell textarea {
+  min-height: 44px;
+  background: rgba(18, 23, 16, .72);
+  border-color: rgba(244, 240, 231, .24);
+  color: var(--text);
+}
+.editorial-page-shell input::placeholder,
+.editorial-page-shell textarea::placeholder { color: var(--text-tertiary); }
+.editorial-page-shell :is(a, button, input, select, textarea):focus-visible { outline: 2px solid #d4b77e; outline-offset: 3px; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
