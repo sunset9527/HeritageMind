@@ -118,3 +118,15 @@ def test_production_image_manifest_covers_every_existing_local_craft_image():
         for craft_name in local_crafts
         if resolve_encyclopedia_image(images, craft_name)["status"] == "legacy_local"
     } == local_crafts
+
+
+def test_production_manifest_publishes_only_the_audited_mct_photo():
+    from src.services.encyclopedia_images import load_image_manifest, resolve_encyclopedia_image
+
+    root = Path(__file__).parents[1]
+    images = load_image_manifest(root / "data" / "knowledge_sources" / "image_manifest.json")
+
+    assert resolve_encyclopedia_image(images, "靖州苗族歌鼟") == {
+        "url": "https://www.mct.gov.cn/whzx/tpxw/201003/W020171202503482457873.jpg",
+        "status": "verified",
+    }
