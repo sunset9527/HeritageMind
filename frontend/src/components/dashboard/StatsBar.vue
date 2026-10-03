@@ -24,10 +24,10 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.quality-band { display: grid; grid-template-columns: repeat(3, 1fr); max-width: 1120px; margin: 0 auto 70px; background: #173f47; color: #f8e8c8; }
-.quality-metric { display: flex; align-items: center; gap: 16px; min-height: 100px; padding: 19px 32px; border-right: 1px solid rgba(246, 226, 178, .25); }
+.quality-band { display: grid; grid-template-columns: repeat(3, 1fr); max-width: 1120px; margin: 0 auto 70px; background: #293025; color: #f4f0e7; }
+.quality-metric { display: flex; align-items: center; gap: 16px; min-height: 100px; padding: 19px 32px; border-right: 1px solid rgba(231, 222, 200, .22); }
 .quality-metric:last-child { border-right: 0; }
-strong { color: #e6bd6b; font-family: var(--font-brush); font-size: 2.5rem; font-weight: 400; letter-spacing: .08em; white-space: nowrap; }
-span, small { display: block; } span { font-size: .76rem; letter-spacing: .1em; } small { margin-top: 4px; color: #c8b797; font-size: .65rem; }
+strong { color: #d4b77e; font-family: var(--font-brush); font-size: 2.15rem; font-weight: 400; letter-spacing: .08em; white-space: nowrap; }
+span, small { display: block; } span { font-size: .76rem; letter-spacing: .1em; } small { margin-top: 4px; color: #c8c8bb; font-size: .65rem; }
 @media (max-width: 760px) { .quality-band { grid-template-columns: 1fr; margin-bottom: 44px; } .quality-metric { border-right: 0; border-bottom: 1px solid rgba(246, 226, 178, .25); } .quality-metric:last-child { border-bottom: 0; } }
 </style>

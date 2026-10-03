@@ -23,4 +23,12 @@ describe('HeroBanner', () => {
     expect(proof.text()).toContain('非遗项目')
     expect(proof.text()).toContain('权威来源类型')
   })
+
+  it('keeps the editorial artwork as a stable, accessible hero asset', () => {
+    const wrapper = mount(HeroBanner)
+
+    const artwork = wrapper.get('[data-testid="hero-art-image"]')
+    expect(artwork.attributes('src')).toBe('/editorial/hero-archive-textile-v1.png')
+    expect(artwork.attributes('alt')).toContain('靛染线轴')
+  })
 })
