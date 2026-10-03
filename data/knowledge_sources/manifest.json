@@ -6414,6 +6414,48 @@
       "evidence_layer": "deep_summary",
       "evidence_dimensions": ["contemporary_practice", "safeguarding"],
       "registry_document_key": "mct-first-batch-358"
+    },
+    {
+      "document_key": "uyghur-molded-pottery-ihchina-deep-001",
+      "craft_name": "维吾尔族模制法土陶烧制技艺",
+      "title": "维吾尔族模制法土陶烧制技艺：中国非遗网项目页摘要",
+      "content_path": "documents/deep/uyghur-molded-pottery-ihchina-deep-001.md",
+      "source_name": "中国非物质文化遗产网·中国非物质文化遗产数字博物馆",
+      "source_url": "https://www.ihchina.cn/project_details/14266.html",
+      "accessed_at": "2026-10-03",
+      "license_note": "自行整理事实摘要；保留来源链接；不转载原文或媒体。",
+      "status": "published",
+      "evidence_layer": "deep_summary",
+      "evidence_dimensions": ["craft", "history_region"],
+      "registry_document_key": "mct-first-batch-356"
+    },
+    {
+      "document_key": "uyghur-molded-pottery-ihchina-inheritor-deep-001",
+      "craft_name": "维吾尔族模制法土陶烧制技艺",
+      "title": "维吾尔族模制法土陶烧制技艺：代表性传承人页摘要",
+      "content_path": "documents/deep/uyghur-molded-pottery-ihchina-inheritor-deep-001.md",
+      "source_name": "中国非物质文化遗产网·中国非物质文化遗产数字博物馆",
+      "source_url": "https://www.ihchina.cn/character_detail/8580.html",
+      "accessed_at": "2026-10-03",
+      "license_note": "自行整理事实摘要；保留来源链接；不转载原文或媒体。",
+      "status": "published",
+      "evidence_layer": "deep_summary",
+      "evidence_dimensions": ["safeguarding", "contemporary_practice"],
+      "registry_document_key": "mct-first-batch-356"
+    },
+    {
+      "document_key": "uyghur-molded-pottery-kashi-gov-deep-001",
+      "craft_name": "维吾尔族模制法土陶烧制技艺",
+      "title": "维吾尔族模制法土陶烧制技艺：喀什地区公开资料摘要",
+      "content_path": "documents/deep/uyghur-molded-pottery-kashi-gov-deep-001.md",
+      "source_name": "喀什地区行政公署",
+      "source_url": "https://www.kashi.gov.cn/ksdqxzgs/c106706/202009/14e6e8b217da4642b1d00aba523f7ebf.shtml",
+      "accessed_at": "2026-10-03",
+      "license_note": "自行整理事实摘要；保留来源链接；不转载原文或媒体。",
+      "status": "published",
+      "evidence_layer": "deep_summary",
+      "evidence_dimensions": ["history_region", "contemporary_practice"],
+      "registry_document_key": "mct-first-batch-356"
     }
   ]
 }
