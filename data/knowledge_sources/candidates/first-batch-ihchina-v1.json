@@ -1,0 +1,137 @@
+{
+  "dataset_version": "candidate-v1-2026-10-03",
+  "candidates": [
+    {
+      "registry_document_key": "mct-first-batch-351",
+      "craft_name": "宜兴紫砂陶制作技艺",
+      "category": "传统手工技艺",
+      "source_name": "中国非物质文化遗产网·中国非物质文化遗产数字博物馆",
+      "searched_at": "2026-10-03",
+      "status": "unresolved",
+      "error": "curl: (28) Connection timed out after 15001 milliseconds\ncurl: (28) Connection timed out after 15001 milliseconds",
+      "project_detail_candidates": []
+    },
+    {
+      "registry_document_key": "mct-first-batch-352",
+      "craft_name": "界首彩陶烧制技艺",
+      "category": "传统手工技艺",
+      "source_name": "中国非物质文化遗产网·中国非物质文化遗产数字博物馆",
+      "searched_at": "2026-10-03",
+      "status": "unresolved",
+      "error": "curl: (35) schannel: failed to receive handshake, SSL/TLS connection failed",
+      "project_detail_candidates": []
+    },
+    {
+      "registry_document_key": "mct-first-batch-353",
+      "craft_name": "石湾陶塑技艺",
+      "category": "传统手工技艺",
+      "source_name": "中国非物质文化遗产网·中国非物质文化遗产数字博物馆",
+      "searched_at": "2026-10-03",
+      "status": "unresolved",
+      "error": "curl: (28) Connection timed out after 15001 milliseconds\ncurl: (28) Connection timed out after 15001 milliseconds",
+      "project_detail_candidates": []
+    },
+    {
+      "registry_document_key": "mct-first-batch-354",
+      "craft_name": "黎族原始制陶技艺",
+      "category": "传统手工技艺",
+      "source_name": "中国非物质文化遗产网·中国非物质文化遗产数字博物馆",
+      "searched_at": "2026-10-03",
+      "status": "unresolved",
+      "error": null,
+      "project_detail_candidates": []
+    },
+    {
+      "registry_document_key": "mct-first-batch-355",
+      "craft_name": "傣族慢轮制陶技艺",
+      "category": "传统手工技艺",
+      "source_name": "中国非物质文化遗产网·中国非物质文化遗产数字博物馆",
+      "searched_at": "2026-10-03",
+      "status": "candidate",
+      "error": null,
+      "project_detail_candidates": [
+        {
+          "url": "https://www.ihchina.cn/project_details/14265.html",
+          "title": "傣族慢轮制陶技艺"
+        }
+      ]
+    },
+    {
+      "registry_document_key": "mct-first-batch-356",
+      "craft_name": "维吾尔族模制法土陶烧制技艺",
+      "category": "传统手工技艺",
+      "source_name": "中国非物质文化遗产网·中国非物质文化遗产数字博物馆",
+      "searched_at": "2026-10-03",
+      "status": "candidate",
+      "error": null,
+      "project_detail_candidates": [
+        {
+          "url": "https://www.ihchina.cn/project_details/14269.html",
+          "title": "维吾尔族模制法土陶烧制技艺"
+        },
+        {
+          "url": "https://www.ihchina.cn/project_details/14268.html",
+          "title": "维吾尔族模制法土陶烧制技艺"
+        },
+        {
+          "url": "https://www.ihchina.cn/project_details/14267.html",
+          "title": "维吾尔族模制法土陶烧制技艺"
+        },
+        {
+          "url": "https://www.ihchina.cn/project_details/14266.html",
+          "title": "维吾尔族模制法土陶烧制技艺"
+        }
+      ]
+    },
+    {
+      "registry_document_key": "mct-first-batch-357",
+      "craft_name": "景德镇手工制瓷技艺",
+      "category": "传统手工技艺",
+      "source_name": "中国非物质文化遗产网·中国非物质文化遗产数字博物馆",
+      "searched_at": "2026-10-03",
+      "status": "unresolved",
+      "error": null,
+      "project_detail_candidates": []
+    },
+    {
+      "registry_document_key": "mct-first-batch-358",
+      "craft_name": "耀州窑陶瓷烧制技艺",
+      "category": "传统手工技艺",
+      "source_name": "中国非物质文化遗产网·中国非物质文化遗产数字博物馆",
+      "searched_at": "2026-10-03",
+      "status": "candidate",
+      "error": null,
+      "project_detail_candidates": [
+        {
+          "url": "https://www.ihchina.cn/project_details/14271.html",
+          "title": "耀州窑陶瓷烧制技艺"
+        }
+      ]
+    },
+    {
+      "registry_document_key": "mct-first-batch-359",
+      "craft_name": "龙泉青瓷烧制技艺",
+      "category": "传统手工技艺",
+      "source_name": "中国非物质文化遗产网·中国非物质文化遗产数字博物馆",
+      "searched_at": "2026-10-03",
+      "status": "unresolved",
+      "error": null,
+      "project_detail_candidates": []
+    },
+    {
+      "registry_document_key": "mct-first-batch-360",
+      "craft_name": "磁州窑烧制技艺",
+      "category": "传统手工技艺",
+      "source_name": "中国非物质文化遗产网·中国非物质文化遗产数字博物馆",
+      "searched_at": "2026-10-03",
+      "status": "candidate",
+      "error": null,
+      "project_detail_candidates": [
+        {
+          "url": "https://www.ihchina.cn/project_details/14273.html",
+          "title": "磁州窑烧制技艺"
+        }
+      ]
+    }
+  ]
+}

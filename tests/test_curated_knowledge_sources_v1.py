@@ -22,7 +22,7 @@ def test_curated_knowledge_sources_v1_has_two_published_sources_per_expanded_cra
 
     deep_sources = [
         item for item in manifest.documents
-        if not item.document_key.startswith("mct-first-batch-")
+        if item.evidence_layer == "curated_summary"
     ]
     counts = Counter(item.craft_name for item in deep_sources)
     source_hosts = defaultdict(set)
