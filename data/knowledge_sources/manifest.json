@@ -6456,6 +6456,48 @@
       "evidence_layer": "deep_summary",
       "evidence_dimensions": ["history_region", "contemporary_practice"],
       "registry_document_key": "mct-first-batch-356"
+    },
+    {
+      "document_key": "dai-slow-wheel-pottery-ihchina-deep-001",
+      "craft_name": "傣族慢轮制陶技艺",
+      "title": "傣族慢轮制陶技艺：中国非遗网项目页摘要",
+      "content_path": "documents/deep/dai-slow-wheel-pottery-ihchina-deep-001.md",
+      "source_name": "中国非物质文化遗产网·中国非物质文化遗产数字博物馆",
+      "source_url": "https://www.ihchina.cn/project_details/14265.html",
+      "accessed_at": "2026-10-03",
+      "license_note": "自行整理事实摘要；保留来源链接；不转载原文或媒体。",
+      "status": "published",
+      "evidence_layer": "deep_summary",
+      "evidence_dimensions": ["craft", "history_region"],
+      "registry_document_key": "mct-first-batch-355"
+    },
+    {
+      "document_key": "dai-slow-wheel-pottery-ihchina-feature-deep-001",
+      "craft_name": "傣族慢轮制陶技艺",
+      "title": "傣族慢轮制陶技艺：中国非遗网专题报道摘要",
+      "content_path": "documents/deep/dai-slow-wheel-pottery-ihchina-feature-deep-001.md",
+      "source_name": "中国非物质文化遗产网·中国非物质文化遗产数字博物馆",
+      "source_url": "https://www.ihchina.cn/Article/Index/detail?id=11229",
+      "accessed_at": "2026-10-03",
+      "license_note": "自行整理事实摘要；保留来源链接；不转载原文或媒体。",
+      "status": "published",
+      "evidence_layer": "deep_summary",
+      "evidence_dimensions": ["craft", "contemporary_practice"],
+      "registry_document_key": "mct-first-batch-355"
+    },
+    {
+      "document_key": "dai-slow-wheel-pottery-yunnan-gov-deep-001",
+      "craft_name": "傣族慢轮制陶技艺",
+      "title": "傣族慢轮制陶技艺：云南省当代实践摘要",
+      "content_path": "documents/deep/dai-slow-wheel-pottery-yunnan-gov-deep-001.md",
+      "source_name": "云南省民族宗教事务委员会",
+      "source_url": "https://mzzj.yn.gov.cn/html/2025/shenghuohao_0527/4059402.html",
+      "accessed_at": "2026-10-03",
+      "license_note": "自行整理事实摘要；保留来源链接；不转载原文或媒体。",
+      "status": "published",
+      "evidence_layer": "deep_summary",
+      "evidence_dimensions": ["history_region", "contemporary_practice"],
+      "registry_document_key": "mct-first-batch-355"
     }
   ]
 }
