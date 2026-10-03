@@ -6498,6 +6498,48 @@
       "evidence_layer": "deep_summary",
       "evidence_dimensions": ["history_region", "contemporary_practice"],
       "registry_document_key": "mct-first-batch-355"
+    },
+    {
+      "document_key": "shiwan-ceramic-sculpture-ihchina-deep-001",
+      "craft_name": "石湾陶塑技艺",
+      "title": "石湾陶塑技艺：中国非遗网项目页摘要",
+      "content_path": "documents/deep/shiwan-ceramic-sculpture-ihchina-deep-001.md",
+      "source_name": "中国非物质文化遗产网·中国非物质文化遗产数字博物馆",
+      "source_url": "https://www.ihchina.cn/Article/Index/detail?id=14263",
+      "accessed_at": "2026-10-03",
+      "license_note": "自行整理事实摘要；保留来源链接；不转载原文或媒体。",
+      "status": "published",
+      "evidence_layer": "deep_summary",
+      "evidence_dimensions": ["craft", "history_region"],
+      "registry_document_key": "mct-first-batch-353"
+    },
+    {
+      "document_key": "shiwan-ceramic-sculpture-mct-deep-001",
+      "craft_name": "石湾陶塑技艺",
+      "title": "石湾陶塑技艺：生产性保护资料摘要",
+      "content_path": "documents/deep/shiwan-ceramic-sculpture-mct-deep-001.md",
+      "source_name": "中华人民共和国文化和旅游部",
+      "source_url": "https://www.mct.gov.cn/preview/special/3415/3423/201202/t20120206_228932.html",
+      "accessed_at": "2026-10-03",
+      "license_note": "自行整理事实摘要；保留来源链接；不转载原文或媒体。",
+      "status": "published",
+      "evidence_layer": "deep_summary",
+      "evidence_dimensions": ["safeguarding", "contemporary_practice"],
+      "registry_document_key": "mct-first-batch-353"
+    },
+    {
+      "document_key": "shiwan-ceramic-sculpture-xinhui-gov-deep-001",
+      "craft_name": "石湾陶塑技艺",
+      "title": "石湾陶塑技艺：地方公共展示摘要",
+      "content_path": "documents/deep/shiwan-ceramic-sculpture-xinhui-gov-deep-001.md",
+      "source_name": "江门市新会区人民政府",
+      "source_url": "https://www.xinhui.gov.cn/zwgk/xhdt/bddt/content/post_2916736.html",
+      "accessed_at": "2026-10-03",
+      "license_note": "自行整理事实摘要；保留来源链接；不转载原文或媒体。",
+      "status": "published",
+      "evidence_layer": "deep_summary",
+      "evidence_dimensions": ["history_region", "contemporary_practice"],
+      "registry_document_key": "mct-first-batch-353"
     }
   ]
 }
