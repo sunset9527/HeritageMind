@@ -6372,6 +6372,48 @@
       "evidence_layer": "deep_summary",
       "evidence_dimensions": ["history_region", "safeguarding"],
       "registry_document_key": "mct-first-batch-360"
+    },
+    {
+      "document_key": "yaozhou-kiln-ihchina-deep-001",
+      "craft_name": "耀州窑陶瓷烧制技艺",
+      "title": "耀州窑陶瓷烧制技艺：中国非遗网项目页摘要",
+      "content_path": "documents/deep/yaozhou-kiln-ihchina-deep-001.md",
+      "source_name": "中国非物质文化遗产网·中国非物质文化遗产数字博物馆",
+      "source_url": "https://www.ihchina.cn/Article/Index/detail?id=14271",
+      "accessed_at": "2026-10-03",
+      "license_note": "自行整理事实摘要；保留来源链接；不转载原文或媒体。",
+      "status": "published",
+      "evidence_layer": "deep_summary",
+      "evidence_dimensions": ["craft", "history_region"],
+      "registry_document_key": "mct-first-batch-358"
+    },
+    {
+      "document_key": "yaozhou-kiln-tongchuan-gov-deep-001",
+      "craft_name": "耀州窑陶瓷烧制技艺",
+      "title": "耀州窑陶瓷烧制技艺：铜川市政府保护规划摘要",
+      "content_path": "documents/deep/yaozhou-kiln-tongchuan-gov-deep-001.md",
+      "source_name": "铜川市人民政府",
+      "source_url": "https://fgw.tongchuan.gov.cn/resources/site/1/html/zl/zycszx/202109/6920.html",
+      "accessed_at": "2026-10-03",
+      "license_note": "自行整理事实摘要；保留来源链接；不转载原文或媒体。",
+      "status": "published",
+      "evidence_layer": "deep_summary",
+      "evidence_dimensions": ["history_region", "safeguarding"],
+      "registry_document_key": "mct-first-batch-358"
+    },
+    {
+      "document_key": "yaozhou-kiln-tongchuan-party-deep-001",
+      "craft_name": "耀州窑陶瓷烧制技艺",
+      "title": "耀州窑陶瓷烧制技艺：当代传承实践摘要",
+      "content_path": "documents/deep/yaozhou-kiln-tongchuan-party-deep-001.md",
+      "source_name": "中共铜川市委组织部（铜川党建网）",
+      "source_url": "https://www.tcdj.gov.cn/info_49011.aspx",
+      "accessed_at": "2026-10-03",
+      "license_note": "自行整理事实摘要；保留来源链接；不转载原文或媒体。",
+      "status": "published",
+      "evidence_layer": "deep_summary",
+      "evidence_dimensions": ["contemporary_practice", "safeguarding"],
+      "registry_document_key": "mct-first-batch-358"
     }
   ]
 }

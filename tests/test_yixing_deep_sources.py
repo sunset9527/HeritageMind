@@ -14,6 +14,7 @@ from src.services.knowledge_manifest import load_manifest
         ("mct-first-batch-352", {"craft", "history_region", "contemporary_practice"}),
         ("mct-first-batch-359", {"craft", "history_region", "safeguarding"}),
         ("mct-first-batch-360", {"craft", "history_region", "safeguarding"}),
+        ("mct-first-batch-358", {"craft", "history_region", "safeguarding"}),
     ],
 )
 def test_selected_first_batch_projects_have_three_linked_official_deep_sources(
