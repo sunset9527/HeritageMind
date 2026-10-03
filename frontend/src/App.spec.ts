@@ -22,5 +22,6 @@ describe('public route editorial scenes', () => {
     const wrapper = mount(App, { global: { plugins: [createPinia(), router] } })
 
     expect(wrapper.find('[data-scene="clay"]').exists()).toBe(true)
+    expect(wrapper.find('.scene-artwork').exists()).toBe(false)
   })
 })
