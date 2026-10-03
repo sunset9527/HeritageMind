@@ -211,10 +211,10 @@ class Settings(BaseSettings):
                     "之前用 HF 模型名 BAAI/bge-reranker-base 走缓存目录，权重不完整会卡网络超时）"
     )
     reranker_enabled: bool = Field(
-        default=False,
+        default=True,
         description="是否启用Reranker重排序。v2.2 已接入检索链路（retriever.retrieve 精排）。"
                     "模型已下载到 E:/huggingface/bge-reranker-base（2026-08-15 完整），"
-                    "确认加载成功后置 True；未启用时检索走 BM25+向量+RRF 三路融合"
+                    "默认启用；模型缺失或加载失败时自动降级为原检索排序"
     )
 
     # 查询重写配置

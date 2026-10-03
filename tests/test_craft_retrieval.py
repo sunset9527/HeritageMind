@@ -164,7 +164,10 @@ class TestCraftNameBoost:
                  craft_id="jingtailan", craft_name="景泰蓝"),
         ]
         old = settings.craft_boost_enabled
+        old_reranker = settings.reranker_enabled
         try:
+            # 本用例只比较 craft boost；隔离默认启用的语义重排序影响。
+            settings.reranker_enabled = False
             settings.craft_boost_enabled = False
             off_ids = [d["id"] for d in _make_retriever(docs).retrieve(
                 "景泰蓝的制作工艺有哪些步骤？", top_k=3)]
@@ -173,6 +176,7 @@ class TestCraftNameBoost:
                 "景泰蓝的制作工艺有哪些步骤？", top_k=3)]
         finally:
             settings.craft_boost_enabled = old
+            settings.reranker_enabled = old_reranker
         print(f"\n[开关对比] 关闭: {off_ids} | 开启: {on_ids}")
         assert off_ids[0] == "suxiu"          # 关闭时目标技艺不在 rank1
         assert on_ids[0] == "jingtailan"      # 开启时置顶

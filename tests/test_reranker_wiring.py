@@ -3,7 +3,7 @@
 
 背景：reranker.py 原为死代码（类+单例已实现但检索链路从未调用，README 却声称已用）。
 v2.2 接入 retriever.retrieve：置顶文档保护 + 候选池截断精排 + 模型不可用快速降级。
-本机 bge-reranker-base 权重未下载完整 + 无外网 → reranker_enabled 默认 False。
+本机 bge-reranker-base 权重完整，默认启用；模型缺失或加载失败时自动降级到原排序。
 
 运行：python -m pytest tests/test_reranker_wiring.py -v
 """
@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import logging
 logging.basicConfig(level=logging.ERROR)
 
-from config import settings
+from config import Settings, settings
 from src.retrieval.retriever import MultiSourceRetriever
 
 Q_SEMANTIC = "哪个非遗项目的雕刻技法最擅长表现人物？"
@@ -28,20 +28,25 @@ def _new_retriever() -> MultiSourceRetriever:
 
 
 class TestRerankerConfig:
-    def test_reranker_disabled_by_default(self):
-        """本机模型不可用（权重 0 字节 + 无外网）→ 默认关闭，避免每次检索卡网络超时"""
-        assert settings.reranker_enabled is False
+    def test_reranker_enabled_by_default(self):
+        """Reranker 默认参与主检索链路；模型不可用时由实现负责自动降级。"""
+        assert Settings.model_fields["reranker_enabled"].default is True
 
 
 class TestRerankerWiring:
     def test_retrieve_disabled_fast_no_rerank_score(self):
+        old = settings.reranker_enabled
+        settings.reranker_enabled = False
         retriever = _new_retriever()
-        t0 = time.time()
-        results = retriever.retrieve(Q_SEMANTIC, top_k=5)
-        dt = time.time() - t0
-        assert len(results) > 0
-        assert not any("rerank_score" in r for r in results), "关闭 rerank 不应有 rerank_score"
-        assert dt < 10, f"关闭 rerank 应快速返回，实测 {dt:.1f}s"
+        try:
+            t0 = time.time()
+            results = retriever.retrieve(Q_SEMANTIC, top_k=5)
+            dt = time.time() - t0
+            assert len(results) > 0
+            assert not any("rerank_score" in r for r in results), "关闭 rerank 不应有 rerank_score"
+            assert dt < 10, f"关闭 rerank 应快速返回，实测 {dt:.1f}s"
+        finally:
+            settings.reranker_enabled = old
 
     def test_retrieve_enabled_model_unavailable_degrades_fast(self, monkeypatch):
         """启用但模型不可用（模拟 _load 失败）→ 快速降级按原分数排序，不卡网络"""
@@ -71,9 +76,14 @@ class TestRerankerWiring:
 
     def test_craft_boost_rank1_protected(self):
         """技艺名置顶文档保持 rank1（硬规则不被 rerank/排序冲掉）"""
+        old = settings.reranker_enabled
+        settings.reranker_enabled = False
         retriever = _new_retriever()
-        results = retriever.retrieve(Q_CRAFT, top_k=5)
-        assert results, "检索不应为空"
-        top1 = results[0]
-        assert top1.get("craft_name_boosted") or "jingtai" in str(top1.get("id", "")).lower(), \
-            f"rank1 应为景泰蓝(置顶)，实际 {top1.get('id')}"
+        try:
+            results = retriever.retrieve(Q_CRAFT, top_k=5)
+            assert results, "检索不应为空"
+            top1 = results[0]
+            assert top1.get("craft_name_boosted") or "jingtai" in str(top1.get("id", "")).lower(), \
+                f"rank1 应为景泰蓝(置顶)，实际 {top1.get('id')}"
+        finally:
+            settings.reranker_enabled = old
