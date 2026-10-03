@@ -6540,6 +6540,48 @@
       "evidence_layer": "deep_summary",
       "evidence_dimensions": ["history_region", "contemporary_practice"],
       "registry_document_key": "mct-first-batch-353"
+    },
+    {
+      "document_key": "li-primitive-pottery-ihchina-deep-001",
+      "craft_name": "黎族原始制陶技艺",
+      "title": "黎族原始制陶技艺：中国非遗网项目页摘要",
+      "content_path": "documents/deep/li-primitive-pottery-ihchina-deep-001.md",
+      "source_name": "中国非物质文化遗产网·中国非物质文化遗产数字博物馆",
+      "source_url": "https://www.ihchina.cn/project_details/14264.html",
+      "accessed_at": "2026-10-03",
+      "license_note": "自行整理事实摘要；保留来源链接；不转载原文或媒体。",
+      "status": "published",
+      "evidence_layer": "deep_summary",
+      "evidence_dimensions": ["craft", "history_region"],
+      "registry_document_key": "mct-first-batch-354"
+    },
+    {
+      "document_key": "li-primitive-pottery-ihchina-inheritor-deep-001",
+      "craft_name": "黎族原始制陶技艺",
+      "title": "黎族原始制陶技艺：传承人报道摘要",
+      "content_path": "documents/deep/li-primitive-pottery-ihchina-inheritor-deep-001.md",
+      "source_name": "中国非物质文化遗产网·中国非物质文化遗产数字博物馆",
+      "source_url": "https://www.ihchina.cn/project_details/10923.html",
+      "accessed_at": "2026-10-03",
+      "license_note": "自行整理事实摘要；保留来源链接；不转载原文或媒体。",
+      "status": "published",
+      "evidence_layer": "deep_summary",
+      "evidence_dimensions": ["history_region", "safeguarding"],
+      "registry_document_key": "mct-first-batch-354"
+    },
+    {
+      "document_key": "li-primitive-pottery-sanya-gov-deep-001",
+      "craft_name": "黎族原始制陶技艺",
+      "title": "黎族原始制陶技艺：当代培训实践摘要",
+      "content_path": "documents/deep/li-primitive-pottery-sanya-gov-deep-001.md",
+      "source_name": "三亚市天涯区人民政府",
+      "source_url": "https://ty.sanya.gov.cn/tyqsite/jrty/202609/b712c83739bc45c595aee8b3e8790c17.shtml",
+      "accessed_at": "2026-10-03",
+      "license_note": "自行整理事实摘要；保留来源链接；不转载原文或媒体。",
+      "status": "published",
+      "evidence_layer": "deep_summary",
+      "evidence_dimensions": ["contemporary_practice", "safeguarding"],
+      "registry_document_key": "mct-first-batch-354"
     }
   ]
 }
