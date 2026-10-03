@@ -1,4 +1,5 @@
 import client from './client'
+import type { AxiosRequestConfig } from 'axios'
 import type { CraftItem } from '@/types'
 
 export interface CraftImage { url: string | null; status: 'verified' | 'legacy_local' | 'pending_review' | 'unavailable' }
@@ -31,7 +32,7 @@ export function buildDashboardMetrics(
   ]
 }
 
-export async function listEncyclopedia() { return (await client.get<{ items: CraftEntry[] }>('/encyclopedia')).data.items }
-export async function getCraft(slug: string) { return (await client.get<CraftEntry>(`/encyclopedia/${encodeURIComponent(slug)}`)).data }
-export async function listInheritors() { return (await client.get<{ items: Inheritor[] }>('/inheritors')).data.items }
-export async function getInheritor(slug: string) { return (await client.get<Inheritor>(`/inheritors/${encodeURIComponent(slug)}`)).data }
+export async function listEncyclopedia(config?: AxiosRequestConfig) { return (await client.get<{ items: CraftEntry[] }>('/encyclopedia', config)).data.items }
+export async function getCraft(slug: string, config?: AxiosRequestConfig) { return (await client.get<CraftEntry>(`/encyclopedia/${encodeURIComponent(slug)}`, config)).data }
+export async function listInheritors(config?: AxiosRequestConfig) { return (await client.get<{ items: Inheritor[] }>('/inheritors', config)).data.items }
+export async function getInheritor(slug: string, config?: AxiosRequestConfig) { return (await client.get<Inheritor>(`/inheritors/${encodeURIComponent(slug)}`, config)).data }

@@ -1,10 +1,11 @@
 import axios, { type AxiosInstance, type InternalAxiosRequestConfig, type AxiosError } from 'axios'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api'
+export const PAGE_REQUEST_TIMEOUT_MS = 15_000
 
 const client: AxiosInstance = axios.create({
   baseURL: API_BASE,
-  timeout: 300_000,
+  timeout: PAGE_REQUEST_TIMEOUT_MS,
   headers: { 'Content-Type': 'application/json' },
 })
 
