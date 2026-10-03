@@ -10,6 +10,7 @@ from typing import Any
 
 
 VALID_STATUSES = frozenset({"draft", "published", "legacy_unverified", "deprecated"})
+VALID_EVIDENCE_LAYERS = frozenset({"registry_record", "curated_summary", "deep_summary"})
 REQUIRED_DOCUMENT_FIELDS = frozenset({
     "document_key",
     "craft_name",
@@ -40,6 +41,9 @@ class ManifestDocument:
     accessed_at: str
     license_note: str
     status: str
+    evidence_layer: str = "curated_summary"
+    evidence_dimensions: tuple[str, ...] = ()
+    registry_document_key: str | None = None
 
 
 @dataclass(frozen=True)
@@ -68,6 +72,7 @@ def load_manifest(manifest_path: str | Path) -> KnowledgeManifest:
     package_root = path.parent.resolve()
     documents = tuple(_parse_document(raw, package_root) for raw in raw_documents)
     _validate_unique_documents(documents)
+    _validate_evidence_links(documents)
     return KnowledgeManifest(dataset_version=dataset_version, documents=documents)
 
 
@@ -84,6 +89,26 @@ def _parse_document(raw: Any, package_root: Path) -> ManifestDocument:
         raise ManifestValidationError(f"{document_key}: source_url must be an http(s) URL")
     if values["status"] not in VALID_STATUSES:
         raise ManifestValidationError(f"{document_key}: status must be one of {', '.join(sorted(VALID_STATUSES))}")
+
+    evidence_layer = raw.get("evidence_layer")
+    if evidence_layer is None:
+        evidence_layer = "registry_record" if document_key.startswith("mct-first-batch-") else "curated_summary"
+    if not isinstance(evidence_layer, str) or evidence_layer not in VALID_EVIDENCE_LAYERS:
+        raise ManifestValidationError(
+            f"{document_key}: evidence_layer must be one of {', '.join(sorted(VALID_EVIDENCE_LAYERS))}"
+        )
+    evidence_dimensions = _evidence_dimensions(raw.get("evidence_dimensions"), document_key)
+    registry_document_key = raw.get("registry_document_key")
+    if registry_document_key is not None and (
+        not isinstance(registry_document_key, str) or not registry_document_key.strip()
+    ):
+        raise ManifestValidationError(f"{document_key}: registry_document_key must be a non-empty string")
+    registry_document_key = registry_document_key.strip() if registry_document_key else None
+    if evidence_layer == "deep_summary":
+        if not evidence_dimensions:
+            raise ManifestValidationError(f"{document_key}: deep_summary requires evidence_dimensions")
+        if registry_document_key is None:
+            raise ManifestValidationError(f"{document_key}: deep_summary requires registry_document_key")
 
     content_path = _safe_content_path(package_root, values["content_path"], document_key)
     try:
@@ -105,6 +130,9 @@ def _parse_document(raw: Any, package_root: Path) -> ManifestDocument:
         accessed_at=values["accessed_at"],
         license_note=values["license_note"],
         status=values["status"],
+        evidence_layer=evidence_layer,
+        evidence_dimensions=evidence_dimensions,
+        registry_document_key=registry_document_key,
     )
 
 
@@ -113,6 +141,17 @@ def _required_text(raw: dict[str, Any], field: str, context: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise ManifestValidationError(f"{context}: {field} is required")
     return value.strip()
+
+
+def _evidence_dimensions(value: Any, document_key: str) -> tuple[str, ...]:
+    if value is None:
+        return ()
+    if not isinstance(value, list) or not value:
+        raise ManifestValidationError(f"{document_key}: evidence_dimensions must be a non-empty list")
+    dimensions = tuple(item.strip() for item in value if isinstance(item, str) and item.strip())
+    if len(dimensions) != len(value) or len(set(dimensions)) != len(dimensions):
+        raise ManifestValidationError(f"{document_key}: evidence_dimensions must contain unique non-empty strings")
+    return dimensions
 
 
 def _safe_content_path(package_root: Path, value: str, document_key: str) -> Path:
@@ -132,3 +171,19 @@ def _validate_unique_documents(documents: tuple[ManifestDocument, ...]) -> None:
             raise ManifestValidationError(f"duplicate content hash: {document.document_key}")
         keys.add(document.document_key)
         hashes.add(document.content_sha256)
+
+
+def _validate_evidence_links(documents: tuple[ManifestDocument, ...]) -> None:
+    documents_by_key = {document.document_key: document for document in documents}
+    for document in documents:
+        if document.evidence_layer != "deep_summary":
+            continue
+        registry = documents_by_key.get(document.registry_document_key or "")
+        if registry is None or registry.evidence_layer != "registry_record":
+            raise ManifestValidationError(
+                f"{document.document_key}: registry_document_key must reference a registry_record"
+            )
+        if registry.craft_name != document.craft_name:
+            raise ManifestValidationError(
+                f"{document.document_key}: registry_document_key craft_name does not match deep source craft_name"
+            )
