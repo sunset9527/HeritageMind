@@ -76,6 +76,24 @@ const router = createRouter({
   },
 })
 
+const chunkRecoveryKey = 'heritagemind:chunk-recovery'
+const chunkLoadError = /failed to fetch dynamically imported module|importing a module script failed|loading chunk [\w-]+ failed/i
+
+export function createChunkRecoveryHandler(reload: () => void) {
+  return (error: Error) => {
+    if (!chunkLoadError.test(error.message) || sessionStorage.getItem(chunkRecoveryKey) === 'attempted') return
+
+    sessionStorage.setItem(chunkRecoveryKey, 'attempted')
+    reload()
+  }
+}
+
+router.onError(createChunkRecoveryHandler(() => window.location.reload()))
+
+router.afterEach(() => {
+  sessionStorage.removeItem(chunkRecoveryKey)
+})
+
 router.beforeEach((to, _from, next) => {
   document.title = `${to.meta.title} - HeritageMind`
   if (to.meta.requiresAdmin) {
