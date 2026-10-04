@@ -18,7 +18,7 @@ sys.path.insert(0, ROOT)
 import fitz
 import pytest
 
-from src.services.pdf_parser import parse_pdf, parse_pdf_to_text
+from src.services.pdf_parser import iter_pdf_pages, parse_pdf, parse_pdf_to_text
 
 FIXTURES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures")
 TEXT_PDF = os.path.join(FIXTURES_DIR, "sample_text_heritage.pdf")
@@ -104,6 +104,14 @@ def test_parse_pdf_accepts_bytes():
     pages = parse_pdf(data)
     assert pages[0]["source"] == "ocr"
     assert "苏绣" in pages[0]["text"]
+
+
+def test_iter_pdf_pages_starts_at_requested_page():
+    """断点导入可从指定页开始，不必重跑已完成页。"""
+    _ensure_fixtures()
+    pages = list(iter_pdf_pages(TEXT_PDF, start_page=1))
+    assert [page["page"] for page in pages] == [1]
+    assert "龙泉青瓷" in pages[0]["text"]
 
 
 def test_parse_document_integration():

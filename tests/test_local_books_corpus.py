@@ -5,6 +5,8 @@ from pathlib import Path
 import subprocess
 import sys
 
+import pytest
+
 
 def _fake_pdf_pages(_path, **_kwargs):
     return [
@@ -124,3 +126,65 @@ def test_book_corpus_command_exposes_build_and_activate_options():
     assert completed.returncode == 0
     assert "--library" in completed.stdout
     assert "--activate" in completed.stdout
+
+
+def test_page_checkpoint_is_visible_and_resume_starts_at_first_unfinished_page(tmp_path):
+    from src.services.local_books_corpus import LocalBooksCorpusBuilder
+
+    library = tmp_path / "library"
+    library.mkdir()
+    (library / "非遗图典.pdf").write_bytes(b"fixture")
+    output = tmp_path / "corpus"
+    first_starts = []
+
+    def failing_reader(_path, *, start_page=1):
+        first_starts.append(start_page)
+        yield {"page": 1, "text": "第一页资料", "source": "text", "char_count": 5}
+        raise RuntimeError("OCR interrupted")
+
+    first = LocalBooksCorpusBuilder(
+        library, output, pdf_page_reader=failing_reader, pdf_page_counter=lambda _: 2
+    )
+    with pytest.raises(RuntimeError, match="OCR interrupted"):
+        first.build()
+
+    progress = json.loads((output / "progress.json").read_text(encoding="utf-8"))
+    assert first_starts == [1]
+    assert progress["completed_unit_count"] == 1
+    assert progress["total_unit_count"] == 2
+    assert progress["percent"] == 50.0
+    assert (output / "documents.jsonl").read_text(encoding="utf-8").count("第一页资料") == 1
+    assert not (output / "catalog.json").exists()
+
+    resumed_starts = []
+
+    def resumed_reader(_path, *, start_page=1):
+        resumed_starts.append(start_page)
+        yield {"page": 2, "text": "第二页资料", "source": "ocr", "char_count": 5}
+
+    result = LocalBooksCorpusBuilder(
+        library, output, pdf_page_reader=resumed_reader, pdf_page_counter=lambda _: 2
+    ).build()
+
+    assert resumed_starts == [2]
+    assert result.document_count == 2
+    assert json.loads((output / "progress.json").read_text(encoding="utf-8"))["percent"] == 100.0
+    assert json.loads((output / "catalog.json").read_text(encoding="utf-8"))["status"] == "staged"
+
+
+def test_progress_command_reads_checkpoint_without_requiring_library(tmp_path):
+    output = tmp_path / "corpus"
+    output.mkdir()
+    (output / "progress.json").write_text(
+        json.dumps({"status": "running", "completed_unit_count": 17, "total_unit_count": 100, "percent": 17.0}),
+        encoding="utf-8",
+    )
+
+    completed = subprocess.run(
+        [sys.executable, "tools/build_local_books_corpus.py", "--output", str(output), "--progress"],
+        cwd=Path(__file__).parents[1], text=True, capture_output=True, check=False,
+    )
+
+    assert completed.returncode == 0
+    assert "17" in completed.stdout
+    assert "17.0" in completed.stdout

@@ -63,13 +63,14 @@ def _ocr_page(page, dpi: int = 200) -> str:
     return "\n".join(str(line[1]) for line in result)
 
 
-def parse_pdf(
+def iter_pdf_pages(
     path_or_bytes: Union[str, Path, bytes],
     ocr_fallback: bool = True,
     ocr_char_threshold: int = 20,
-) -> List[Dict]:
+    start_page: int = 1,
+):
     """
-    解析 PDF，逐页返回提取结果
+    按需解析 PDF 页面；用于可断点的长文档导入。
 
     Args:
         path_or_bytes: PDF 文件路径 或 文件字节（bytes）
@@ -84,12 +85,10 @@ def parse_pdf(
     - source="ocr"   扫描页，来自 RapidOCR
     - source="empty" 封面页/纯图页，无任何文字（OCR 也未识别出内容）
     """
-    import fitz
-
     doc = _open_doc(path_or_bytes)
-    pages: List[Dict] = []
     try:
-        for idx, page in enumerate(doc, start=1):
+        for idx in range(max(1, start_page), len(doc) + 1):
+            page = doc[idx - 1]
             text = page.get_text("text") or ""
             char_count = len(text.strip())
             source = "text"
@@ -108,15 +107,27 @@ def parse_pdf(
                 else:
                     source = "empty"
 
-            pages.append({
+            yield {
                 "page": idx,
                 "text": text,
                 "source": source,
                 "char_count": char_count,
-            })
+            }
     finally:
         doc.close()
-    return pages
+
+
+def parse_pdf(
+    path_or_bytes: Union[str, Path, bytes],
+    ocr_fallback: bool = True,
+    ocr_char_threshold: int = 20,
+) -> List[Dict]:
+    """解析 PDF，逐页返回提取结果。"""
+    return list(iter_pdf_pages(
+        path_or_bytes,
+        ocr_fallback=ocr_fallback,
+        ocr_char_threshold=ocr_char_threshold,
+    ))
 
 
 def parse_pdf_to_text(

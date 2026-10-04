@@ -93,9 +93,10 @@ npm run dev
 cd <project root>
 python tools\build_local_books_corpus.py --library '<local books directory>' --dry-run
 python tools\build_local_books_corpus.py --library '<local books directory>' --activate
+python tools\build_local_books_corpus.py --progress
 ```
 
-第一条只检查目录及支持的文件，不读取 PDF/EPUB、不会加载 OCR；第二条才会完整解析、写入本地语料并切换。切换完成后重启后端，使内存中的检索器重新加载新语料。若需回退，移除 `data/local_books_corpus/catalog.json` 或将其状态改回 `staged` 后重启服务，默认加载器会回到原有资料。
+第一条只检查目录及支持的文件，不读取 PDF/EPUB、不会加载 OCR；第二条按页写入片段和 `progress.json`，可随时终止。再次运行同一条构建命令会跳过已完成页继续处理；第三条只读显示已完成/总页数和百分比。所有页完成后才写入 staged catalog 并激活。切换完成后重启后端，使内存中的检索器重新加载新语料。若需回退，移除 `data/local_books_corpus/catalog.json` 或将其状态改回 `staged` 后重启服务，默认加载器会回到原有资料。
 
 ### 检索基线
 

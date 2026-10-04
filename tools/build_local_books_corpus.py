@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 import sys
 
@@ -22,7 +23,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="将本地 PDF/EPUB 非遗书籍构建为可溯源检索语料；不会上传或提交原文。"
     )
-    parser.add_argument("--library", required=True, type=Path, help="含 PDF/EPUB 原件的本地知识库目录")
+    parser.add_argument("--library", type=Path, help="含 PDF/EPUB 原件的本地知识库目录")
     parser.add_argument(
         "--output",
         type=Path,
@@ -33,15 +34,31 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--chunk-chars", default=1200, type=int, help="单个检索片段的最大字符数（默认：1200）")
     parser.add_argument("--dry-run", action="store_true", help="仅检查书库目录和支持的文件，不解析、不写入、不激活")
     parser.add_argument("--activate", action="store_true", help="构建成功后将 staged corpus 切换为默认检索语料")
+    parser.add_argument("--progress", action="store_true", help="只显示已有断点进度，不读取图书或运行 OCR")
     arguments = parser.parse_args()
     if arguments.dry_run and arguments.activate:
         parser.error("--dry-run 不能与 --activate 同时使用")
+    if not arguments.progress and arguments.library is None:
+        parser.error("构建或预检时必须提供 --library")
+    if arguments.progress and (arguments.library is not None or arguments.dry_run or arguments.activate):
+        parser.error("--progress 不能与构建参数同时使用")
     return arguments
 
 
 def main() -> int:
     arguments = parse_args()
     try:
+        if arguments.progress:
+            progress_path = arguments.output / "progress.json"
+            if not progress_path.is_file():
+                raise LocalBooksCorpusError("尚无进度文件；请先启动构建")
+            progress = json.loads(progress_path.read_text(encoding="utf-8"))
+            print(
+                f"图书语料进度：{progress.get('completed_unit_count', 0)}/"
+                f"{progress.get('total_unit_count', 0)}（{progress.get('percent', 0)}%），"
+                f"状态：{progress.get('status', 'unknown')}。"
+            )
+            return 0
         builder = LocalBooksCorpusBuilder(
             arguments.library,
             arguments.output,
