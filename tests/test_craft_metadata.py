@@ -165,3 +165,82 @@ def test_craft_metadata_command_runs_as_a_file_from_any_working_directory(tmp_pa
 
     assert completed.returncode == 0, completed.stderr
     assert (corpus_path / "craft_metadata.json").is_file()
+
+
+def test_build_craft_metadata_attaches_general_book_evidence_to_a_known_project(tmp_path):
+    from src.services.craft_metadata import build_craft_metadata
+
+    corpus_path = _write_active_corpus(tmp_path, [
+        _document(1, "民间文学（共计2项）\nI-1\n布洛陀广西壮族自治区\nI-2\n白蛇传传说浙江省", book_title="第一批国家级非物质文化遗产名录图典"),
+        _document(2, "布洛陀在壮族民间文化中具有重要意义。", book_title="非遗通识读本"),
+    ])
+
+    result = build_craft_metadata(corpus_path)
+    buluotuo = next(item for item in result["projects"] if item["project_name"] == "布洛陀")
+
+    assert {source["book_title"] for source in buluotuo["sources"]} == {
+        "第一批国家级非物质文化遗产名录图典", "非遗通识读本",
+    }
+
+
+def test_build_craft_metadata_attaches_explicit_inheritor_from_a_general_book_to_one_known_project(tmp_path):
+    from src.services.craft_metadata import build_craft_metadata
+
+    corpus_path = _write_active_corpus(tmp_path, [
+        _document(1, "民间文学（共计2项）\nI-1\n布洛陀广西壮族自治区\nI-2\n白蛇传传说浙江省", book_title="第一批国家级非物质文化遗产名录图典"),
+        _document(2, "布洛陀国家级代表性传承人张三，长期从事相关传承工作。", book_title="传承人大典"),
+    ])
+
+    result = build_craft_metadata(corpus_path)
+    buluotuo = next(item for item in result["projects"] if item["project_name"] == "布洛陀")
+
+    assert buluotuo["inheritors"][0]["name"] == "张三"
+    assert buluotuo["inheritors"][0]["evidence"][0]["book_title"] == "传承人大典"
+
+
+def test_build_craft_metadata_does_not_treat_inheritor_status_text_as_a_person_name(tmp_path):
+    from src.services.craft_metadata import build_craft_metadata
+
+    corpus_path = _write_active_corpus(tmp_path, [
+        _document(1, "民间文学（共计2项）\nI-1\n布洛陀广西壮族自治区\nI-2\n白蛇传传说浙江省", book_title="第一批国家级非物质文化遗产名录图典"),
+        _document(2, "布洛陀的国家级代表性传承人日益减少。", book_title="传承人大典"),
+    ])
+
+    result = build_craft_metadata(corpus_path)
+    buluotuo = next(item for item in result["projects"] if item["project_name"] == "布洛陀")
+
+    assert buluotuo["inheritors"] == []
+
+
+def test_build_craft_metadata_rejects_surname_shaped_status_or_work_descriptions(tmp_path):
+    from src.services.craft_metadata import build_craft_metadata
+
+    corpus_path = _write_active_corpus(tmp_path, [
+        _document(1, "民间文学（共计2项）\nI-1\n布洛陀广西壮族自治区\nI-2\n白蛇传传说浙江省", book_title="第一批国家级非物质文化遗产名录图典"),
+        _document(2, "布洛陀国家级代表性传承人严重萎缩，相关传承人杨氏画作颇多。", book_title="传承人大典"),
+    ])
+
+    result = build_craft_metadata(corpus_path)
+    buluotuo = next(item for item in result["projects"] if item["project_name"] == "布洛陀")
+
+    assert buluotuo["inheritors"] == []
+
+
+def test_build_craft_metadata_rejects_truncated_or_category_only_catalogue_names(tmp_path):
+    from src.services.craft_metadata import build_craft_metadata
+
+    corpus_path = _write_active_corpus(tmp_path, [
+        _document(1, "传统音乐（共计2项）\nII-1\n族民歌云南省\nII-2\n传统技艺浙江省", book_title="第一批国家级非物质文化遗产名录图典"),
+    ])
+
+    assert build_craft_metadata(corpus_path)["projects"] == []
+
+
+def test_build_craft_metadata_rejects_a_category_name_captured_as_an_explicit_project(tmp_path):
+    from src.services.craft_metadata import build_craft_metadata
+
+    corpus_path = _write_active_corpus(tmp_path, [
+        _document(1, "传统美术：传统技艺。", book_title="第二批国家级非物质文化遗产名录简介"),
+    ])
+
+    assert build_craft_metadata(corpus_path)["projects"] == []

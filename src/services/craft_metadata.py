@@ -43,9 +43,15 @@ _PROJECT_PATTERN = re.compile(
     r"(?P<project>[\u4e00-\u9fff·（）()]{2,36}?"
     r"(?:制作技艺|烧制技艺|织造技艺|印染技艺|锻制技艺|雕刻技艺|刺绣|剪纸|皮影戏|木偶戏|戏曲|舞|歌|传说|习俗|技艺))"
 )
+_SURNAME_CHARS = (
+    "赵钱孙李周吴郑王冯陈褚卫蒋沈韩杨朱秦尤许何吕施张孔曹严华金魏陶姜戚谢邹喻柏水窦章云苏潘葛奚范彭郎鲁韦昌马苗凤花方俞任袁柳"
+    "鲍史唐费廉岑薛雷贺倪汤滕殷罗毕郝邬安常乐于傅皮卞齐康伍余元卜顾孟平黄和穆萧尹姚邵湛汪祁毛禹狄米贝明臧计伏成戴谈宋茅庞熊"
+    "纪舒屈项祝董梁杜阮蓝闵席季麻强贾路娄危江童颜郭梅盛林刁钟徐邱骆高夏蔡田樊胡凌霍虞万支柯管卢莫经房裘缪干解应宗丁宣邓单杭洪"
+    "包诸左石崔吉龚程嵇邢裴陆荣翁荀羊惠甄曲家封芮储靳松井段富巫乌焦巴弓牧山谷车侯班仰秋仲伊宫宁仇栾暴甘厉戎祖武符刘景詹束龙叶幸司欧"
+)
 _INHERITOR_PATTERN = re.compile(
     r"(?P<recognition>(?:国家级|省级|市级|县级)?(?:代表性)?传承人)"
-    r"(?:为|：|:)?\s*(?P<name>[\u4e00-\u9fff·]{2,4})(?=[，。、；;（）()\s]|$)"
+    rf"(?:有|为|：|:)?\s*(?P<name>[{_SURNAME_CHARS}][\u4e00-\u9fff·]{{1,3}})(?=[，。、；;（）()\s]|$)"
 )
 _CATALOGUE_ITEM_PATTERN = re.compile(
     r"(?m)^\s*[IVXⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ]{1,6}\s*-\s*\d+\s*$"
@@ -61,6 +67,7 @@ _REGION_PATTERN = re.compile(
 )
 _EXCERPT_LIMIT = 280
 _DESCRIPTION_LIMIT = 900
+_NON_NAME_FRAGMENTS = ("严重", "萎缩", "日益", "减少", "稀少", "不足", "困难", "画作", "作品", "表演", "场景")
 
 
 def build_craft_metadata(corpus_path: Path | str) -> dict[str, Any]:
@@ -76,8 +83,7 @@ def build_craft_metadata(corpus_path: Path | str) -> dict[str, Any]:
     if not documents_path.is_file():
         raise CraftMetadataError("活动语料缺少 documents.jsonl")
 
-    projects: OrderedDict[str, dict[str, Any]] = OrderedDict()
-    category_context: dict[str, str] = {}
+    documents: list[dict[str, Any]] = []
     for line in documents_path.read_text(encoding="utf-8").splitlines():
         if not line.strip():
             continue
@@ -85,7 +91,16 @@ def build_craft_metadata(corpus_path: Path | str) -> dict[str, Any]:
             document = json.loads(line)
         except json.JSONDecodeError as error:
             raise CraftMetadataError(f"活动语料 documents.jsonl 无效：{error}") from error
+        documents.append(document)
+
+    projects: OrderedDict[str, dict[str, Any]] = OrderedDict()
+    category_context: dict[str, str] = {}
+    for document in documents:
         _add_document_projects(projects, document, category_context)
+    known_project_pattern = _known_project_pattern(projects)
+    if known_project_pattern is not None:
+        for document in documents:
+            _attach_known_project_mentions(projects, document, known_project_pattern)
 
     result = {
         "corpus_id": catalog["corpus_id"],
@@ -143,6 +158,7 @@ def _add_document_projects(
     category_by_project = {
         match.group("project"): _CATEGORY_ALIASES[match.group("category")]
         for match in _CATEGORY_PATTERN.finditer(text)
+        if _is_valid_project_name(match.group("project"))
     }
     raw_project_names = [match.group("project") for match in _PROJECT_PATTERN.finditer(text)]
     explicit_project_names = list(category_by_project) if can_create_projects else []
@@ -170,15 +186,7 @@ def _add_document_projects(
         return
     project = projects[_normalized_project_name(project_names[0])]
     for match in _INHERITOR_PATTERN.finditer(text):
-        candidate = {
-            "name": match.group("name"),
-            "recognition": match.group("recognition"),
-            "status": "verified",
-            "evidence": [evidence],
-        }
-        if not any(item["name"] == candidate["name"] and item["recognition"] == candidate["recognition"] for item in project["inheritors"]):
-            project["inheritors"].append(candidate)
-            project["status"] = "verified"
+        _append_inheritor(project, match.group("name"), match.group("recognition"), evidence)
 
 
 def _new_project(project_name: str) -> dict[str, Any]:
@@ -192,6 +200,39 @@ def _new_project(project_name: str) -> dict[str, Any]:
         "sources": [],
         "status": "mentioned",
     }
+
+
+def _known_project_pattern(projects: OrderedDict[str, dict[str, Any]]) -> re.Pattern[str] | None:
+    names = [item["project_name"] for item in projects.values() if len(item["project_name"]) >= 3]
+    if not names:
+        return None
+    return re.compile("|".join(re.escape(name) for name in sorted(names, key=len, reverse=True)))
+
+
+def _attach_known_project_mentions(
+    projects: OrderedDict[str, dict[str, Any]],
+    document: dict[str, Any],
+    known_project_pattern: re.Pattern[str],
+) -> None:
+    """Attach every explicit mention from all books after authoritative names exist."""
+    text = document.get("content")
+    metadata = document.get("metadata")
+    document_id = document.get("id")
+    if not isinstance(text, str) or not isinstance(metadata, dict) or not isinstance(document_id, str):
+        return
+    matches = list(known_project_pattern.finditer(text))
+    matched_keys: set[str] = set()
+    for match in matches:
+        project = projects[_normalized_project_name(match.group(0))]
+        matched_keys.add(_normalized_project_name(match.group(0)))
+        evidence = _evidence(document_id, text, metadata, focus_start=match.start(), focus_end=match.end())
+        _append_unique_evidence(project["sources"], evidence)
+        _append_description(project["description"], evidence)
+    if len(matched_keys) == 1:
+        project = projects[matched_keys.pop()]
+        for match in _INHERITOR_PATTERN.finditer(text):
+            evidence = _evidence(document_id, text, metadata, focus_start=match.start(), focus_end=match.end())
+            _append_inheritor(project, match.group("name"), match.group("recognition"), evidence)
 
 
 def _resolve_project_names(raw_names: list[str], projects: OrderedDict[str, dict[str, Any]]) -> list[str]:
@@ -241,14 +282,21 @@ def _catalogue_entries(text: str) -> list[tuple[str, str | None, str]]:
         if region_match is None:
             continue
         name = normalized[:region_match.start()].strip("-—·，、:：")
-        if (
-            not 2 <= len(name) <= 48
-            or "共计" in name
-            or re.search(r"[0-9A-Za-z\[\]-]", name)
-        ):
+        if not _is_valid_project_name(name):
             continue
         entries.append((name, region_match.group(0), segment))
     return entries
+
+
+def _is_valid_project_name(name: str) -> bool:
+    return (
+        2 <= len(name) <= 48
+        and "共计" not in name
+        and not re.search(r"[0-9A-Za-z\[\]-]", name)
+        and not name.startswith("族")
+        and name not in _CATEGORY_ALIASES
+        and name not in _CATEGORY_ALIASES.values()
+    )
 
 
 def _set_category(project: dict[str, Any], category: str, evidence: dict[str, Any]) -> None:
@@ -270,12 +318,45 @@ def _append_region(project: dict[str, Any], region: str, evidence: dict[str, Any
     project["status"] = "verified"
 
 
+def _append_inheritor(project: dict[str, Any], name: str, recognition: str, evidence: dict[str, Any]) -> None:
+    name = name.rstrip("等")
+    if not name or any(fragment in name for fragment in _NON_NAME_FRAGMENTS):
+        return
+    existing = next(
+        (item for item in project["inheritors"] if item["name"] == name and item["recognition"] == recognition),
+        None,
+    )
+    if existing is None:
+        project["inheritors"].append({
+            "name": name,
+            "recognition": recognition,
+            "status": "verified",
+            "evidence": [evidence],
+        })
+    else:
+        _append_unique_evidence(existing["evidence"], evidence)
+    project["status"] = "verified"
+
+
 def _normalized_project_name(value: str) -> str:
     return re.sub(r"[\s（）()]", "", value)
 
 
-def _evidence(document_id: str, text: str, metadata: dict[str, Any]) -> dict[str, Any]:
-    excerpt = re.sub(r"\s+", " ", text).strip()[:_EXCERPT_LIMIT]
+def _evidence(
+    document_id: str,
+    text: str,
+    metadata: dict[str, Any],
+    *,
+    focus_start: int | None = None,
+    focus_end: int | None = None,
+) -> dict[str, Any]:
+    if focus_start is None or focus_end is None:
+        excerpt_text = text
+    else:
+        start = max(0, focus_start - _EXCERPT_LIMIT // 2)
+        end = min(len(text), focus_end + _EXCERPT_LIMIT // 2)
+        excerpt_text = text[start:end]
+    excerpt = re.sub(r"\s+", " ", excerpt_text).strip()[:_EXCERPT_LIMIT]
     return {
         "book_title": str(metadata.get("book_title", "")),
         "chapter_title": str(metadata.get("chapter_title", "")),
