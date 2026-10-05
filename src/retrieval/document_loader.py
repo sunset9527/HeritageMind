@@ -444,6 +444,11 @@ class HeritageDocumentLoader:
         return {
             "total_documents": len(documents),
             "total_characters": total_chars,
-            "crafts": [doc["metadata"]["craft_name"] for doc in documents],
+            "crafts": [
+                doc["metadata"].get("craft_name")
+                or doc["metadata"].get("book_title")
+                or doc["id"]
+                for doc in documents
+            ],
             "top_keywords": sorted(keyword_freq.items(), key=lambda x: x[1], reverse=True)[:20]
         }
