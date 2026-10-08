@@ -39,7 +39,7 @@ class HeritageDocumentLoader:
     4. 文档元数据管理
     """
     
-    def __init__(self, base_path: Optional[str] = None):
+    def __init__(self, base_path: Optional[str] = None, local_books_corpus_path: Optional[str | Path] = None):
         """
         初始化文档加载器
         
@@ -49,6 +49,11 @@ class HeritageDocumentLoader:
         if base_path is None:
             base_path = settings.crafts_doc_path
         self.base_path = Path(base_path)
+        self.local_books_corpus_path = (
+            Path(local_books_corpus_path)
+            if local_books_corpus_path is not None
+            else self.base_path.parent / "local_books_corpus"
+        )
     
     def load_craft_documents(self) -> List[Dict[str, Any]]:
         """
@@ -57,6 +62,11 @@ class HeritageDocumentLoader:
         Returns:
             文档列表，每项包含 id, content, metadata
         """
+        local_books = self._load_active_local_books_documents()
+        if local_books is not None:
+            logger.info(f"已加载{len(local_books)}篇已激活本地图书语料")
+            return local_books
+
         documents: List[Dict[str, Any]] = []
         if not self.base_path.exists():
             logger.warning(f"文档目录不存在：{self.base_path}")
@@ -73,6 +83,43 @@ class HeritageDocumentLoader:
         documents.extend(self._load_published_curated_documents())
 
         logger.info(f"已加载{len(documents)}篇技艺文档")
+        return documents
+
+    def _load_active_local_books_documents(self) -> Optional[List[Dict[str, Any]]]:
+        """Return the active local books corpus, or ``None`` before it is activated.
+
+        An activated but malformed corpus fails closed: legacy web sources must not
+        silently reappear after the operator has switched the default knowledge base.
+        """
+        catalog_path = self.local_books_corpus_path / "catalog.json"
+        documents_path = self.local_books_corpus_path / "documents.jsonl"
+        if not catalog_path.exists():
+            return None
+        try:
+            catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as error:
+            logger.error("本地图书语料 catalog 无效，拒绝回退旧资料：%s", error)
+            return []
+        if catalog.get("status") != "active":
+            return None
+        if not documents_path.is_file():
+            logger.error("本地图书语料已激活但 documents.jsonl 缺失，拒绝回退旧资料")
+            return []
+        documents: List[Dict[str, Any]] = []
+        try:
+            for line in documents_path.read_text(encoding="utf-8").splitlines():
+                if not line.strip():
+                    continue
+                item = json.loads(line)
+                if not isinstance(item.get("id"), str) or not isinstance(item.get("content"), str):
+                    raise ValueError("document missing id or content")
+                metadata = item.get("metadata")
+                if not isinstance(metadata, dict) or not metadata.get("book_title"):
+                    raise ValueError("document missing book_title metadata")
+                documents.append(item)
+        except (OSError, ValueError, json.JSONDecodeError) as error:
+            logger.error("本地图书语料 documents 无效，拒绝回退旧资料：%s", error)
+            return []
         return documents
 
     def _load_published_curated_documents(self) -> List[Dict[str, Any]]:

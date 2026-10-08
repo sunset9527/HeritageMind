@@ -19,6 +19,7 @@ dist/
 # 向量数据库
 data/chroma_db/
 data/audio_chroma/
+data/local_books_corpus/
 *.db
 
 # 测试

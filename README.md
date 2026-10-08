@@ -83,6 +83,20 @@ npm run dev
 
 当前资料分为两层：73 条项目级来源摘要用于工艺、历史、保护和当代实践等细节问答，其中 27 条新增深度摘要已完整覆盖第一批中的宜兴紫砂陶制作技艺、界首彩陶烧制技艺、石湾陶塑技艺、黎族原始制陶技艺、龙泉青瓷烧制技艺、耀州窑陶瓷烧制技艺、磁州窑烧制技艺、维吾尔族模制法土陶烧制技艺、傣族慢轮制陶技艺（每项均有 3 个 URL、至少 2 个来源机构）；518 条由文化和旅游部公开的第一批国家级非遗名录生成，只陈述可回链核验的项目名、编号、门类和申报地区/单位。后者用于扩大可探索范围，**不应被视为 518 篇深度研究**。
 
+### 本地图书语料切换
+
+项目可将本地 PDF/EPUB 图书构建为默认检索语料。构建输出位于 `data/local_books_corpus/`，该目录已被 Git 忽略，避免提交版权正文；原有 `data/knowledge_sources/` 的 591 条资料与文件不会删除。只有在构建成功并传入 `--activate` 后，默认检索才会只读取图书语料；图书片段保留书名、章节、页码、内容哈希和原生文字/OCR 来源。
+
+在 PowerShell 中先预检，再执行实际构建和切换（扫描型图书的 OCR 可能耗时较长）：
+
+```powershell
+cd <project root>
+python tools\build_local_books_corpus.py --library '<local books directory>' --dry-run
+python tools\build_local_books_corpus.py --library '<local books directory>' --activate
+```
+
+第一条只检查目录及支持的文件，不读取 PDF/EPUB、不会加载 OCR；第二条才会完整解析、写入本地语料并切换。切换完成后重启后端，使内存中的检索器重新加载新语料。若需回退，移除 `data/local_books_corpus/catalog.json` 或将其状态改回 `staged` 后重启服务，默认加载器会回到原有资料。
+
 ### 检索基线
 
 评测集 `data/evaluation/retrieval-v1.jsonl` 有 120 条证据级问题：40 条直问、30 条混淆、25 条比较、15 条多轮追问、10 条知识库外问题。指标仅衡量检索是否找回可接受来源，**不等同于回答事实正确率**。
