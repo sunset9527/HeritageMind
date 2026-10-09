@@ -28,19 +28,21 @@ class HeritageGraphVisualizer:
     
     # 节点类型到颜色的映射
     NODE_COLORS = {
-        "craft": "#8B4513",         # 棕色 - 技艺
-        "material": "#2E7D32",      # 绿色 - 材料
-        "tool": "#1565C0",           # 蓝色 - 工具
-        "inheritor": "#EF6C00",     # 橙色 - 传承人
-        "region": "#7B1FA2",        # 紫色 - 地域
-        "dynasty": "#C62828",       # 红色 - 朝代
-        "source": "#5C6BC0",        # 靛蓝 - 来源资料
-        "unknown": "#757575"        # 灰色 - 未知
+        "craft": "#D4B77E",         # 金色 - 技艺
+        "category": "#67C587",      # 绿色 - 非遗门类
+        "material": "#67C587",      # 绿色 - 材料
+        "tool": "#5CAEEB",          # 蓝色 - 工具
+        "inheritor": "#F29B4B",     # 橙色 - 传承人
+        "region": "#BF8AE0",        # 紫色 - 地域
+        "dynasty": "#EC7373",       # 红色 - 朝代
+        "source": "#91A7FF",        # 靛蓝 - 来源资料
+        "unknown": "#C3C8BC"        # 灰色 - 未知
     }
     
     # 节点类型中文名称
     NODE_TYPE_NAMES = {
         "craft": "技艺",
+        "category": "非遗门类",
         "material": "材料",
         "tool": "工具",
         "inheritor": "传承人",
@@ -114,13 +116,13 @@ class HeritageGraphVisualizer:
             颜色代码
         """
         if "material" in relation:
-            return "#2E7D32"
+            return "#67C587"
         elif "tool" in relation:
-            return "#1565C0"
+            return "#5CAEEB"
         elif "mastered" in relation:
-            return "#EF6C00"
+            return "#F29B4B"
         else:
-            return "#9E9E9E"
+            return "#839080"
     
     def render_interactive(
         self,
@@ -149,8 +151,8 @@ class HeritageGraphVisualizer:
         net = Network(
             height=height,
             width="100%",
-            bgcolor="#FFF8F0",
-            font_color="#333333",
+            bgcolor="#1C2016",
+            font_color="#F4F0E7",
             directed=True,
             notebook=False,
             select_menu=False,
@@ -208,7 +210,7 @@ class HeritageGraphVisualizer:
                 "title": hover_text,
                 "color": {
                     "background": color,
-                    "border": "#333333",
+                    "border": "#F4F0E7",
                     "highlight": {
                         "background": color,
                         "border": "#FFD700"
@@ -217,7 +219,7 @@ class HeritageGraphVisualizer:
                 "size": size,
                 "font": {
                     "size": 14,
-                    "color": "#333333"
+                    "color": "#F4F0E7"
                 },
                 "borderWidth": 2,
                 "borderWidthSelected": 4
@@ -249,7 +251,7 @@ class HeritageGraphVisualizer:
                 "arrowStrikethrough": False,
                 "font": {
                     "size": 10,
-                    "color": "#666666",
+                    "color": "#ADB4A8",
                     "strokeWidth": 0
                 },
                 "smooth": {
@@ -343,8 +345,8 @@ class HeritageGraphVisualizer:
                 type_counts["unknown"] = type_counts.get("unknown", 0) + 1
         
         # 构建图例HTML
-        legend_html = '<div style="position:absolute;top:10px;left:10px;z-index:1000;background:white;padding:15px;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,0.1);font-family:sans-serif;font-size:12px;">'
-        legend_html += '<b style="color:#8B4513;">📚 图例</b><br><br>'
+        legend_html = '<div style="position:absolute;top:10px;left:10px;z-index:1000;background:#293025;color:#F4F0E7;padding:15px;border:1px solid rgba(244,240,231,.16);border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,.22);font-family:sans-serif;font-size:12px;">'
+        legend_html += '<b style="color:#D4B77E;">📚 图例</b><br><br>'
         
         for ntype, color in self.NODE_COLORS.items():
             if ntype == "unknown":
@@ -354,8 +356,8 @@ class HeritageGraphVisualizer:
             legend_html += f'<span style="display:inline-block;width:12px;height:12px;background:{color};border-radius:50%;margin-right:5px;"></span>'
             legend_html += f'{type_name}: {count}<br>'
         
-        legend_html += '<br><b style="color:#666;">🖱️ 操作提示</b><br>'
-        legend_html += '<span style="color:#888;font-size:10px;">拖动节点查看详情<br>滚轮缩放<br>双击节点居中</span>'
+        legend_html += '<br><b style="color:#D3D8CC;">🖱️ 操作提示</b><br>'
+        legend_html += '<span style="color:#ADB4A8;font-size:10px;">拖动节点查看详情<br>滚轮缩放<br>双击节点居中</span>'
         legend_html += '</div>'
         
         # 在HTML body中插入图例
@@ -395,8 +397,8 @@ class HeritageGraphVisualizer:
         net = Network(
             height="500px",
             width="100%",
-            bgcolor="#FFF8F0",
-            font_color="#333333",
+            bgcolor="#1C2016",
+            font_color="#F4F0E7",
             directed=True,
             notebook=False
         )
@@ -431,11 +433,11 @@ class HeritageGraphVisualizer:
                 title=hover_text,
                 color={
                     "background": color if not is_center else "#FFD700",
-                    "border": "#333333" if not is_center else "#8B4513",
+                    "border": "#F4F0E7" if not is_center else "#D4B77E",
                     "highlight": {"background": "#FFD700", "border": "#8B4513"}
                 },
                 size=size if not is_center else size + 10,
-                font={"size": 14, "color": "#333333", "bold": is_center},
+                font={"size": 14, "color": "#F4F0E7", "bold": is_center},
                 borderWidth=3 if is_center else 2
             )
         
@@ -453,7 +455,7 @@ class HeritageGraphVisualizer:
                 label=relation_name,
                 color=self._get_edge_color(relation),
                 arrows="to",
-                font={"size": 10, "color": "#666666"}
+                font={"size": 10, "color": "#ADB4A8"}
             )
         
         # 生成HTML
@@ -461,7 +463,7 @@ class HeritageGraphVisualizer:
         
         # 添加标题
         center_name = self.graph.get_node(center_node).get("name", center_node) if self.graph.get_node(center_node) else center_node
-        title_html = f'<div style="text-align:center;padding:10px;background:#FFF8F0;color:#8B4513;font-family:sans-serif;"><b>📍 {center_name}</b> 的知识网络（{depth}度关联）</div>'
+        title_html = f'<div style="text-align:center;padding:10px;background:#293025;color:#F4F0E7;font-family:sans-serif;"><b style="color:#D4B77E;">📍 {center_name}</b> 的知识网络（{depth}度关联）</div>'
         
         if "<body>" in html:
             html = html.replace("<body>", f"<body>\n{title_html}")
@@ -508,8 +510,8 @@ class HeritageGraphVisualizer:
         net = Network(
             height="500px",
             width="100%",
-            bgcolor="#FFF8F0",
-            font_color="#333333",
+            bgcolor="#1C2016",
+            font_color="#F4F0E7",
             directed=True,
             notebook=False
         )
@@ -533,11 +535,11 @@ class HeritageGraphVisualizer:
                 title=hover_text,
                 color={
                     "background": color if not is_selected else "#FFD700",
-                    "border": "#333333" if not is_selected else "#8B4513",
+                    "border": "#F4F0E7" if not is_selected else "#D4B77E",
                     "highlight": {"background": "#FFD700", "border": "#8B4513"}
                 },
                 size=size + 5 if is_selected else size,
-                font={"size": 14, "color": "#333333", "bold": is_selected},
+                font={"size": 14, "color": "#F4F0E7", "bold": is_selected},
                 borderWidth=3 if is_selected else 2
             )
         
@@ -552,14 +554,14 @@ class HeritageGraphVisualizer:
                 label=relation_name,
                 color=self._get_edge_color(relation),
                 arrows="to",
-                font={"size": 10, "color": "#666666"}
+                font={"size": 10, "color": "#ADB4A8"}
             )
         
         html = net.generate_html()
         
         # 添加标题
         names = [self.graph.get_node(n).get("name", n) if self.graph.get_node(n) else n for n in node_ids]
-        title_html = f'<div style="text-align:center;padding:10px;background:#FFF8F0;color:#8B4513;font-family:sans-serif;"><b>📊 {title}</b><br><small>{" vs ".join(names)}</small></div>'
+        title_html = f'<div style="text-align:center;padding:10px;background:#293025;color:#F4F0E7;font-family:sans-serif;"><b style="color:#D4B77E;">📊 {title}</b><br><small>{" vs ".join(names)}</small></div>'
         
         if "<body>" in html:
             html = html.replace("<body>", f"<body>\n{title_html}")

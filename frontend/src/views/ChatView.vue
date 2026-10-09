@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from 'vue'
+import { computed, ref, onMounted, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useChatStore } from '@/stores/chat'
 import { useAuthStore } from '@/stores/auth'
@@ -24,10 +24,23 @@ const settings = useSettingsStore()
 const input = ref('')
 const chatContainer = ref<HTMLElement | null>(null)
 const sidebarOpen = ref(false)
+const craftPickerOpen = ref(false)
+const craftSearch = ref('')
 
 const profiles = ref<ProfileItem[]>([])
 const crafts = ref<CraftItem[]>([])
 const sessions = ref<ChatSession[]>([])
+const suggestedQuestions = computed(() => crafts.value.slice(0, 6).map((craft) => `请介绍${craft.name}的历史与传承。`))
+const visibleCrafts = computed(() => {
+  const keyword = craftSearch.value.trim()
+  return crafts.value.filter((craft) => !keyword || craft.name.includes(keyword)).slice(0, 36)
+})
+
+function chooseCraft(name: string | null) {
+  chatStore.setCraft(name)
+  craftSearch.value = ''
+  craftPickerOpen.value = false
+}
 
 onMounted(async () => {
   try { profiles.value = await getProfiles() } catch { /* */ }
@@ -109,12 +122,12 @@ function agentChipIcon(id: string) { return chipColors[id]?.icon || '💬' }
       <aside
         v-if="sidebarOpen"
         class="w-60 flex-shrink-0 border-r overflow-y-auto p-4 flex flex-col gap-3"
-        style="background: rgba(249, 247, 244, 0.6); border-color: var(--border)"
+        style="background: rgba(28, 32, 22, 0.98); border-color: var(--border)"
       >
         <!-- Auth -->
         <div v-if="auth.isAuthenticated" class="text-sm">
           <div class="font-semibold">{{ auth.user?.username }}</div>
-          <button @click="auth.logout()" class="text-xs text-[var(--text-tertiary)] hover:text-[var(--accent)] mt-1">退出</button>
+          <button @click="auth.logout()" class="text-[13px] text-[var(--text-tertiary)] hover:text-[var(--accent)] mt-1">退出</button>
         </div>
         <div v-else class="text-sm space-x-2">
           <router-link to="/login" class="text-[var(--accent)] no-underline font-medium">登录</router-link>
@@ -125,11 +138,11 @@ function agentChipIcon(id: string) { return chipColors[id]?.icon || '💬' }
 
         <!-- Profile -->
         <div>
-          <div class="text-[11px] uppercase tracking-wider text-[var(--text-tertiary)] mb-1.5">学习深度</div>
+          <div class="text-[13px] uppercase tracking-wider text-[var(--text-tertiary)] mb-1.5">学习深度</div>
           <select
             :value="chatStore.currentProfile"
             @change="chatStore.setProfile(($event.target as HTMLSelectElement).value)"
-            class="w-full text-[13px] rounded-lg px-2 py-1.5 bg-white border-0"
+            class="w-full text-[14px] rounded-lg px-2 py-1.5 bg-[var(--surface)] text-[var(--text)] border-0"
             style="box-shadow: var(--shadow-sm)"
           >
             <option v-for="p in profiles" :key="p.id" :value="p.id">{{ p.name }}</option>
@@ -137,21 +150,21 @@ function agentChipIcon(id: string) { return chipColors[id]?.icon || '💬' }
         </div>
 
         <!-- Craft -->
-        <div>
-          <div class="text-[11px] uppercase tracking-wider text-[var(--text-tertiary)] mb-1.5">技艺</div>
-          <select
-            :value="chatStore.currentCraft || ''"
-            @change="chatStore.setCraft(($event.target as HTMLSelectElement).value || null)"
-            class="w-full text-[13px] rounded-lg px-2 py-1.5 bg-white border-0"
-            style="box-shadow: var(--shadow-sm)"
-          >
-            <option value="">全部</option>
-            <option v-for="c in crafts" :key="c.id" :value="c.name">{{ c.name }}</option>
-          </select>
+        <div data-testid="craft-picker" class="craft-picker">
+          <div class="text-[13px] uppercase tracking-wider text-[var(--text-tertiary)] mb-1.5">技艺</div>
+          <button type="button" class="craft-picker-trigger" @click="craftPickerOpen = !craftPickerOpen">
+            <span>{{ chatStore.currentCraft || '全部' }}</span><span aria-hidden="true">⌄</span>
+          </button>
+          <div v-if="craftPickerOpen" class="craft-picker-panel">
+            <input v-model="craftSearch" type="search" placeholder="搜索技艺…" aria-label="搜索技艺" />
+            <button type="button" class="craft-choice" :class="{ selected: !chatStore.currentCraft }" @click="chooseCraft(null)">全部</button>
+            <button v-for="craft in visibleCrafts" :key="craft.id" type="button" class="craft-choice" :class="{ selected: chatStore.currentCraft === craft.name }" @click="chooseCraft(craft.name)">{{ craft.name }}</button>
+            <p v-if="!visibleCrafts.length" class="craft-empty">未找到匹配技艺</p>
+          </div>
         </div>
 
         <!-- Narrative -->
-        <label class="flex items-center gap-2 text-[13px] text-[var(--text-secondary)] cursor-pointer">
+        <label class="flex items-center gap-2 text-[14px] text-[var(--text-secondary)] cursor-pointer">
           <input type="checkbox" :checked="chatStore.includeNarrative" @change="chatStore.toggleNarrative()" class="rounded" />
           传承人口吻
         </label>
@@ -160,15 +173,15 @@ function agentChipIcon(id: string) { return chipColors[id]?.icon || '💬' }
 
         <!-- Sessions -->
         <div v-if="auth.isAuthenticated">
-          <div class="flex items-center justify-between text-[11px] uppercase tracking-wider text-[var(--text-tertiary)] mb-1.5">
+          <div class="flex items-center justify-between text-[13px] uppercase tracking-wider text-[var(--text-tertiary)] mb-1.5">
             <span>继续上次对话</span>
-            <button @click="chatStore.startNewSession()" class="border-0 bg-transparent cursor-pointer text-[var(--accent)] text-[11px]">新对话</button>
+            <button @click="chatStore.startNewSession()" class="border-0 bg-transparent cursor-pointer text-[var(--accent)] text-[13px]">新对话</button>
           </div>
           <button
             v-for="session in sessions"
             :key="session.id"
             @click="continueSession(session.id)"
-            class="w-full text-left text-[12px] truncate py-1 px-1.5 rounded border-0 cursor-pointer"
+            class="w-full text-left text-[13px] truncate py-1 px-1.5 rounded border-0 cursor-pointer"
             :style="{ color: chatStore.activeSessionId === session.id ? 'var(--accent)' : 'var(--text-tertiary)', background: chatStore.activeSessionId === session.id ? 'var(--accent-soft)' : 'transparent' }"
           >
             {{ session.title }}
@@ -188,7 +201,7 @@ function agentChipIcon(id: string) { return chipColors[id]?.icon || '💬' }
           {{ sidebarOpen ? '← 收起' : '→ 选项' }}
         </button>
         <span class="chat-title">寻艺问答</span>
-        <span class="text-[13px] text-[var(--text-tertiary)]">
+        <span class="text-[14px] text-[var(--text-tertiary)]">
           {{ chatStore.currentProfile === 'curious' ? '好奇者' : chatStore.currentProfile === 'learner' ? '学习者' : '研究者' }}
           <template v-if="chatStore.currentCraft"> · {{ chatStore.currentCraft }}</template>
         </span>
@@ -198,10 +211,10 @@ function agentChipIcon(id: string) { return chipColors[id]?.icon || '💬' }
       <div v-if="chatStore.messages.length === 0" class="px-6 pt-6 pb-2">
         <div class="flex flex-wrap gap-2">
           <button
-            v-for="q in ['景泰蓝的制作流程是什么？', '苏绣有哪些针法特点？', '龙泉青瓷的釉色如何形成？', '宜兴紫砂壶为什么适合泡茶？', '芜湖铁画的传承现状如何？', '蜀锦与宋锦有什么区别？']"
+            v-for="q in suggestedQuestions"
             :key="q"
             @click="input = q; handleSend()"
-            class="px-4 py-2 rounded-full text-[13px] font-medium transition-all duration-300 cursor-pointer border-0"
+            class="px-4 py-2 rounded-full text-[14px] font-medium transition-all duration-300 cursor-pointer border-0"
             style="background: var(--surface); color: var(--text-secondary); box-shadow: var(--shadow-sm); border: 1px solid var(--border)"
           >
             {{ q }}
@@ -219,7 +232,7 @@ function agentChipIcon(id: string) { return chipColors[id]?.icon || '💬' }
               <span
                 v-for="agent in msg.metadata.sourceAgents"
                 :key="agent.id"
-                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium"
+                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[13px] font-medium"
                 :style="{
                   background: agentChipBg(agent.id),
                   color: agentChipColor(agent.id),
@@ -264,7 +277,7 @@ function agentChipIcon(id: string) { return chipColors[id]?.icon || '💬' }
       <!-- Key required notice -->
       <div
         v-if="!settings.canQuery()"
-        class="mx-6 mb-2 px-4 py-2.5 rounded-xl text-[13px] flex items-center gap-2"
+        class="mx-6 mb-2 px-4 py-2.5 rounded-xl text-[14px] flex items-center gap-2"
         style="background: #FFFBF0; color: #8B6D2E; border: 1px solid rgba(180, 140, 60, 0.12)"
       >
         <span>⚠️</span>
@@ -273,7 +286,7 @@ function agentChipIcon(id: string) { return chipColors[id]?.icon || '💬' }
       </div>
 
       <!-- Input -->
-      <div class="px-6 py-4 border-t" style="border-color: var(--border); background: rgba(249, 247, 244, 0.5)">
+      <div data-testid="chat-composer" class="px-6 py-4 border-t" style="border-color: var(--border); background: rgba(28, 32, 22, 0.92)">
         <div class="flex gap-3 max-w-4xl">
           <input
             v-model="input"
@@ -298,8 +311,8 @@ function agentChipIcon(id: string) { return chipColors[id]?.icon || '💬' }
     </div>
 
     <!-- Debate panel (right) -->
-    <aside class="w-72 flex-shrink-0 border-l p-4 overflow-y-auto hidden xl:block" style="border-color: var(--border); background: rgba(249, 247, 244, 0.3)">
-      <div class="text-[11px] uppercase tracking-wider text-[var(--text-tertiary)] mb-3">辩论过程</div>
+    <aside data-testid="debate-panel" class="w-72 flex-shrink-0 border-l p-4 overflow-y-auto hidden xl:block" style="border-color: var(--border); background: rgba(41, 48, 37, 0.55)">
+      <div class="text-[13px] uppercase tracking-wider text-[var(--text-tertiary)] mb-3">辩论过程</div>
       <template v-if="chatStore.messages.length">
         <DebateTimeline
           :debate-session="chatStore.messages[chatStore.messages.length - 1]?.metadata?.debateSession || null"
@@ -315,6 +328,7 @@ function agentChipIcon(id: string) { return chipColors[id]?.icon || '💬' }
 <style scoped>
 .chat-page :deep(.scene-content){max-width:none;padding:0}.chat-toolbar { background:rgba(28,32,22,.82);border-color:rgba(244,240,231,.18)!important;backdrop-filter:blur(12px); }
 .chat-title { color: var(--accent); font-family: var(--font-brush); font-size: 1.5rem; letter-spacing: .1em; }
+.craft-picker{position:relative}.craft-picker-trigger{display:flex;width:100%;align-items:center;justify-content:space-between;padding:.55rem .75rem;border:1px solid var(--border);border-radius:.65rem;background:#293025;color:var(--text);cursor:pointer;font:inherit;text-align:left;box-shadow:none}.craft-picker-trigger:hover{border-color:var(--accent)}.craft-picker-panel{position:absolute;z-index:20;top:calc(100% + 6px);left:0;right:0;max-height:320px;overflow:auto;padding:8px;background:#20261d;border:1px solid var(--border-strong);border-radius:10px;box-shadow:0 14px 30px rgba(0,0,0,.28)}.craft-picker-panel input{box-sizing:border-box;width:100%;margin-bottom:6px;padding:8px 9px;border:1px solid var(--border);border-radius:7px;background:#151a13;color:var(--text);font:inherit}.craft-choice{display:block;width:100%;padding:7px 9px;border:0;border-radius:6px;background:transparent;color:var(--text);font:inherit;text-align:left;cursor:pointer}.craft-choice:hover,.craft-choice.selected{background:rgba(155,128,80,.22);color:#fff4d8}.craft-empty{margin:7px 9px;color:var(--text-tertiary);font-size:.85rem}
 .slide-enter-active, .slide-leave-active { transition: all 0.3s ease; }
 .slide-enter-from, .slide-leave-to { opacity: 0; transform: translateX(-16px); }
 </style>

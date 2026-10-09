@@ -9,6 +9,10 @@ vi.mock('@/stores/settings', () => ({
   useSettingsStore: () => ({ loadServerConfig: vi.fn() }),
 }))
 
+vi.mock('@/views/LoginView.vue', () => ({
+  default: { template: '<div data-testid="login-view" />' },
+}))
+
 describe('public route editorial scenes', () => {
   beforeEach(() => {
     setActivePinia(createPinia())

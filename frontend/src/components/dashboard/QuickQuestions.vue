@@ -19,7 +19,7 @@ function ask(q: string) {
 
 <template>
   <section class="max-w-5xl mx-auto px-6 mb-20">
-    <p class="caption uppercase tracking-wider mb-4" style="font-size: 0.7rem; letter-spacing: 0.08em">试着问问</p>
+    <p class="caption uppercase tracking-wider mb-4" style="font-size: 0.82rem; letter-spacing: 0.08em">试着问问</p>
     <div class="flex flex-wrap gap-2.5">
       <button
         v-for="q in questions"

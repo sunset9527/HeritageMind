@@ -49,12 +49,12 @@
   --radius-xl:        32px;
 
   /* Typography */
-  --font-sans:       'Times New Roman', 'STXingkai', '华文行楷', 'KaiTi', serif;
+  --font-sans:       'STXingkai', '华文行楷', 'KaiTi', serif;
   --font-display:    'Times New Roman', 'STXingkai', '华文行楷', 'KaiTi', serif;
   /* Windows includes STXINGKA.TTF: use it for heritage display text site-wide. */
   --font-brush:      'STXingkai', '华文行楷', 'KaiTi', serif;
   /* Element Plus otherwise resets form controls to its own Latin font stack. */
-  --el-font-family:  'Times New Roman', 'STXingkai', '华文行楷', 'KaiTi', serif;
+  --el-font-family:  'STXingkai', '华文行楷', 'KaiTi', serif;
 }
 
 /* ================================================================
@@ -110,7 +110,7 @@ h1, h2, h3, h4 {
 
 .headline {
   font-family: var(--font-brush);
-  font-size: 2rem;
+  font-size: 2.45rem;
   font-weight: 400;
   letter-spacing: .08em;
 }
@@ -122,14 +122,24 @@ h1, h2, h3, h4 {
 }
 
 .body {
-  font-size: 0.9375rem;
+  font-size: 1.05rem;
   color: var(--text-secondary);
   line-height: 1.7;
 }
 
+.detail-copy,
+.inheritor-copy {
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: clamp(1.08rem, 1.2vw, 1.22rem);
+  font-weight: 400;
+  line-height: 2;
+  letter-spacing: .025em;
+}
+
 .caption {
-  font-size: 0.8125rem;
-  color: var(--text-tertiary);
+  font-size: 0.875rem;
+  color: var(--text-secondary);
 }
 
 /* ================================================================
@@ -385,9 +395,9 @@ h1, h2, h3, h4 {
 
 /* Shared page language: every product page carries the same paper, ink and seal hierarchy. */
 .heritage-page { position: relative; color: var(--text); }
-.page-kicker { margin: 0 0 7px; color: var(--accent); font-size: .68rem; font-weight: 700; letter-spacing: .22em; }
+.page-kicker { margin: 0 0 7px; color: var(--accent); font-size: .8rem; font-weight: 700; letter-spacing: .22em; }
 .page-title { margin: 0; color: var(--text); font-family: var(--font-brush); font-size: clamp(2.7rem, 5vw, 4.2rem); font-weight: 400; letter-spacing: .12em; line-height: 1.05; }
-.page-intro { margin: 13px 0 28px; color: var(--text-secondary); font-size: .88rem; line-height: 1.8; }
+.page-intro { margin: 13px 0 28px; color: var(--text-secondary); font-size: .94rem; line-height: 1.8; }
 .heritage-page .setting-section { background: rgba(41, 48, 37, .92); border-color: var(--border); box-shadow: var(--shadow-md); }
 .heritage-page .setting-section h3 { font-family: var(--font-brush); font-size: 1.6rem; font-weight: 400; letter-spacing: .08em; }
 

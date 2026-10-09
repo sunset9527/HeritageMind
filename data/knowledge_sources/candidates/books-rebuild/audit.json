@@ -1,0 +1,488 @@
+{
+  "corpus_id": "heritage-books-v1",
+  "status": "review_only_not_published",
+  "national_main_list_items": 1219,
+  "national_main_list_unique_names": 1218,
+  "national_extension_items_by_notice": {
+    "after_first_batch": 147,
+    "after_second_batch": 164
+  },
+  "national_extension_count_basis": "国务院第二、三批公布通知；扩展项目另列且不重复增加主项目名数",
+  "provincial_profile_pages_detected": 305,
+  "provincial_profile_pages_book_confirmed": 305,
+  "provincial_profile_pages_needing_ocr_review": 0,
+  "candidate_unique_project_names": 1476,
+  "candidate_descriptions_with_book_page_evidence": 1024,
+  "dedicated_volume_inheritor_profiles": 226,
+  "inheritor_profiles_missing_biography": [],
+  "inheritor_profiles_ocr_project_name_missing": [
+    16,
+    28,
+    48,
+    89,
+    114,
+    144,
+    165
+  ],
+  "inheritor_profiles_missing_book_project_name": [],
+  "inheritor_profiles_linked_by_book_code": [
+    16,
+    28,
+    48,
+    89,
+    114,
+    144,
+    165
+  ],
+  "unlinked_inheritor_numbers": [],
+  "ocr_main_list_audit": {
+    "second": {
+      "official_count": 510,
+      "covered_count": 510,
+      "missing_from_book": [],
+      "name_disagreements": [
+        {
+          "sequence": 569,
+          "official_name": "壮族嘹歌",
+          "ocr_name": "壮族嗪歌",
+          "page": 83
+        },
+        {
+          "sequence": 647,
+          "official_name": "跑帷子",
+          "ocr_name": "跑惟子",
+          "page": 210
+        },
+        {
+          "sequence": 651,
+          "official_name": "蜈蚣舞",
+          "ocr_name": "蚣舞是流传于广东澄海的一种民间舞蹈，起源于清代同治至光绪年间，系由西门乡人陈成",
+          "page": 213
+        },
+        {
+          "sequence": 663,
+          "official_name": "得荣学羌",
+          "ocr_name": "得荣学关",
+          "page": 222
+        },
+        {
+          "sequence": 673,
+          "official_name": "纳西族热美蹉",
+          "ocr_name": "纳西族热美",
+          "page": 232
+        },
+        {
+          "sequence": 675,
+          "official_name": "普米族搓蹉",
+          "ocr_name": "普米族搓",
+          "page": 234
+        },
+        {
+          "sequence": 689,
+          "official_name": "藏族螭鼓舞",
+          "ocr_name": "藏族鼓舞",
+          "page": 247
+        },
+        {
+          "sequence": 719,
+          "official_name": "山东梆子",
+          "ocr_name": "山东郴子",
+          "page": 272
+        },
+        {
+          "sequence": 720,
+          "official_name": "莱芜梆子",
+          "ocr_name": "莱芜子",
+          "page": 272
+        },
+        {
+          "sequence": 721,
+          "official_name": "枣梆",
+          "ocr_name": "枣郴原名“本地”，主要流传于山东菏泽、郓城等地及河北、河南、山西的部分地区。它是",
+          "page": 273
+        },
+        {
+          "sequence": 722,
+          "official_name": "徐州梆子",
+          "ocr_name": "徐州郴子",
+          "page": 273
+        },
+        {
+          "sequence": 723,
+          "official_name": "同州梆子",
+          "ocr_name": "同州郴子",
+          "page": 274
+        },
+        {
+          "sequence": 739,
+          "official_name": "邕剧",
+          "ocr_name": "剧是广西四大地方剧种之一，旧时习称为“广戏”、“老戏”、“五六腔”，流传于广",
+          "page": 285
+        },
+        {
+          "sequence": 759,
+          "official_name": "平湖钹子书",
+          "ocr_name": "平湖铵子书",
+          "page": 305
+        },
+        {
+          "sequence": 793,
+          "official_name": "天桥摔跤",
+          "ocr_name": "天桥摔",
+          "page": 335
+        },
+        {
+          "sequence": 794,
+          "official_name": "沙力搏尔式摔跤",
+          "ocr_name": "沙力搏尔式摔政",
+          "page": 336
+        },
+        {
+          "sequence": 806,
+          "official_name": "苌家拳",
+          "ocr_name": "家拳",
+          "page": 346
+        },
+        {
+          "sequence": 811,
+          "official_name": "满族二贵摔跤",
+          "ocr_name": "满族二贵摔",
+          "page": 349
+        },
+        {
+          "sequence": 844,
+          "official_name": "常州梳篦",
+          "ocr_name": "常州梳",
+          "page": 401
+        },
+        {
+          "sequence": 852,
+          "official_name": "羌族刺绣",
+          "ocr_name": "族刺绣",
+          "page": 406
+        },
+        {
+          "sequence": 860,
+          "official_name": "料器(北京料器)",
+          "ocr_name": "料器·北京料器",
+          "page": 415
+        },
+        {
+          "sequence": 892,
+          "official_name": "新疆维吾尔族艾德莱斯绸织染技艺",
+          "ocr_name": "新疆维吾尔族艾德莱斯绸织染",
+          "page": 453
+        },
+        {
+          "sequence": 894,
+          "official_name": "滩羊皮鞣制工艺",
+          "ocr_name": "滩羊皮棘制工艺",
+          "page": 456
+        },
+        {
+          "sequence": 895,
+          "official_name": "鄂伦春族狍皮制作技艺",
+          "ocr_name": "鄂伦春族孢皮制作技艺",
+          "page": 457
+        },
+        {
+          "sequence": 897,
+          "official_name": "维吾尔族卡拉库尔胎羔皮帽制作技艺",
+          "ocr_name": "维吾尔族卡拉库尔胎羔皮帽制",
+          "page": 458
+        },
+        {
+          "sequence": 909,
+          "official_name": "金漆镶嵌髹饰技艺",
+          "ocr_name": "金漆镶嵌饰技艺",
+          "page": 471
+        },
+        {
+          "sequence": 910,
+          "official_name": "漆器髹饰技艺(徽州漆器髹饰技艺、重庆漆器髹饰技艺)",
+          "ocr_name": "漆器暴饰技艺",
+          "page": 472
+        },
+        {
+          "sequence": 911,
+          "official_name": "彝族漆器髹饰技艺",
+          "ocr_name": "彝族漆器饰技艺",
+          "page": 473
+        },
+        {
+          "sequence": 914,
+          "official_name": "楮皮纸制作技艺",
+          "ocr_name": "褚皮纸制作技艺",
+          "page": 476
+        },
+        {
+          "sequence": 925,
+          "official_name": "贝叶经制作技艺",
+          "ocr_name": "贝叶经制作工艺",
+          "page": 489
+        },
+        {
+          "sequence": 952,
+          "official_name": "天福号酱肘子制作技艺",
+          "ocr_name": "天福号酱肘时子制作技艺",
+          "page": 531
+        },
+        {
+          "sequence": 968,
+          "official_name": "撒拉族篱笆楼营造技艺",
+          "ocr_name": "撒拉族篱芭楼营造技艺",
+          "page": 547
+        },
+        {
+          "sequence": 1004,
+          "official_name": "蟳埔女习俗",
+          "ocr_name": "埔女习俗",
+          "page": 623
+        }
+      ]
+    },
+    "third": {
+      "official_count": 191,
+      "covered_count": 191,
+      "missing_from_book": [],
+      "name_disagreements": [
+        {
+          "sequence": 1037,
+          "official_name": "盘瓠传说",
+          "ocr_name": "盘传说",
+          "page": 41
+        },
+        {
+          "sequence": 1068,
+          "official_name": "酉阳古歌",
+          "ocr_name": "西阳古歌",
+          "page": 100
+        },
+        {
+          "sequence": 1070,
+          "official_name": "凤阳民歌",
+          "ocr_name": "风阳民歌",
+          "page": 106
+        },
+        {
+          "sequence": 1083,
+          "official_name": "伽倻琴艺术",
+          "ocr_name": "伽椰琴艺术",
+          "page": 129
+        },
+        {
+          "sequence": 1086,
+          "official_name": "跳马伕",
+          "ocr_name": "跳马侠",
+          "page": 138
+        },
+        {
+          "sequence": 1108,
+          "official_name": "鹧鸪戏",
+          "ocr_name": "鹧鸪戏剧照（王大鹏摄，淄博市电视台提供）",
+          "page": 183
+        },
+        {
+          "sequence": 1116,
+          "official_name": "西路梆子",
+          "ocr_name": "西路椰子",
+          "page": 198
+        },
+        {
+          "sequence": 1117,
+          "official_name": "淮北梆子戏",
+          "ocr_name": "淮北椰子戏",
+          "page": 200
+        },
+        {
+          "sequence": 1143,
+          "official_name": "孙膑拳",
+          "ocr_name": "孙拳",
+          "page": 259
+        },
+        {
+          "sequence": 1147,
+          "official_name": "撂石锁",
+          "ocr_name": "石锁",
+          "page": 267
+        },
+        {
+          "sequence": 1150,
+          "official_name": "掼牛",
+          "ocr_name": "揽牛",
+          "page": 281
+        },
+        {
+          "sequence": 1152,
+          "official_name": "花毽",
+          "ocr_name": "花健",
+          "page": 285
+        },
+        {
+          "sequence": 1163,
+          "official_name": "藏族编织、挑花刺绣工艺",
+          "ocr_name": "藏族编织丶挑花刺绣工艺",
+          "page": 312
+        },
+        {
+          "sequence": 1164,
+          "official_name": "侗族刺绣",
+          "ocr_name": "何族刺绣",
+          "page": 316
+        },
+        {
+          "sequence": 1167,
+          "official_name": "越窑青瓷烧制技艺",
+          "ocr_name": "越密青瓷烧制技艺",
+          "page": 326
+        },
+        {
+          "sequence": 1172,
+          "official_name": "蓝夹缬技艺",
+          "ocr_name": "蓝夹缬百子图（阮立忠摄）",
+          "page": 338
+        },
+        {
+          "sequence": 1174,
+          "official_name": "铅锡刻镂技艺",
+          "ocr_name": "锡刻镂技艺",
+          "page": 348
+        },
+        {
+          "sequence": 1179,
+          "official_name": "藏族矿植物颜料制作技艺",
+          "ocr_name": "在西藏，制作和应用矿植物绘画颜料已有两千多年的悠久历史。自",
+          "page": 358
+        },
+        {
+          "sequence": 1182,
+          "official_name": "古书画临摹复制技艺",
+          "ocr_name": "古书画临墓复制技艺",
+          "page": 366
+        },
+        {
+          "sequence": 1188,
+          "official_name": "北京四合院传统营造技艺",
+          "ocr_name": "北京四合院",
+          "page": 376
+        },
+        {
+          "sequence": 1202,
+          "official_name": "布依族“三月三”",
+          "ocr_name": "布依族『三月三』",
+          "page": 416
+        },
+        {
+          "sequence": 1205,
+          "official_name": "侗年",
+          "ocr_name": "侗年是侗族感谢祖先保佑的传统节日，也是侗族家人团圆、庆贺丰",
+          "page": 424
+        },
+        {
+          "sequence": 1217,
+          "official_name": "苗族栽岩习俗",
+          "ocr_name": "苗族裁岩习俗",
+          "page": 460
+        },
+        {
+          "sequence": 1218,
+          "official_name": "柯尔克孜族驯鹰习俗",
+          "ocr_name": "柯尔克孜族卵鹰习俗",
+          "page": 461
+        }
+      ]
+    }
+  },
+  "sources": [
+    {
+      "book_title": "“小书大传承”中国非物质文化遗产通识读本（套装共30册）",
+      "format": "epub",
+      "source_id": "book:1fa1f73d4577a24d0d4adf38262e0d310f6e9b7caf216284694cfcad216cdac0",
+      "confirmed_project_pages": null,
+      "project_pages_needing_ocr_review": 0,
+      "confirmed_inheritor_profiles": 0,
+      "count_basis": "通识读本；项目零散提及，不作为独立名录计数"
+    },
+    {
+      "book_title": "中国的非物质文化遗产 (《中国的非物质文化遗产》编写组编 etc.) ",
+      "format": "pdf",
+      "source_id": "book:bf71f6004c533304fea1efd5d29e59953b0240b2d588bd2d3cc44b592ad657ed",
+      "confirmed_project_pages": null,
+      "project_pages_needing_ocr_review": 0,
+      "confirmed_inheritor_profiles": 0,
+      "count_basis": "通识读本；项目零散提及，不作为独立名录计数"
+    },
+    {
+      "book_title": "国家级非物质文化遗产项目代表性传承人大典 第1卷 (罗微主编, 罗微主编 , 中国非物质文化遗产保护中心编, 罗微 etc.)",
+      "format": "pdf",
+      "source_id": "book:27f575d58853afc20b0aa98be1acf72b297e6403e328290a677f9dbbb6534993",
+      "confirmed_project_pages": null,
+      "project_pages_needing_ocr_review": 0,
+      "confirmed_inheritor_profiles": 226,
+      "count_basis": "本书传承人编号人物页"
+    },
+    {
+      "book_title": "山东省省级非物质文化遗产名录图典 第1卷 (李宗伟主编, 汉英对照，李宗伟主编, Pdg2Pic) ",
+      "format": "pdf",
+      "source_id": "book:8e1be29f8f1141be62399889d607fb776fb0266454a0aa2725cc352fdb4a4f95",
+      "confirmed_project_pages": 153,
+      "project_pages_needing_ocr_review": 0,
+      "confirmed_inheritor_profiles": 0,
+      "count_basis": "省级图典项目页，名称经本书目录或原 PDF 标题核对"
+    },
+    {
+      "book_title": "山东省省级非物质文化遗产名录图典 第2卷 (李宗伟主编, 汉英对照，李宗伟主编, Pdg2Pic)",
+      "format": "pdf",
+      "source_id": "book:4214772346017635e932010b14e8acc8057c8a594bcc7d89e2b998487f55b4b8",
+      "confirmed_project_pages": 152,
+      "project_pages_needing_ocr_review": 0,
+      "confirmed_inheritor_profiles": 0,
+      "count_basis": "省级图典项目页，名称经本书目录或原 PDF 标题核对"
+    },
+    {
+      "book_title": "第一批国家级非物质文化遗产名录图典 (上) (周和平 主编, zhu bian Zhou Heping etc.) ",
+      "format": "pdf",
+      "source_id": "book:40aef427960b9b4b471e236713c263fd66576ff06e99c311ba25ff85d672324a",
+      "confirmed_project_pages": 229,
+      "project_pages_needing_ocr_review": 0,
+      "confirmed_inheritor_profiles": 0,
+      "count_basis": "国家级名录项目页提取出可用正文"
+    },
+    {
+      "book_title": "第一批国家级非物质文化遗产名录图典 (下) (周和平 主编, zhu bian Zhou Heping etc.) ",
+      "format": "pdf",
+      "source_id": "book:690ef1b93d4de56d3a53c1b7176596df653a9a7364509a8a44f2ac30fc0da77f",
+      "confirmed_project_pages": 162,
+      "project_pages_needing_ocr_review": 0,
+      "confirmed_inheritor_profiles": 0,
+      "count_basis": "国家级名录项目页提取出可用正文"
+    },
+    {
+      "book_title": "第三批国家级非物质文化遗产名录图典 上 (王文章主编, 王文章主编 , 中国艺术研究院, 中国非物质文化遗产保护中心编, 王文章 etc.)",
+      "format": "pdf",
+      "source_id": "book:b3ef0449af989305e482fadf14736baebedf865b06de1b0e54fa235a24e017a6",
+      "confirmed_project_pages": 191,
+      "project_pages_needing_ocr_review": 0,
+      "confirmed_inheritor_profiles": 0,
+      "count_basis": "国家级名录项目页提取出可用正文"
+    },
+    {
+      "book_title": "第三批国家级非物质文化遗产名录图典 下 (王文章主编, 王文章主编 , 中国艺术研究院, 中国非物质文化遗产保护中心编, 王文章 etc.)",
+      "format": "pdf",
+      "source_id": "book:23980ff1a36710e37ce53b9fe662205e84c2bbd9b1006505c80cd109d68eb729",
+      "confirmed_project_pages": null,
+      "project_pages_needing_ocr_review": 0,
+      "confirmed_inheritor_profiles": 0,
+      "count_basis": "国家级名录项目页提取出可用正文"
+    },
+    {
+      "book_title": "第二批国家级非物质文化遗产名录简介 (中国非物质文化遗产保护中心编著 etc.)",
+      "format": "pdf",
+      "source_id": "book:59baa5b6b4bde1ebc9a60521aea3a7adabd72b36cf581627497e6f0a532d2124",
+      "confirmed_project_pages": 510,
+      "project_pages_needing_ocr_review": 0,
+      "confirmed_inheritor_profiles": 0,
+      "count_basis": "国家级名录项目页提取出可用正文"
+    }
+  ]
+}

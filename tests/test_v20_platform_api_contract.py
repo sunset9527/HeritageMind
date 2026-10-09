@@ -12,5 +12,5 @@ def test_platform_routes_are_registered():
         "/admin/inheritors", "/admin/inheritors/{profile_id}", "/admin/inheritors/{profile_id}/publish",
         "/admin/graph-candidates", "/admin/graph-candidates/scan",
         "/admin/graph-candidates/{candidate_id}/approve", "/admin/graph-candidates/{candidate_id}/reject",
-        "/admin/audit-logs", "/search/ai",
+        "/admin/audit-logs", "/search/ai", "/dashboard/summary",
     } <= paths

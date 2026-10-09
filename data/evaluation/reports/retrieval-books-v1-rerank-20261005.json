@@ -1,0 +1,4271 @@
+{
+  "configuration": {
+    "top_k": 5,
+    "candidate_k": 15,
+    "reranker_model": "E:/huggingface/bge-reranker-base",
+    "reranker_loaded": true,
+    "model_load_seconds": 11.86,
+    "method_note": "Same candidate pool before/after. Runtime first stage uses MultiSourceRetriever without embeddings."
+  },
+  "run_metadata": {
+    "dataset": "data/evaluation/retrieval-books-v1.jsonl",
+    "dataset_case_count": 40,
+    "corpus": "data/local_books_corpus/documents.jsonl",
+    "corpus_sha256": "b8f04692310686e344245c8f97017d5011f93fe38202bab2b58f31503fa09877",
+    "document_count": 7688,
+    "git_commit": "35d530ca177f34aab1835141a1bd03b14b7bdc0a",
+    "run_at_utc": "2026-10-05T09:46:39.766073+00:00"
+  },
+  "methods": {
+    "bm25": {
+      "metrics": {
+        "before": {
+          "answerable_count": 30,
+          "out_of_scope_count": 10,
+          "recall_at_1": 0.9333333333333333,
+          "recall_at_3": 0.9333333333333333,
+          "recall_at_5": 0.9333333333333333,
+          "mrr": 0.9333333333333333,
+          "correct_rejection_rate": 0.0,
+          "by_category": {
+            "direct": {
+              "count": 22,
+              "recall_at_1": 0.9545454545454546,
+              "recall_at_3": 0.9545454545454546,
+              "recall_at_5": 0.9545454545454546,
+              "mrr": 0.9545454545454546
+            },
+            "paraphrase": {
+              "count": 8,
+              "recall_at_1": 0.875,
+              "recall_at_3": 0.875,
+              "recall_at_5": 0.875,
+              "mrr": 0.875
+            },
+            "out_of_scope": {
+              "count": 10,
+              "correct_rejection_rate": 0.0
+            }
+          }
+        },
+        "after": {
+          "answerable_count": 30,
+          "out_of_scope_count": 10,
+          "recall_at_1": 0.9333333333333333,
+          "recall_at_3": 1.0,
+          "recall_at_5": 1.0,
+          "mrr": 0.961111111111111,
+          "correct_rejection_rate": 0.0,
+          "by_category": {
+            "direct": {
+              "count": 22,
+              "recall_at_1": 1.0,
+              "recall_at_3": 1.0,
+              "recall_at_5": 1.0,
+              "mrr": 1.0
+            },
+            "paraphrase": {
+              "count": 8,
+              "recall_at_1": 0.75,
+              "recall_at_3": 1.0,
+              "recall_at_5": 1.0,
+              "mrr": 0.8541666666666666
+            },
+            "out_of_scope": {
+              "count": 10,
+              "correct_rejection_rate": 0.0
+            }
+          }
+        }
+      },
+      "candidate_recall": 1.0,
+      "rankings": {
+        "before": {
+          "b01": [
+            "book:1fa1f73d4577a24d:p865:c5",
+            "book:1fa1f73d4577a24d:p863:c1",
+            "book:1fa1f73d4577a24d:p872:c3",
+            "book:1fa1f73d4577a24d:p877:c1",
+            "book:1fa1f73d4577a24d:p166:c2"
+          ],
+          "b02": [
+            "book:1fa1f73d4577a24d:p502:c2",
+            "book:1fa1f73d4577a24d:p86:c1",
+            "book:1fa1f73d4577a24d:p495:c3",
+            "book:1fa1f73d4577a24d:p502:c1",
+            "book:1fa1f73d4577a24d:p498:c2"
+          ],
+          "b03": [
+            "book:1fa1f73d4577a24d:p98:c1",
+            "book:8e1be29f8f1141be:p46:c1",
+            "book:1fa1f73d4577a24d:p7:c6",
+            "book:1fa1f73d4577a24d:p101:c2",
+            "book:59baa5b6b4bde1eb:p58:c1"
+          ],
+          "b04": [
+            "book:1fa1f73d4577a24d:p6:c2",
+            "book:b3ef0449af989305:p479:c1",
+            "book:bf71f6004c533304:p18:c1",
+            "book:1fa1f73d4577a24d:p4:c1",
+            "book:59baa5b6b4bde1eb:p54:c1"
+          ],
+          "b05": [
+            "book:27f575d58853afc2:p84:c1",
+            "book:59baa5b6b4bde1eb:p825:c1",
+            "book:1fa1f73d4577a24d:p724:c2",
+            "book:59baa5b6b4bde1eb:p642:c1",
+            "book:1fa1f73d4577a24d:p491:c1"
+          ],
+          "b06": [
+            "book:27f575d58853afc2:p102:c1",
+            "book:1fa1f73d4577a24d:p748:c1",
+            "book:690ef1b93d4de56d:p113:c1",
+            "book:59baa5b6b4bde1eb:p847:c1",
+            "book:bf71f6004c533304:p135:c2"
+          ],
+          "b07": [
+            "book:27f575d58853afc2:p141:c1",
+            "book:1fa1f73d4577a24d:p573:c1",
+            "book:690ef1b93d4de56d:p192:c1",
+            "book:1fa1f73d4577a24d:p559:c1",
+            "book:690ef1b93d4de56d:p194:c1"
+          ],
+          "b08": [
+            "book:8e1be29f8f1141be:p149:c1",
+            "book:4214772346017635:p150:c1",
+            "book:59baa5b6b4bde1eb:p198:c1",
+            "book:59baa5b6b4bde1eb:p199:c1",
+            "book:59baa5b6b4bde1eb:p753:c1"
+          ],
+          "b09": [
+            "book:8e1be29f8f1141be:p268:c1",
+            "book:1fa1f73d4577a24d:p59:c1",
+            "book:1fa1f73d4577a24d:p54:c1",
+            "book:1fa1f73d4577a24d:p58:c2",
+            "book:1fa1f73d4577a24d:p166:c1"
+          ],
+          "b10": [
+            "book:8e1be29f8f1141be:p93:c1",
+            "book:b3ef0449af989305:p126:c1",
+            "book:b3ef0449af989305:p125:c1",
+            "book:8e1be29f8f1141be:p11:c2",
+            "book:b3ef0449af989305:p104:c1"
+          ],
+          "b11": [
+            "book:4214772346017635:p103:c1",
+            "book:4214772346017635:p104:c1",
+            "book:1fa1f73d4577a24d:p166:c1",
+            "book:1fa1f73d4577a24d:p59:c1",
+            "book:1fa1f73d4577a24d:p54:c1"
+          ],
+          "b12": [
+            "book:4214772346017635:p144:c1",
+            "book:4214772346017635:p168:c1",
+            "book:4214772346017635:p145:c1",
+            "book:1fa1f73d4577a24d:p383:c1",
+            "book:1fa1f73d4577a24d:p71:c2"
+          ],
+          "b13": [
+            "book:4214772346017635:p272:c1",
+            "book:1fa1f73d4577a24d:p495:c1",
+            "book:4214772346017635:p273:c1",
+            "book:8e1be29f8f1141be:p343:c1",
+            "book:1fa1f73d4577a24d:p56:c2"
+          ],
+          "b14": [
+            "book:40aef427960b9b4b:p117:c1",
+            "book:59baa5b6b4bde1eb:p140:c1",
+            "book:59baa5b6b4bde1eb:p137:c1",
+            "book:59baa5b6b4bde1eb:p74:c1",
+            "book:1fa1f73d4577a24d:p166:c1"
+          ],
+          "b15": [
+            "book:40aef427960b9b4b:p172:c1",
+            "book:59baa5b6b4bde1eb:p700:c1",
+            "book:59baa5b6b4bde1eb:p130:c1",
+            "book:b3ef0449af989305:p76:c1",
+            "book:690ef1b93d4de56d:p225:c1"
+          ],
+          "b16": [
+            "book:40aef427960b9b4b:p104:c1",
+            "book:40aef427960b9b4b:p87:c1",
+            "book:40aef427960b9b4b:p103:c1",
+            "book:40aef427960b9b4b:p86:c1",
+            "book:59baa5b6b4bde1eb:p100:c1"
+          ],
+          "b17": [
+            "book:690ef1b93d4de56d:p89:c1",
+            "book:1fa1f73d4577a24d:p448:c1",
+            "book:1fa1f73d4577a24d:p442:c1",
+            "book:1fa1f73d4577a24d:p460:c1",
+            "book:1fa1f73d4577a24d:p436:c1"
+          ],
+          "b18": [
+            "book:690ef1b93d4de56d:p128:c1",
+            "book:27f575d58853afc2:p108:c1",
+            "book:690ef1b93d4de56d:p130:c1",
+            "book:27f575d58853afc2:p107:c1",
+            "book:690ef1b93d4de56d:p129:c1"
+          ],
+          "b19": [
+            "book:690ef1b93d4de56d:p59:c1",
+            "book:1fa1f73d4577a24d:p483:c1",
+            "book:1fa1f73d4577a24d:p470:c3",
+            "book:1fa1f73d4577a24d:p470:c2",
+            "book:1fa1f73d4577a24d:p475:c1"
+          ],
+          "b20": [
+            "book:b3ef0449af989305:p89:c1",
+            "book:59baa5b6b4bde1eb:p71:c1",
+            "book:b3ef0449af989305:p92:c1",
+            "book:b3ef0449af989305:p484:c1",
+            "book:1fa1f73d4577a24d:p126:c1"
+          ],
+          "b21": [
+            "book:690ef1b93d4de56d:p410:c1",
+            "book:59baa5b6b4bde1eb:p925:c1",
+            "book:59baa5b6b4bde1eb:p926:c1",
+            "book:1fa1f73d4577a24d:p46:c12",
+            "book:1fa1f73d4577a24d:p189:c2"
+          ],
+          "b22": [
+            "book:b3ef0449af989305:p297:c1",
+            "book:b3ef0449af989305:p298:c1",
+            "book:1fa1f73d4577a24d:p537:c1",
+            "book:1fa1f73d4577a24d:p724:c2",
+            "book:1fa1f73d4577a24d:p536:c1"
+          ],
+          "b23": [
+            "book:23980ff1a36710e3:p116:c1",
+            "book:1fa1f73d4577a24d:p159:c1",
+            "book:1fa1f73d4577a24d:p149:c6",
+            "book:59baa5b6b4bde1eb:p314:c1",
+            "book:23980ff1a36710e3:p114:c1"
+          ],
+          "b24": [
+            "book:23980ff1a36710e3:p154:c1",
+            "book:1fa1f73d4577a24d:p452:c3",
+            "book:1fa1f73d4577a24d:p448:c2",
+            "book:59baa5b6b4bde1eb:p845:c1",
+            "book:23980ff1a36710e3:p151:c1"
+          ],
+          "b25": [
+            "book:23980ff1a36710e3:p135:c1",
+            "book:b3ef0449af989305:p252:c1",
+            "book:4214772346017635:p223:c1",
+            "book:1fa1f73d4577a24d:p56:c2",
+            "book:b3ef0449af989305:p256:c1"
+          ],
+          "b26": [
+            "book:59baa5b6b4bde1eb:p253:c1",
+            "book:23980ff1a36710e3:p84:c1",
+            "book:b3ef0449af989305:p372:c1",
+            "book:1fa1f73d4577a24d:p861:c1",
+            "book:1fa1f73d4577a24d:p166:c1"
+          ],
+          "b27": [
+            "book:59baa5b6b4bde1eb:p204:c1",
+            "book:59baa5b6b4bde1eb:p203:c1",
+            "book:b3ef0449af989305:p607:c1",
+            "book:59baa5b6b4bde1eb:p9:c1",
+            "book:59baa5b6b4bde1eb:p205:c1"
+          ],
+          "b28": [
+            "book:59baa5b6b4bde1eb:p371:c1",
+            "book:59baa5b6b4bde1eb:p372:c1",
+            "book:4214772346017635:p360:c1",
+            "book:23980ff1a36710e3:p180:c1",
+            "book:1fa1f73d4577a24d:p760:c3"
+          ],
+          "b29": [
+            "book:4214772346017635:p90:c1",
+            "book:1fa1f73d4577a24d:p7:c1",
+            "book:1fa1f73d4577a24d:p66:c1",
+            "book:1fa1f73d4577a24d:p41:c3",
+            "book:1fa1f73d4577a24d:p19:c2"
+          ],
+          "b30": [
+            "book:27f575d58853afc2:p62:c1",
+            "book:23980ff1a36710e3:p123:c1",
+            "book:4214772346017635:p218:c1",
+            "book:690ef1b93d4de56d:p39:c1",
+            "book:27f575d58853afc2:p61:c1"
+          ],
+          "o01": [
+            "book:1fa1f73d4577a24d:p347:c1",
+            "book:1fa1f73d4577a24d:p54:c1",
+            "book:1fa1f73d4577a24d:p126:c2",
+            "book:1fa1f73d4577a24d:p71:c2",
+            "book:1fa1f73d4577a24d:p73:c1"
+          ],
+          "o02": [
+            "book:1fa1f73d4577a24d:p63:c1",
+            "book:690ef1b93d4de56d:p272:c1",
+            "book:1fa1f73d4577a24d:p848:c1",
+            "book:1fa1f73d4577a24d:p60:c1",
+            "book:59baa5b6b4bde1eb:p861:c1"
+          ],
+          "o03": [
+            "book:1fa1f73d4577a24d:p54:c1",
+            "book:1fa1f73d4577a24d:p145:c2",
+            "book:1fa1f73d4577a24d:p894:c7",
+            "book:1fa1f73d4577a24d:p64:c1",
+            "book:1fa1f73d4577a24d:p894:c14"
+          ],
+          "o04": [
+            "book:1fa1f73d4577a24d:p575:c2",
+            "book:40aef427960b9b4b:p650:c1",
+            "book:1fa1f73d4577a24d:p42:c2",
+            "book:23980ff1a36710e3:p338:c1",
+            "book:40aef427960b9b4b:p48:c1"
+          ],
+          "o05": [
+            "book:1fa1f73d4577a24d:p72:c1",
+            "book:23980ff1a36710e3:p125:c1",
+            "book:1fa1f73d4577a24d:p347:c1",
+            "book:1fa1f73d4577a24d:p63:c1",
+            "book:1fa1f73d4577a24d:p63:c3"
+          ],
+          "o06": [
+            "book:1fa1f73d4577a24d:p54:c1",
+            "book:1fa1f73d4577a24d:p46:c3",
+            "book:1fa1f73d4577a24d:p63:c1",
+            "book:1fa1f73d4577a24d:p68:c1",
+            "book:1fa1f73d4577a24d:p67:c2"
+          ],
+          "o07": [
+            "book:1fa1f73d4577a24d:p60:c1",
+            "book:1fa1f73d4577a24d:p347:c1",
+            "book:1fa1f73d4577a24d:p192:c1",
+            "book:1fa1f73d4577a24d:p188:c2",
+            "book:1fa1f73d4577a24d:p46:c5"
+          ],
+          "o08": [
+            "book:1fa1f73d4577a24d:p72:c2",
+            "book:1fa1f73d4577a24d:p425:c2",
+            "book:1fa1f73d4577a24d:p124:c2",
+            "book:1fa1f73d4577a24d:p46:c3",
+            "book:1fa1f73d4577a24d:p115:c1"
+          ],
+          "o09": [
+            "book:1fa1f73d4577a24d:p63:c1",
+            "book:1fa1f73d4577a24d:p184:c2",
+            "book:1fa1f73d4577a24d:p347:c1",
+            "book:1fa1f73d4577a24d:p63:c3",
+            "book:1fa1f73d4577a24d:p54:c1"
+          ],
+          "o10": [
+            "book:1fa1f73d4577a24d:p188:c3",
+            "book:1fa1f73d4577a24d:p32:c1",
+            "book:1fa1f73d4577a24d:p932:c2",
+            "book:1fa1f73d4577a24d:p948:c2",
+            "book:1fa1f73d4577a24d:p184:c2"
+          ]
+        },
+        "after": {
+          "b01": [
+            "book:1fa1f73d4577a24d:p865:c5",
+            "book:1fa1f73d4577a24d:p872:c3",
+            "book:1fa1f73d4577a24d:p869:c1",
+            "book:1fa1f73d4577a24d:p876:c1",
+            "book:1fa1f73d4577a24d:p877:c1"
+          ],
+          "b02": [
+            "book:1fa1f73d4577a24d:p502:c2",
+            "book:1fa1f73d4577a24d:p496:c1",
+            "book:1fa1f73d4577a24d:p498:c1",
+            "book:1fa1f73d4577a24d:p499:c1",
+            "book:1fa1f73d4577a24d:p500:c1"
+          ],
+          "b03": [
+            "book:1fa1f73d4577a24d:p98:c1",
+            "book:8e1be29f8f1141be:p46:c1",
+            "book:1fa1f73d4577a24d:p97:c1",
+            "book:59baa5b6b4bde1eb:p58:c1",
+            "book:1fa1f73d4577a24d:p12:c4"
+          ],
+          "b04": [
+            "book:1fa1f73d4577a24d:p6:c2",
+            "book:1fa1f73d4577a24d:p21:c1",
+            "book:bf71f6004c533304:p184:c2",
+            "book:bf71f6004c533304:p18:c1",
+            "book:b3ef0449af989305:p479:c1"
+          ],
+          "b05": [
+            "book:27f575d58853afc2:p84:c1",
+            "book:690ef1b93d4de56d:p83:c1",
+            "book:59baa5b6b4bde1eb:p825:c1",
+            "book:690ef1b93d4de56d:p82:c1",
+            "book:1fa1f73d4577a24d:p323:c1"
+          ],
+          "b06": [
+            "book:27f575d58853afc2:p102:c1",
+            "book:1fa1f73d4577a24d:p748:c1",
+            "book:690ef1b93d4de56d:p113:c1",
+            "book:27f575d58853afc2:p266:c1",
+            "book:59baa5b6b4bde1eb:p847:c1"
+          ],
+          "b07": [
+            "book:27f575d58853afc2:p141:c1",
+            "book:1fa1f73d4577a24d:p573:c1",
+            "book:690ef1b93d4de56d:p192:c1",
+            "book:4214772346017635:p330:c1",
+            "book:1fa1f73d4577a24d:p596:c2"
+          ],
+          "b08": [
+            "book:8e1be29f8f1141be:p149:c1",
+            "book:59baa5b6b4bde1eb:p196:c1",
+            "book:4214772346017635:p150:c1",
+            "book:59baa5b6b4bde1eb:p752:c1",
+            "book:59baa5b6b4bde1eb:p753:c1"
+          ],
+          "b09": [
+            "book:8e1be29f8f1141be:p268:c1",
+            "book:1fa1f73d4577a24d:p166:c1",
+            "book:1fa1f73d4577a24d:p59:c1",
+            "book:1fa1f73d4577a24d:p63:c1",
+            "book:1fa1f73d4577a24d:p125:c1"
+          ],
+          "b10": [
+            "book:b3ef0449af989305:p126:c1",
+            "book:8e1be29f8f1141be:p93:c1",
+            "book:23980ff1a36710e3:p487:c1",
+            "book:8e1be29f8f1141be:p90:c1",
+            "book:23980ff1a36710e3:p529:c1"
+          ],
+          "b11": [
+            "book:4214772346017635:p103:c1",
+            "book:4214772346017635:p104:c1",
+            "book:4214772346017635:p11:c1",
+            "book:1fa1f73d4577a24d:p166:c1",
+            "book:4214772346017635:p531:c1"
+          ],
+          "b12": [
+            "book:4214772346017635:p144:c1",
+            "book:4214772346017635:p168:c1",
+            "book:4214772346017635:p145:c1",
+            "book:1fa1f73d4577a24d:p240:c1",
+            "book:1fa1f73d4577a24d:p71:c2"
+          ],
+          "b13": [
+            "book:4214772346017635:p272:c1",
+            "book:4214772346017635:p273:c1",
+            "book:1fa1f73d4577a24d:p495:c1",
+            "book:8e1be29f8f1141be:p343:c1",
+            "book:1fa1f73d4577a24d:p490:c1"
+          ],
+          "b14": [
+            "book:40aef427960b9b4b:p117:c1",
+            "book:59baa5b6b4bde1eb:p140:c1",
+            "book:59baa5b6b4bde1eb:p74:c1",
+            "book:59baa5b6b4bde1eb:p137:c1",
+            "book:59baa5b6b4bde1eb:p138:c1"
+          ],
+          "b15": [
+            "book:40aef427960b9b4b:p172:c1",
+            "book:59baa5b6b4bde1eb:p700:c1",
+            "book:40aef427960b9b4b:p306:c1",
+            "book:690ef1b93d4de56d:p225:c1",
+            "book:59baa5b6b4bde1eb:p82:c1"
+          ],
+          "b16": [
+            "book:40aef427960b9b4b:p104:c1",
+            "book:59baa5b6b4bde1eb:p100:c1",
+            "book:40aef427960b9b4b:p103:c1",
+            "book:59baa5b6b4bde1eb:p125:c1",
+            "book:59baa5b6b4bde1eb:p99:c1"
+          ],
+          "b17": [
+            "book:690ef1b93d4de56d:p89:c1",
+            "book:1fa1f73d4577a24d:p442:c1",
+            "book:1fa1f73d4577a24d:p436:c1",
+            "book:1fa1f73d4577a24d:p460:c1",
+            "book:59baa5b6b4bde1eb:p838:c1"
+          ],
+          "b18": [
+            "book:690ef1b93d4de56d:p128:c1",
+            "book:690ef1b93d4de56d:p130:c1",
+            "book:27f575d58853afc2:p108:c1",
+            "book:27f575d58853afc2:p107:c1",
+            "book:1fa1f73d4577a24d:p608:c2"
+          ],
+          "b19": [
+            "book:690ef1b93d4de56d:p59:c1",
+            "book:1fa1f73d4577a24d:p483:c1",
+            "book:690ef1b93d4de56d:p58:c1",
+            "book:1fa1f73d4577a24d:p470:c3",
+            "book:1fa1f73d4577a24d:p470:c2"
+          ],
+          "b20": [
+            "book:b3ef0449af989305:p89:c1",
+            "book:b3ef0449af989305:p92:c1",
+            "book:b3ef0449af989305:p93:c1",
+            "book:1fa1f73d4577a24d:p126:c1",
+            "book:59baa5b6b4bde1eb:p71:c1"
+          ],
+          "b21": [
+            "book:b3ef0449af989305:p161:c1",
+            "book:59baa5b6b4bde1eb:p925:c1",
+            "book:690ef1b93d4de56d:p409:c1",
+            "book:59baa5b6b4bde1eb:p926:c1",
+            "book:690ef1b93d4de56d:p410:c1"
+          ],
+          "b22": [
+            "book:b3ef0449af989305:p297:c1",
+            "book:b3ef0449af989305:p298:c1",
+            "book:b3ef0449af989305:p290:c1",
+            "book:1fa1f73d4577a24d:p677:c6",
+            "book:1fa1f73d4577a24d:p724:c2"
+          ],
+          "b23": [
+            "book:23980ff1a36710e3:p116:c1",
+            "book:59baa5b6b4bde1eb:p314:c1",
+            "book:23980ff1a36710e3:p117:c1",
+            "book:23980ff1a36710e3:p114:c1",
+            "book:1fa1f73d4577a24d:p159:c1"
+          ],
+          "b24": [
+            "book:23980ff1a36710e3:p154:c1",
+            "book:23980ff1a36710e3:p155:c1",
+            "book:23980ff1a36710e3:p148:c1",
+            "book:1fa1f73d4577a24d:p437:c1",
+            "book:1fa1f73d4577a24d:p448:c2"
+          ],
+          "b25": [
+            "book:23980ff1a36710e3:p135:c1",
+            "book:4214772346017635:p223:c1",
+            "book:b3ef0449af989305:p252:c1",
+            "book:59baa5b6b4bde1eb:p819:c1",
+            "book:23980ff1a36710e3:p130:c1"
+          ],
+          "b26": [
+            "book:59baa5b6b4bde1eb:p253:c1",
+            "book:23980ff1a36710e3:p84:c1",
+            "book:40aef427960b9b4b:p424:c1",
+            "book:4214772346017635:p211:c1",
+            "book:1fa1f73d4577a24d:p145:c2"
+          ],
+          "b27": [
+            "book:59baa5b6b4bde1eb:p204:c1",
+            "book:59baa5b6b4bde1eb:p203:c1",
+            "book:59baa5b6b4bde1eb:p205:c1",
+            "book:59baa5b6b4bde1eb:p206:c1",
+            "book:59baa5b6b4bde1eb:p9:c1"
+          ],
+          "b28": [
+            "book:59baa5b6b4bde1eb:p371:c1",
+            "book:4214772346017635:p360:c1",
+            "book:59baa5b6b4bde1eb:p372:c1",
+            "book:23980ff1a36710e3:p180:c1",
+            "book:23980ff1a36710e3:p173:c1"
+          ],
+          "b29": [
+            "book:4214772346017635:p90:c1",
+            "book:b3ef0449af989305:p50:c1",
+            "book:1fa1f73d4577a24d:p66:c1",
+            "book:59baa5b6b4bde1eb:p53:c1",
+            "book:1fa1f73d4577a24d:p60:c1"
+          ],
+          "b30": [
+            "book:27f575d58853afc2:p62:c1",
+            "book:690ef1b93d4de56d:p40:c1",
+            "book:4214772346017635:p217:c1",
+            "book:690ef1b93d4de56d:p39:c1",
+            "book:23980ff1a36710e3:p123:c1"
+          ],
+          "o01": [
+            "book:1fa1f73d4577a24d:p54:c1",
+            "book:1fa1f73d4577a24d:p347:c1",
+            "book:1fa1f73d4577a24d:p176:c1",
+            "book:1fa1f73d4577a24d:p126:c2",
+            "book:1fa1f73d4577a24d:p60:c1"
+          ],
+          "o02": [
+            "book:59baa5b6b4bde1eb:p590:c1",
+            "book:690ef1b93d4de56d:p272:c1",
+            "book:59baa5b6b4bde1eb:p861:c1",
+            "book:1fa1f73d4577a24d:p833:c2",
+            "book:1fa1f73d4577a24d:p609:c1"
+          ],
+          "o03": [
+            "book:1fa1f73d4577a24d:p59:c2",
+            "book:1fa1f73d4577a24d:p194:c1",
+            "book:1fa1f73d4577a24d:p894:c7",
+            "book:1fa1f73d4577a24d:p56:c2",
+            "book:1fa1f73d4577a24d:p46:c3"
+          ],
+          "o04": [
+            "book:1fa1f73d4577a24d:p93:c1",
+            "book:40aef427960b9b4b:p650:c1",
+            "book:690ef1b93d4de56d:p511:c1",
+            "book:4214772346017635:p165:c1",
+            "book:1fa1f73d4577a24d:p452:c3"
+          ],
+          "o05": [
+            "book:1fa1f73d4577a24d:p72:c1",
+            "book:23980ff1a36710e3:p125:c1",
+            "book:1fa1f73d4577a24d:p563:c2",
+            "book:1fa1f73d4577a24d:p63:c2",
+            "book:1fa1f73d4577a24d:p46:c5"
+          ],
+          "o06": [
+            "book:1fa1f73d4577a24d:p54:c1",
+            "book:1fa1f73d4577a24d:p46:c4",
+            "book:1fa1f73d4577a24d:p73:c1",
+            "book:1fa1f73d4577a24d:p58:c1",
+            "book:1fa1f73d4577a24d:p56:c2"
+          ],
+          "o07": [
+            "book:1fa1f73d4577a24d:p63:c1",
+            "book:1fa1f73d4577a24d:p46:c5",
+            "book:1fa1f73d4577a24d:p130:c3",
+            "book:1fa1f73d4577a24d:p347:c1",
+            "book:1fa1f73d4577a24d:p417:c1"
+          ],
+          "o08": [
+            "book:1fa1f73d4577a24d:p168:c1",
+            "book:1fa1f73d4577a24d:p72:c2",
+            "book:1fa1f73d4577a24d:p72:c1",
+            "book:1fa1f73d4577a24d:p68:c2",
+            "book:1fa1f73d4577a24d:p68:c1"
+          ],
+          "o09": [
+            "book:1fa1f73d4577a24d:p63:c2",
+            "book:1fa1f73d4577a24d:p63:c1",
+            "book:1fa1f73d4577a24d:p54:c1",
+            "book:1fa1f73d4577a24d:p74:c1",
+            "book:1fa1f73d4577a24d:p63:c3"
+          ],
+          "o10": [
+            "book:1fa1f73d4577a24d:p32:c2",
+            "book:1fa1f73d4577a24d:p932:c2",
+            "book:1fa1f73d4577a24d:p63:c1",
+            "book:1fa1f73d4577a24d:p948:c2",
+            "book:1fa1f73d4577a24d:p31:c4"
+          ]
+        }
+      },
+      "per_case": [
+        {
+          "id": "b01",
+          "category": "direct",
+          "candidate_ids": [
+            "book:1fa1f73d4577a24d:p865:c5",
+            "book:1fa1f73d4577a24d:p863:c1",
+            "book:1fa1f73d4577a24d:p872:c3",
+            "book:1fa1f73d4577a24d:p877:c1",
+            "book:1fa1f73d4577a24d:p166:c2",
+            "book:59baa5b6b4bde1eb:p781:c1",
+            "book:1fa1f73d4577a24d:p866:c1",
+            "book:1fa1f73d4577a24d:p876:c1",
+            "book:1fa1f73d4577a24d:p869:c1",
+            "book:1fa1f73d4577a24d:p865:c1",
+            "book:1fa1f73d4577a24d:p866:c4",
+            "book:1fa1f73d4577a24d:p878:c4",
+            "book:1fa1f73d4577a24d:p870:c3",
+            "book:1fa1f73d4577a24d:p866:c2",
+            "book:1fa1f73d4577a24d:p872:c4"
+          ],
+          "before": [
+            "book:1fa1f73d4577a24d:p865:c5",
+            "book:1fa1f73d4577a24d:p863:c1",
+            "book:1fa1f73d4577a24d:p872:c3",
+            "book:1fa1f73d4577a24d:p877:c1",
+            "book:1fa1f73d4577a24d:p166:c2"
+          ],
+          "after": [
+            "book:1fa1f73d4577a24d:p865:c5",
+            "book:1fa1f73d4577a24d:p872:c3",
+            "book:1fa1f73d4577a24d:p869:c1",
+            "book:1fa1f73d4577a24d:p876:c1",
+            "book:1fa1f73d4577a24d:p877:c1"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b02",
+          "category": "paraphrase",
+          "candidate_ids": [
+            "book:1fa1f73d4577a24d:p502:c2",
+            "book:1fa1f73d4577a24d:p86:c1",
+            "book:1fa1f73d4577a24d:p495:c3",
+            "book:1fa1f73d4577a24d:p502:c1",
+            "book:1fa1f73d4577a24d:p498:c2",
+            "book:1fa1f73d4577a24d:p96:c1",
+            "book:1fa1f73d4577a24d:p125:c1",
+            "book:1fa1f73d4577a24d:p500:c1",
+            "book:1fa1f73d4577a24d:p498:c1",
+            "book:1fa1f73d4577a24d:p492:c1",
+            "book:1fa1f73d4577a24d:p496:c1",
+            "book:1fa1f73d4577a24d:p51:c2",
+            "book:1fa1f73d4577a24d:p58:c2",
+            "book:1fa1f73d4577a24d:p51:c1",
+            "book:1fa1f73d4577a24d:p499:c1"
+          ],
+          "before": [
+            "book:1fa1f73d4577a24d:p502:c2",
+            "book:1fa1f73d4577a24d:p86:c1",
+            "book:1fa1f73d4577a24d:p495:c3",
+            "book:1fa1f73d4577a24d:p502:c1",
+            "book:1fa1f73d4577a24d:p498:c2"
+          ],
+          "after": [
+            "book:1fa1f73d4577a24d:p502:c2",
+            "book:1fa1f73d4577a24d:p496:c1",
+            "book:1fa1f73d4577a24d:p498:c1",
+            "book:1fa1f73d4577a24d:p499:c1",
+            "book:1fa1f73d4577a24d:p500:c1"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b03",
+          "category": "paraphrase",
+          "candidate_ids": [
+            "book:1fa1f73d4577a24d:p98:c1",
+            "book:8e1be29f8f1141be:p46:c1",
+            "book:1fa1f73d4577a24d:p7:c6",
+            "book:1fa1f73d4577a24d:p101:c2",
+            "book:59baa5b6b4bde1eb:p58:c1",
+            "book:8e1be29f8f1141be:p34:c1",
+            "book:1fa1f73d4577a24d:p97:c1",
+            "book:1fa1f73d4577a24d:p7:c1",
+            "book:b3ef0449af989305:p43:c1",
+            "book:1fa1f73d4577a24d:p12:c4",
+            "book:1fa1f73d4577a24d:p65:c2",
+            "book:1fa1f73d4577a24d:p96:c1",
+            "book:1fa1f73d4577a24d:p18:c1",
+            "book:8e1be29f8f1141be:p43:c1",
+            "book:1fa1f73d4577a24d:p380:c1"
+          ],
+          "before": [
+            "book:1fa1f73d4577a24d:p98:c1",
+            "book:8e1be29f8f1141be:p46:c1",
+            "book:1fa1f73d4577a24d:p7:c6",
+            "book:1fa1f73d4577a24d:p101:c2",
+            "book:59baa5b6b4bde1eb:p58:c1"
+          ],
+          "after": [
+            "book:1fa1f73d4577a24d:p98:c1",
+            "book:8e1be29f8f1141be:p46:c1",
+            "book:1fa1f73d4577a24d:p97:c1",
+            "book:59baa5b6b4bde1eb:p58:c1",
+            "book:1fa1f73d4577a24d:p12:c4"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b04",
+          "category": "paraphrase",
+          "candidate_ids": [
+            "book:1fa1f73d4577a24d:p6:c2",
+            "book:b3ef0449af989305:p479:c1",
+            "book:bf71f6004c533304:p18:c1",
+            "book:1fa1f73d4577a24d:p4:c1",
+            "book:59baa5b6b4bde1eb:p54:c1",
+            "book:1fa1f73d4577a24d:p21:c1",
+            "book:1fa1f73d4577a24d:p56:c2",
+            "book:1fa1f73d4577a24d:p20:c1",
+            "book:bf71f6004c533304:p184:c2",
+            "book:1fa1f73d4577a24d:p932:c2",
+            "book:8e1be29f8f1141be:p25:c1",
+            "book:1fa1f73d4577a24d:p31:c3",
+            "book:690ef1b93d4de56d:p379:c1",
+            "book:1fa1f73d4577a24d:p21:c3",
+            "book:8e1be29f8f1141be:p55:c1"
+          ],
+          "before": [
+            "book:1fa1f73d4577a24d:p6:c2",
+            "book:b3ef0449af989305:p479:c1",
+            "book:bf71f6004c533304:p18:c1",
+            "book:1fa1f73d4577a24d:p4:c1",
+            "book:59baa5b6b4bde1eb:p54:c1"
+          ],
+          "after": [
+            "book:1fa1f73d4577a24d:p6:c2",
+            "book:1fa1f73d4577a24d:p21:c1",
+            "book:bf71f6004c533304:p184:c2",
+            "book:bf71f6004c533304:p18:c1",
+            "book:b3ef0449af989305:p479:c1"
+          ],
+          "before_first_gold_rank": null,
+          "after_first_gold_rank": 3
+        },
+        {
+          "id": "b05",
+          "category": "direct",
+          "candidate_ids": [
+            "book:27f575d58853afc2:p84:c1",
+            "book:59baa5b6b4bde1eb:p825:c1",
+            "book:1fa1f73d4577a24d:p724:c2",
+            "book:59baa5b6b4bde1eb:p642:c1",
+            "book:1fa1f73d4577a24d:p491:c1",
+            "book:1fa1f73d4577a24d:p760:c1",
+            "book:4214772346017635:p354:c1",
+            "book:1fa1f73d4577a24d:p624:c6",
+            "book:690ef1b93d4de56d:p83:c1",
+            "book:1fa1f73d4577a24d:p323:c1",
+            "book:1fa1f73d4577a24d:p7:c1",
+            "book:690ef1b93d4de56d:p82:c1",
+            "book:1fa1f73d4577a24d:p18:c1",
+            "book:1fa1f73d4577a24d:p16:c1",
+            "book:1fa1f73d4577a24d:p51:c3"
+          ],
+          "before": [
+            "book:27f575d58853afc2:p84:c1",
+            "book:59baa5b6b4bde1eb:p825:c1",
+            "book:1fa1f73d4577a24d:p724:c2",
+            "book:59baa5b6b4bde1eb:p642:c1",
+            "book:1fa1f73d4577a24d:p491:c1"
+          ],
+          "after": [
+            "book:27f575d58853afc2:p84:c1",
+            "book:690ef1b93d4de56d:p83:c1",
+            "book:59baa5b6b4bde1eb:p825:c1",
+            "book:690ef1b93d4de56d:p82:c1",
+            "book:1fa1f73d4577a24d:p323:c1"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b06",
+          "category": "direct",
+          "candidate_ids": [
+            "book:27f575d58853afc2:p102:c1",
+            "book:1fa1f73d4577a24d:p748:c1",
+            "book:690ef1b93d4de56d:p113:c1",
+            "book:59baa5b6b4bde1eb:p847:c1",
+            "book:bf71f6004c533304:p135:c2",
+            "book:1fa1f73d4577a24d:p60:c1",
+            "book:27f575d58853afc2:p266:c1",
+            "book:1fa1f73d4577a24d:p749:c1",
+            "book:1fa1f73d4577a24d:p744:c2",
+            "book:27f575d58853afc2:p252:c1",
+            "book:1fa1f73d4577a24d:p745:c4",
+            "book:1fa1f73d4577a24d:p347:c1",
+            "book:b3ef0449af989305:p306:c1",
+            "book:690ef1b93d4de56d:p114:c1",
+            "book:27f575d58853afc2:p101:c1"
+          ],
+          "before": [
+            "book:27f575d58853afc2:p102:c1",
+            "book:1fa1f73d4577a24d:p748:c1",
+            "book:690ef1b93d4de56d:p113:c1",
+            "book:59baa5b6b4bde1eb:p847:c1",
+            "book:bf71f6004c533304:p135:c2"
+          ],
+          "after": [
+            "book:27f575d58853afc2:p102:c1",
+            "book:1fa1f73d4577a24d:p748:c1",
+            "book:690ef1b93d4de56d:p113:c1",
+            "book:27f575d58853afc2:p266:c1",
+            "book:59baa5b6b4bde1eb:p847:c1"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b07",
+          "category": "direct",
+          "candidate_ids": [
+            "book:27f575d58853afc2:p141:c1",
+            "book:1fa1f73d4577a24d:p573:c1",
+            "book:690ef1b93d4de56d:p192:c1",
+            "book:1fa1f73d4577a24d:p559:c1",
+            "book:690ef1b93d4de56d:p194:c1",
+            "book:690ef1b93d4de56d:p193:c1",
+            "book:4214772346017635:p330:c1",
+            "book:1fa1f73d4577a24d:p606:c1",
+            "book:1fa1f73d4577a24d:p592:c2",
+            "book:1fa1f73d4577a24d:p835:c1",
+            "book:1fa1f73d4577a24d:p80:c1",
+            "book:1fa1f73d4577a24d:p145:c2",
+            "book:1fa1f73d4577a24d:p596:c2",
+            "book:40aef427960b9b4b:p36:c1",
+            "book:1fa1f73d4577a24d:p46:c5"
+          ],
+          "before": [
+            "book:27f575d58853afc2:p141:c1",
+            "book:1fa1f73d4577a24d:p573:c1",
+            "book:690ef1b93d4de56d:p192:c1",
+            "book:1fa1f73d4577a24d:p559:c1",
+            "book:690ef1b93d4de56d:p194:c1"
+          ],
+          "after": [
+            "book:27f575d58853afc2:p141:c1",
+            "book:1fa1f73d4577a24d:p573:c1",
+            "book:690ef1b93d4de56d:p192:c1",
+            "book:4214772346017635:p330:c1",
+            "book:1fa1f73d4577a24d:p596:c2"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b08",
+          "category": "paraphrase",
+          "candidate_ids": [
+            "book:8e1be29f8f1141be:p149:c1",
+            "book:4214772346017635:p150:c1",
+            "book:59baa5b6b4bde1eb:p198:c1",
+            "book:59baa5b6b4bde1eb:p199:c1",
+            "book:59baa5b6b4bde1eb:p753:c1",
+            "book:59baa5b6b4bde1eb:p752:c1",
+            "book:59baa5b6b4bde1eb:p196:c1",
+            "book:59baa5b6b4bde1eb:p221:c1",
+            "book:1fa1f73d4577a24d:p145:c2",
+            "book:1fa1f73d4577a24d:p145:c1",
+            "book:40aef427960b9b4b:p316:c1",
+            "book:59baa5b6b4bde1eb:p247:c1",
+            "book:1fa1f73d4577a24d:p129:c1",
+            "book:59baa5b6b4bde1eb:p197:c1",
+            "book:1fa1f73d4577a24d:p60:c1"
+          ],
+          "before": [
+            "book:8e1be29f8f1141be:p149:c1",
+            "book:4214772346017635:p150:c1",
+            "book:59baa5b6b4bde1eb:p198:c1",
+            "book:59baa5b6b4bde1eb:p199:c1",
+            "book:59baa5b6b4bde1eb:p753:c1"
+          ],
+          "after": [
+            "book:8e1be29f8f1141be:p149:c1",
+            "book:59baa5b6b4bde1eb:p196:c1",
+            "book:4214772346017635:p150:c1",
+            "book:59baa5b6b4bde1eb:p752:c1",
+            "book:59baa5b6b4bde1eb:p753:c1"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b09",
+          "category": "direct",
+          "candidate_ids": [
+            "book:8e1be29f8f1141be:p268:c1",
+            "book:1fa1f73d4577a24d:p59:c1",
+            "book:1fa1f73d4577a24d:p54:c1",
+            "book:1fa1f73d4577a24d:p58:c2",
+            "book:1fa1f73d4577a24d:p166:c1",
+            "book:1fa1f73d4577a24d:p58:c1",
+            "book:1fa1f73d4577a24d:p68:c1",
+            "book:1fa1f73d4577a24d:p63:c2",
+            "book:1fa1f73d4577a24d:p114:c1",
+            "book:1fa1f73d4577a24d:p71:c2",
+            "book:1fa1f73d4577a24d:p73:c1",
+            "book:1fa1f73d4577a24d:p56:c2",
+            "book:1fa1f73d4577a24d:p63:c1",
+            "book:1fa1f73d4577a24d:p284:c1",
+            "book:1fa1f73d4577a24d:p125:c1"
+          ],
+          "before": [
+            "book:8e1be29f8f1141be:p268:c1",
+            "book:1fa1f73d4577a24d:p59:c1",
+            "book:1fa1f73d4577a24d:p54:c1",
+            "book:1fa1f73d4577a24d:p58:c2",
+            "book:1fa1f73d4577a24d:p166:c1"
+          ],
+          "after": [
+            "book:8e1be29f8f1141be:p268:c1",
+            "book:1fa1f73d4577a24d:p166:c1",
+            "book:1fa1f73d4577a24d:p59:c1",
+            "book:1fa1f73d4577a24d:p63:c1",
+            "book:1fa1f73d4577a24d:p125:c1"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b10",
+          "category": "paraphrase",
+          "candidate_ids": [
+            "book:8e1be29f8f1141be:p93:c1",
+            "book:b3ef0449af989305:p126:c1",
+            "book:b3ef0449af989305:p125:c1",
+            "book:8e1be29f8f1141be:p11:c2",
+            "book:b3ef0449af989305:p104:c1",
+            "book:23980ff1a36710e3:p529:c1",
+            "book:8e1be29f8f1141be:p90:c1",
+            "book:23980ff1a36710e3:p487:c1",
+            "book:1fa1f73d4577a24d:p894:c14",
+            "book:1fa1f73d4577a24d:p724:c2",
+            "book:b3ef0449af989305:p9:c1",
+            "book:4214772346017635:p502:c1",
+            "book:59baa5b6b4bde1eb:p680:c1",
+            "book:8e1be29f8f1141be:p433:c1",
+            "book:8e1be29f8f1141be:p230:c1"
+          ],
+          "before": [
+            "book:8e1be29f8f1141be:p93:c1",
+            "book:b3ef0449af989305:p126:c1",
+            "book:b3ef0449af989305:p125:c1",
+            "book:8e1be29f8f1141be:p11:c2",
+            "book:b3ef0449af989305:p104:c1"
+          ],
+          "after": [
+            "book:b3ef0449af989305:p126:c1",
+            "book:8e1be29f8f1141be:p93:c1",
+            "book:23980ff1a36710e3:p487:c1",
+            "book:8e1be29f8f1141be:p90:c1",
+            "book:23980ff1a36710e3:p529:c1"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 2
+        },
+        {
+          "id": "b11",
+          "category": "direct",
+          "candidate_ids": [
+            "book:4214772346017635:p103:c1",
+            "book:4214772346017635:p104:c1",
+            "book:1fa1f73d4577a24d:p166:c1",
+            "book:1fa1f73d4577a24d:p59:c1",
+            "book:1fa1f73d4577a24d:p54:c1",
+            "book:1fa1f73d4577a24d:p58:c2",
+            "book:1fa1f73d4577a24d:p58:c1",
+            "book:4214772346017635:p174:c1",
+            "book:8e1be29f8f1141be:p281:c1",
+            "book:1fa1f73d4577a24d:p68:c1",
+            "book:1fa1f73d4577a24d:p63:c2",
+            "book:40aef427960b9b4b:p312:c1",
+            "book:4214772346017635:p531:c1",
+            "book:1fa1f73d4577a24d:p114:c1",
+            "book:4214772346017635:p11:c1"
+          ],
+          "before": [
+            "book:4214772346017635:p103:c1",
+            "book:4214772346017635:p104:c1",
+            "book:1fa1f73d4577a24d:p166:c1",
+            "book:1fa1f73d4577a24d:p59:c1",
+            "book:1fa1f73d4577a24d:p54:c1"
+          ],
+          "after": [
+            "book:4214772346017635:p103:c1",
+            "book:4214772346017635:p104:c1",
+            "book:4214772346017635:p11:c1",
+            "book:1fa1f73d4577a24d:p166:c1",
+            "book:4214772346017635:p531:c1"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b12",
+          "category": "direct",
+          "candidate_ids": [
+            "book:4214772346017635:p144:c1",
+            "book:4214772346017635:p168:c1",
+            "book:4214772346017635:p145:c1",
+            "book:1fa1f73d4577a24d:p383:c1",
+            "book:1fa1f73d4577a24d:p71:c2",
+            "book:59baa5b6b4bde1eb:p234:c1",
+            "book:1fa1f73d4577a24d:p725:c3",
+            "book:1fa1f73d4577a24d:p240:c1",
+            "book:1fa1f73d4577a24d:p71:c3",
+            "book:4214772346017635:p141:c1",
+            "book:1fa1f73d4577a24d:p131:c1",
+            "book:59baa5b6b4bde1eb:p721:c1",
+            "book:1fa1f73d4577a24d:p467:c3",
+            "book:40aef427960b9b4b:p314:c1",
+            "book:690ef1b93d4de56d:p409:c1"
+          ],
+          "before": [
+            "book:4214772346017635:p144:c1",
+            "book:4214772346017635:p168:c1",
+            "book:4214772346017635:p145:c1",
+            "book:1fa1f73d4577a24d:p383:c1",
+            "book:1fa1f73d4577a24d:p71:c2"
+          ],
+          "after": [
+            "book:4214772346017635:p144:c1",
+            "book:4214772346017635:p168:c1",
+            "book:4214772346017635:p145:c1",
+            "book:1fa1f73d4577a24d:p240:c1",
+            "book:1fa1f73d4577a24d:p71:c2"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b13",
+          "category": "direct",
+          "candidate_ids": [
+            "book:4214772346017635:p272:c1",
+            "book:1fa1f73d4577a24d:p495:c1",
+            "book:4214772346017635:p273:c1",
+            "book:8e1be29f8f1141be:p343:c1",
+            "book:1fa1f73d4577a24d:p56:c2",
+            "book:8e1be29f8f1141be:p210:c1",
+            "book:59baa5b6b4bde1eb:p788:c1",
+            "book:1fa1f73d4577a24d:p157:c2",
+            "book:1fa1f73d4577a24d:p493:c1",
+            "book:1fa1f73d4577a24d:p490:c1",
+            "book:8e1be29f8f1141be:p287:c1",
+            "book:8e1be29f8f1141be:p245:c1",
+            "book:23980ff1a36710e3:p171:c1",
+            "book:1fa1f73d4577a24d:p157:c1",
+            "book:1fa1f73d4577a24d:p502:c1"
+          ],
+          "before": [
+            "book:4214772346017635:p272:c1",
+            "book:1fa1f73d4577a24d:p495:c1",
+            "book:4214772346017635:p273:c1",
+            "book:8e1be29f8f1141be:p343:c1",
+            "book:1fa1f73d4577a24d:p56:c2"
+          ],
+          "after": [
+            "book:4214772346017635:p272:c1",
+            "book:4214772346017635:p273:c1",
+            "book:1fa1f73d4577a24d:p495:c1",
+            "book:8e1be29f8f1141be:p343:c1",
+            "book:1fa1f73d4577a24d:p490:c1"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b14",
+          "category": "direct",
+          "candidate_ids": [
+            "book:40aef427960b9b4b:p117:c1",
+            "book:59baa5b6b4bde1eb:p140:c1",
+            "book:59baa5b6b4bde1eb:p137:c1",
+            "book:59baa5b6b4bde1eb:p74:c1",
+            "book:1fa1f73d4577a24d:p166:c1",
+            "book:1fa1f73d4577a24d:p278:c6",
+            "book:40aef427960b9b4b:p78:c1",
+            "book:1fa1f73d4577a24d:p145:c2",
+            "book:59baa5b6b4bde1eb:p138:c1",
+            "book:1fa1f73d4577a24d:p53:c4",
+            "book:1fa1f73d4577a24d:p68:c1",
+            "book:59baa5b6b4bde1eb:p139:c1",
+            "book:59baa5b6b4bde1eb:p107:c1",
+            "book:59baa5b6b4bde1eb:p75:c1",
+            "book:1fa1f73d4577a24d:p63:c3"
+          ],
+          "before": [
+            "book:40aef427960b9b4b:p117:c1",
+            "book:59baa5b6b4bde1eb:p140:c1",
+            "book:59baa5b6b4bde1eb:p137:c1",
+            "book:59baa5b6b4bde1eb:p74:c1",
+            "book:1fa1f73d4577a24d:p166:c1"
+          ],
+          "after": [
+            "book:40aef427960b9b4b:p117:c1",
+            "book:59baa5b6b4bde1eb:p140:c1",
+            "book:59baa5b6b4bde1eb:p74:c1",
+            "book:59baa5b6b4bde1eb:p137:c1",
+            "book:59baa5b6b4bde1eb:p138:c1"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b15",
+          "category": "direct",
+          "candidate_ids": [
+            "book:40aef427960b9b4b:p172:c1",
+            "book:59baa5b6b4bde1eb:p700:c1",
+            "book:59baa5b6b4bde1eb:p130:c1",
+            "book:b3ef0449af989305:p76:c1",
+            "book:690ef1b93d4de56d:p225:c1",
+            "book:40aef427960b9b4b:p305:c1",
+            "book:b3ef0449af989305:p75:c1",
+            "book:40aef427960b9b4b:p306:c1",
+            "book:40aef427960b9b4b:p272:c1",
+            "book:b3ef0449af989305:p383:c1",
+            "book:59baa5b6b4bde1eb:p655:c1",
+            "book:40aef427960b9b4b:p171:c1",
+            "book:59baa5b6b4bde1eb:p667:c1",
+            "book:59baa5b6b4bde1eb:p82:c1",
+            "book:1fa1f73d4577a24d:p541:c1"
+          ],
+          "before": [
+            "book:40aef427960b9b4b:p172:c1",
+            "book:59baa5b6b4bde1eb:p700:c1",
+            "book:59baa5b6b4bde1eb:p130:c1",
+            "book:b3ef0449af989305:p76:c1",
+            "book:690ef1b93d4de56d:p225:c1"
+          ],
+          "after": [
+            "book:40aef427960b9b4b:p172:c1",
+            "book:59baa5b6b4bde1eb:p700:c1",
+            "book:40aef427960b9b4b:p306:c1",
+            "book:690ef1b93d4de56d:p225:c1",
+            "book:59baa5b6b4bde1eb:p82:c1"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b16",
+          "category": "direct",
+          "candidate_ids": [
+            "book:40aef427960b9b4b:p104:c1",
+            "book:40aef427960b9b4b:p87:c1",
+            "book:40aef427960b9b4b:p103:c1",
+            "book:40aef427960b9b4b:p86:c1",
+            "book:59baa5b6b4bde1eb:p100:c1",
+            "book:1fa1f73d4577a24d:p868:c2",
+            "book:59baa5b6b4bde1eb:p90:c1",
+            "book:59baa5b6b4bde1eb:p122:c1",
+            "book:59baa5b6b4bde1eb:p99:c1",
+            "book:59baa5b6b4bde1eb:p89:c1",
+            "book:40aef427960b9b4b:p98:c1",
+            "book:59baa5b6b4bde1eb:p125:c1",
+            "book:40aef427960b9b4b:p105:c1",
+            "book:b3ef0449af989305:p111:c1",
+            "book:40aef427960b9b4b:p168:c1"
+          ],
+          "before": [
+            "book:40aef427960b9b4b:p104:c1",
+            "book:40aef427960b9b4b:p87:c1",
+            "book:40aef427960b9b4b:p103:c1",
+            "book:40aef427960b9b4b:p86:c1",
+            "book:59baa5b6b4bde1eb:p100:c1"
+          ],
+          "after": [
+            "book:40aef427960b9b4b:p104:c1",
+            "book:59baa5b6b4bde1eb:p100:c1",
+            "book:40aef427960b9b4b:p103:c1",
+            "book:59baa5b6b4bde1eb:p125:c1",
+            "book:59baa5b6b4bde1eb:p99:c1"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b17",
+          "category": "paraphrase",
+          "candidate_ids": [
+            "book:690ef1b93d4de56d:p89:c1",
+            "book:1fa1f73d4577a24d:p448:c1",
+            "book:1fa1f73d4577a24d:p442:c1",
+            "book:1fa1f73d4577a24d:p460:c1",
+            "book:1fa1f73d4577a24d:p436:c1",
+            "book:59baa5b6b4bde1eb:p830:c1",
+            "book:1fa1f73d4577a24d:p450:c1",
+            "book:59baa5b6b4bde1eb:p836:c1",
+            "book:59baa5b6b4bde1eb:p828:c1",
+            "book:59baa5b6b4bde1eb:p369:c1",
+            "book:59baa5b6b4bde1eb:p838:c1",
+            "book:1fa1f73d4577a24d:p444:c2",
+            "book:690ef1b93d4de56d:p99:c1",
+            "book:23980ff1a36710e3:p151:c1",
+            "book:1fa1f73d4577a24d:p445:c1"
+          ],
+          "before": [
+            "book:690ef1b93d4de56d:p89:c1",
+            "book:1fa1f73d4577a24d:p448:c1",
+            "book:1fa1f73d4577a24d:p442:c1",
+            "book:1fa1f73d4577a24d:p460:c1",
+            "book:1fa1f73d4577a24d:p436:c1"
+          ],
+          "after": [
+            "book:690ef1b93d4de56d:p89:c1",
+            "book:1fa1f73d4577a24d:p442:c1",
+            "book:1fa1f73d4577a24d:p436:c1",
+            "book:1fa1f73d4577a24d:p460:c1",
+            "book:59baa5b6b4bde1eb:p838:c1"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b18",
+          "category": "direct",
+          "candidate_ids": [
+            "book:690ef1b93d4de56d:p128:c1",
+            "book:27f575d58853afc2:p108:c1",
+            "book:690ef1b93d4de56d:p130:c1",
+            "book:27f575d58853afc2:p107:c1",
+            "book:690ef1b93d4de56d:p129:c1",
+            "book:690ef1b93d4de56d:p141:c1",
+            "book:59baa5b6b4bde1eb:p390:c1",
+            "book:59baa5b6b4bde1eb:p376:c1",
+            "book:1fa1f73d4577a24d:p608:c2",
+            "book:1fa1f73d4577a24d:p676:c1",
+            "book:1fa1f73d4577a24d:p609:c1",
+            "book:23980ff1a36710e3:p189:c1",
+            "book:59baa5b6b4bde1eb:p855:c1",
+            "book:27f575d58853afc2:p260:c1",
+            "book:690ef1b93d4de56d:p161:c1"
+          ],
+          "before": [
+            "book:690ef1b93d4de56d:p128:c1",
+            "book:27f575d58853afc2:p108:c1",
+            "book:690ef1b93d4de56d:p130:c1",
+            "book:27f575d58853afc2:p107:c1",
+            "book:690ef1b93d4de56d:p129:c1"
+          ],
+          "after": [
+            "book:690ef1b93d4de56d:p128:c1",
+            "book:690ef1b93d4de56d:p130:c1",
+            "book:27f575d58853afc2:p108:c1",
+            "book:27f575d58853afc2:p107:c1",
+            "book:1fa1f73d4577a24d:p608:c2"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b19",
+          "category": "direct",
+          "candidate_ids": [
+            "book:690ef1b93d4de56d:p59:c1",
+            "book:1fa1f73d4577a24d:p483:c1",
+            "book:1fa1f73d4577a24d:p470:c3",
+            "book:1fa1f73d4577a24d:p470:c2",
+            "book:1fa1f73d4577a24d:p475:c1",
+            "book:690ef1b93d4de56d:p57:c1",
+            "book:690ef1b93d4de56d:p325:c1",
+            "book:1fa1f73d4577a24d:p479:c1",
+            "book:1fa1f73d4577a24d:p478:c1",
+            "book:27f575d58853afc2:p72:c1",
+            "book:690ef1b93d4de56d:p72:c1",
+            "book:1fa1f73d4577a24d:p482:c1",
+            "book:27f575d58853afc2:p77:c1",
+            "book:690ef1b93d4de56d:p58:c1",
+            "book:1fa1f73d4577a24d:p464:c1"
+          ],
+          "before": [
+            "book:690ef1b93d4de56d:p59:c1",
+            "book:1fa1f73d4577a24d:p483:c1",
+            "book:1fa1f73d4577a24d:p470:c3",
+            "book:1fa1f73d4577a24d:p470:c2",
+            "book:1fa1f73d4577a24d:p475:c1"
+          ],
+          "after": [
+            "book:690ef1b93d4de56d:p59:c1",
+            "book:1fa1f73d4577a24d:p483:c1",
+            "book:690ef1b93d4de56d:p58:c1",
+            "book:1fa1f73d4577a24d:p470:c3",
+            "book:1fa1f73d4577a24d:p470:c2"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b20",
+          "category": "paraphrase",
+          "candidate_ids": [
+            "book:b3ef0449af989305:p89:c1",
+            "book:59baa5b6b4bde1eb:p71:c1",
+            "book:b3ef0449af989305:p92:c1",
+            "book:b3ef0449af989305:p484:c1",
+            "book:1fa1f73d4577a24d:p126:c1",
+            "book:1fa1f73d4577a24d:p133:c1",
+            "book:27f575d58853afc2:p19:c1",
+            "book:b3ef0449af989305:p430:c1",
+            "book:1fa1f73d4577a24d:p124:c2",
+            "book:b3ef0449af989305:p93:c1",
+            "book:1fa1f73d4577a24d:p130:c2",
+            "book:1fa1f73d4577a24d:p82:c1",
+            "book:1fa1f73d4577a24d:p58:c2",
+            "book:1fa1f73d4577a24d:p59:c1",
+            "book:b3ef0449af989305:p96:c1"
+          ],
+          "before": [
+            "book:b3ef0449af989305:p89:c1",
+            "book:59baa5b6b4bde1eb:p71:c1",
+            "book:b3ef0449af989305:p92:c1",
+            "book:b3ef0449af989305:p484:c1",
+            "book:1fa1f73d4577a24d:p126:c1"
+          ],
+          "after": [
+            "book:b3ef0449af989305:p89:c1",
+            "book:b3ef0449af989305:p92:c1",
+            "book:b3ef0449af989305:p93:c1",
+            "book:1fa1f73d4577a24d:p126:c1",
+            "book:59baa5b6b4bde1eb:p71:c1"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b21",
+          "category": "direct",
+          "candidate_ids": [
+            "book:690ef1b93d4de56d:p410:c1",
+            "book:59baa5b6b4bde1eb:p925:c1",
+            "book:59baa5b6b4bde1eb:p926:c1",
+            "book:1fa1f73d4577a24d:p46:c12",
+            "book:1fa1f73d4577a24d:p189:c2",
+            "book:1fa1f73d4577a24d:p184:c2",
+            "book:1fa1f73d4577a24d:p65:c2",
+            "book:b3ef0449af989305:p161:c1",
+            "book:1fa1f73d4577a24d:p63:c1",
+            "book:59baa5b6b4bde1eb:p932:c1",
+            "book:1fa1f73d4577a24d:p49:c1",
+            "book:1fa1f73d4577a24d:p64:c1",
+            "book:1fa1f73d4577a24d:p54:c1",
+            "book:59baa5b6b4bde1eb:p930:c1",
+            "book:690ef1b93d4de56d:p409:c1"
+          ],
+          "before": [
+            "book:690ef1b93d4de56d:p410:c1",
+            "book:59baa5b6b4bde1eb:p925:c1",
+            "book:59baa5b6b4bde1eb:p926:c1",
+            "book:1fa1f73d4577a24d:p46:c12",
+            "book:1fa1f73d4577a24d:p189:c2"
+          ],
+          "after": [
+            "book:b3ef0449af989305:p161:c1",
+            "book:59baa5b6b4bde1eb:p925:c1",
+            "book:690ef1b93d4de56d:p409:c1",
+            "book:59baa5b6b4bde1eb:p926:c1",
+            "book:690ef1b93d4de56d:p410:c1"
+          ],
+          "before_first_gold_rank": null,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b22",
+          "category": "direct",
+          "candidate_ids": [
+            "book:b3ef0449af989305:p297:c1",
+            "book:b3ef0449af989305:p298:c1",
+            "book:1fa1f73d4577a24d:p537:c1",
+            "book:1fa1f73d4577a24d:p724:c2",
+            "book:1fa1f73d4577a24d:p536:c1",
+            "book:59baa5b6b4bde1eb:p825:c1",
+            "book:b3ef0449af989305:p302:c1",
+            "book:27f575d58853afc2:p69:c1",
+            "book:b3ef0449af989305:p290:c1",
+            "book:690ef1b93d4de56d:p74:c1",
+            "book:b3ef0449af989305:p358:c1",
+            "book:1fa1f73d4577a24d:p760:c1",
+            "book:59baa5b6b4bde1eb:p823:c1",
+            "book:1fa1f73d4577a24d:p677:c6",
+            "book:1fa1f73d4577a24d:p532:c1"
+          ],
+          "before": [
+            "book:b3ef0449af989305:p297:c1",
+            "book:b3ef0449af989305:p298:c1",
+            "book:1fa1f73d4577a24d:p537:c1",
+            "book:1fa1f73d4577a24d:p724:c2",
+            "book:1fa1f73d4577a24d:p536:c1"
+          ],
+          "after": [
+            "book:b3ef0449af989305:p297:c1",
+            "book:b3ef0449af989305:p298:c1",
+            "book:b3ef0449af989305:p290:c1",
+            "book:1fa1f73d4577a24d:p677:c6",
+            "book:1fa1f73d4577a24d:p724:c2"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b23",
+          "category": "direct",
+          "candidate_ids": [
+            "book:23980ff1a36710e3:p116:c1",
+            "book:1fa1f73d4577a24d:p159:c1",
+            "book:1fa1f73d4577a24d:p149:c6",
+            "book:59baa5b6b4bde1eb:p314:c1",
+            "book:23980ff1a36710e3:p114:c1",
+            "book:23980ff1a36710e3:p115:c1",
+            "book:1fa1f73d4577a24d:p148:c3",
+            "book:1fa1f73d4577a24d:p148:c4",
+            "book:23980ff1a36710e3:p117:c1",
+            "book:59baa5b6b4bde1eb:p312:c1",
+            "book:59baa5b6b4bde1eb:p308:c1",
+            "book:1fa1f73d4577a24d:p159:c2",
+            "book:1fa1f73d4577a24d:p992:c1",
+            "book:59baa5b6b4bde1eb:p313:c1",
+            "book:1fa1f73d4577a24d:p148:c7"
+          ],
+          "before": [
+            "book:23980ff1a36710e3:p116:c1",
+            "book:1fa1f73d4577a24d:p159:c1",
+            "book:1fa1f73d4577a24d:p149:c6",
+            "book:59baa5b6b4bde1eb:p314:c1",
+            "book:23980ff1a36710e3:p114:c1"
+          ],
+          "after": [
+            "book:23980ff1a36710e3:p116:c1",
+            "book:59baa5b6b4bde1eb:p314:c1",
+            "book:23980ff1a36710e3:p117:c1",
+            "book:23980ff1a36710e3:p114:c1",
+            "book:1fa1f73d4577a24d:p159:c1"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b24",
+          "category": "direct",
+          "candidate_ids": [
+            "book:23980ff1a36710e3:p154:c1",
+            "book:1fa1f73d4577a24d:p452:c3",
+            "book:1fa1f73d4577a24d:p448:c2",
+            "book:59baa5b6b4bde1eb:p845:c1",
+            "book:23980ff1a36710e3:p151:c1",
+            "book:1fa1f73d4577a24d:p727:c5",
+            "book:1fa1f73d4577a24d:p436:c1",
+            "book:1fa1f73d4577a24d:p447:c1",
+            "book:59baa5b6b4bde1eb:p840:c1",
+            "book:23980ff1a36710e3:p148:c1",
+            "book:59baa5b6b4bde1eb:p102:c1",
+            "book:23980ff1a36710e3:p150:c1",
+            "book:1fa1f73d4577a24d:p437:c1",
+            "book:23980ff1a36710e3:p152:c1",
+            "book:23980ff1a36710e3:p155:c1"
+          ],
+          "before": [
+            "book:23980ff1a36710e3:p154:c1",
+            "book:1fa1f73d4577a24d:p452:c3",
+            "book:1fa1f73d4577a24d:p448:c2",
+            "book:59baa5b6b4bde1eb:p845:c1",
+            "book:23980ff1a36710e3:p151:c1"
+          ],
+          "after": [
+            "book:23980ff1a36710e3:p154:c1",
+            "book:23980ff1a36710e3:p155:c1",
+            "book:23980ff1a36710e3:p148:c1",
+            "book:1fa1f73d4577a24d:p437:c1",
+            "book:1fa1f73d4577a24d:p448:c2"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b25",
+          "category": "paraphrase",
+          "candidate_ids": [
+            "book:23980ff1a36710e3:p135:c1",
+            "book:b3ef0449af989305:p252:c1",
+            "book:4214772346017635:p223:c1",
+            "book:1fa1f73d4577a24d:p56:c2",
+            "book:b3ef0449af989305:p256:c1",
+            "book:23980ff1a36710e3:p130:c1",
+            "book:59baa5b6b4bde1eb:p819:c1",
+            "book:8e1be29f8f1141be:p303:c1",
+            "book:59baa5b6b4bde1eb:p343:c1",
+            "book:1fa1f73d4577a24d:p71:c2",
+            "book:1fa1f73d4577a24d:p122:c1",
+            "book:1fa1f73d4577a24d:p58:c2",
+            "book:4214772346017635:p220:c1",
+            "book:1fa1f73d4577a24d:p46:c5",
+            "book:23980ff1a36710e3:p275:c1"
+          ],
+          "before": [
+            "book:23980ff1a36710e3:p135:c1",
+            "book:b3ef0449af989305:p252:c1",
+            "book:4214772346017635:p223:c1",
+            "book:1fa1f73d4577a24d:p56:c2",
+            "book:b3ef0449af989305:p256:c1"
+          ],
+          "after": [
+            "book:23980ff1a36710e3:p135:c1",
+            "book:4214772346017635:p223:c1",
+            "book:b3ef0449af989305:p252:c1",
+            "book:59baa5b6b4bde1eb:p819:c1",
+            "book:23980ff1a36710e3:p130:c1"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b26",
+          "category": "direct",
+          "candidate_ids": [
+            "book:59baa5b6b4bde1eb:p253:c1",
+            "book:23980ff1a36710e3:p84:c1",
+            "book:b3ef0449af989305:p372:c1",
+            "book:1fa1f73d4577a24d:p861:c1",
+            "book:1fa1f73d4577a24d:p166:c1",
+            "book:1fa1f73d4577a24d:p145:c2",
+            "book:1fa1f73d4577a24d:p68:c1",
+            "book:40aef427960b9b4b:p424:c1",
+            "book:1fa1f73d4577a24d:p63:c1",
+            "book:690ef1b93d4de56d:p471:c1",
+            "book:1fa1f73d4577a24d:p125:c1",
+            "book:8e1be29f8f1141be:p74:c1",
+            "book:1fa1f73d4577a24d:p278:c6",
+            "book:4214772346017635:p211:c1",
+            "book:1fa1f73d4577a24d:p54:c1"
+          ],
+          "before": [
+            "book:59baa5b6b4bde1eb:p253:c1",
+            "book:23980ff1a36710e3:p84:c1",
+            "book:b3ef0449af989305:p372:c1",
+            "book:1fa1f73d4577a24d:p861:c1",
+            "book:1fa1f73d4577a24d:p166:c1"
+          ],
+          "after": [
+            "book:59baa5b6b4bde1eb:p253:c1",
+            "book:23980ff1a36710e3:p84:c1",
+            "book:40aef427960b9b4b:p424:c1",
+            "book:4214772346017635:p211:c1",
+            "book:1fa1f73d4577a24d:p145:c2"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b27",
+          "category": "direct",
+          "candidate_ids": [
+            "book:59baa5b6b4bde1eb:p204:c1",
+            "book:59baa5b6b4bde1eb:p203:c1",
+            "book:b3ef0449af989305:p607:c1",
+            "book:59baa5b6b4bde1eb:p9:c1",
+            "book:59baa5b6b4bde1eb:p205:c1",
+            "book:59baa5b6b4bde1eb:p206:c1",
+            "book:1fa1f73d4577a24d:p724:c1",
+            "book:1fa1f73d4577a24d:p724:c2",
+            "book:23980ff1a36710e3:p190:c1",
+            "book:1fa1f73d4577a24d:p126:c3",
+            "book:1fa1f73d4577a24d:p278:c6",
+            "book:59baa5b6b4bde1eb:p207:c1",
+            "book:23980ff1a36710e3:p192:c1",
+            "book:1fa1f73d4577a24d:p276:c2",
+            "book:1fa1f73d4577a24d:p68:c1"
+          ],
+          "before": [
+            "book:59baa5b6b4bde1eb:p204:c1",
+            "book:59baa5b6b4bde1eb:p203:c1",
+            "book:b3ef0449af989305:p607:c1",
+            "book:59baa5b6b4bde1eb:p9:c1",
+            "book:59baa5b6b4bde1eb:p205:c1"
+          ],
+          "after": [
+            "book:59baa5b6b4bde1eb:p204:c1",
+            "book:59baa5b6b4bde1eb:p203:c1",
+            "book:59baa5b6b4bde1eb:p205:c1",
+            "book:59baa5b6b4bde1eb:p206:c1",
+            "book:59baa5b6b4bde1eb:p9:c1"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b28",
+          "category": "direct",
+          "candidate_ids": [
+            "book:59baa5b6b4bde1eb:p371:c1",
+            "book:59baa5b6b4bde1eb:p372:c1",
+            "book:4214772346017635:p360:c1",
+            "book:23980ff1a36710e3:p180:c1",
+            "book:1fa1f73d4577a24d:p760:c3",
+            "book:1fa1f73d4577a24d:p760:c4",
+            "book:59baa5b6b4bde1eb:p942:c2",
+            "book:1fa1f73d4577a24d:p697:c1",
+            "book:1fa1f73d4577a24d:p537:c2",
+            "book:1fa1f73d4577a24d:p429:c1",
+            "book:23980ff1a36710e3:p173:c1",
+            "book:1fa1f73d4577a24d:p145:c2",
+            "book:1fa1f73d4577a24d:p145:c1",
+            "book:23980ff1a36710e3:p199:c1",
+            "book:1fa1f73d4577a24d:p442:c1"
+          ],
+          "before": [
+            "book:59baa5b6b4bde1eb:p371:c1",
+            "book:59baa5b6b4bde1eb:p372:c1",
+            "book:4214772346017635:p360:c1",
+            "book:23980ff1a36710e3:p180:c1",
+            "book:1fa1f73d4577a24d:p760:c3"
+          ],
+          "after": [
+            "book:59baa5b6b4bde1eb:p371:c1",
+            "book:4214772346017635:p360:c1",
+            "book:59baa5b6b4bde1eb:p372:c1",
+            "book:23980ff1a36710e3:p180:c1",
+            "book:23980ff1a36710e3:p173:c1"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b29",
+          "category": "direct",
+          "candidate_ids": [
+            "book:4214772346017635:p90:c1",
+            "book:1fa1f73d4577a24d:p7:c1",
+            "book:1fa1f73d4577a24d:p66:c1",
+            "book:1fa1f73d4577a24d:p41:c3",
+            "book:1fa1f73d4577a24d:p19:c2",
+            "book:b3ef0449af989305:p59:c1",
+            "book:59baa5b6b4bde1eb:p53:c1",
+            "book:59baa5b6b4bde1eb:p650:c1",
+            "book:1fa1f73d4577a24d:p12:c4",
+            "book:1fa1f73d4577a24d:p63:c3",
+            "book:1fa1f73d4577a24d:p41:c5",
+            "book:1fa1f73d4577a24d:p60:c1",
+            "book:1fa1f73d4577a24d:p46:c5",
+            "book:1fa1f73d4577a24d:p347:c1",
+            "book:b3ef0449af989305:p50:c1"
+          ],
+          "before": [
+            "book:4214772346017635:p90:c1",
+            "book:1fa1f73d4577a24d:p7:c1",
+            "book:1fa1f73d4577a24d:p66:c1",
+            "book:1fa1f73d4577a24d:p41:c3",
+            "book:1fa1f73d4577a24d:p19:c2"
+          ],
+          "after": [
+            "book:4214772346017635:p90:c1",
+            "book:b3ef0449af989305:p50:c1",
+            "book:1fa1f73d4577a24d:p66:c1",
+            "book:59baa5b6b4bde1eb:p53:c1",
+            "book:1fa1f73d4577a24d:p60:c1"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b30",
+          "category": "direct",
+          "candidate_ids": [
+            "book:27f575d58853afc2:p62:c1",
+            "book:23980ff1a36710e3:p123:c1",
+            "book:4214772346017635:p218:c1",
+            "book:690ef1b93d4de56d:p39:c1",
+            "book:27f575d58853afc2:p61:c1",
+            "book:4214772346017635:p217:c1",
+            "book:1fa1f73d4577a24d:p125:c1",
+            "book:690ef1b93d4de56d:p40:c1",
+            "book:1fa1f73d4577a24d:p129:c1",
+            "book:27f575d58853afc2:p261:c1",
+            "book:1fa1f73d4577a24d:p80:c1",
+            "book:1fa1f73d4577a24d:p145:c2",
+            "book:1fa1f73d4577a24d:p46:c5",
+            "book:1fa1f73d4577a24d:p56:c2",
+            "book:1fa1f73d4577a24d:p65:c2"
+          ],
+          "before": [
+            "book:27f575d58853afc2:p62:c1",
+            "book:23980ff1a36710e3:p123:c1",
+            "book:4214772346017635:p218:c1",
+            "book:690ef1b93d4de56d:p39:c1",
+            "book:27f575d58853afc2:p61:c1"
+          ],
+          "after": [
+            "book:27f575d58853afc2:p62:c1",
+            "book:690ef1b93d4de56d:p40:c1",
+            "book:4214772346017635:p217:c1",
+            "book:690ef1b93d4de56d:p39:c1",
+            "book:23980ff1a36710e3:p123:c1"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "o01",
+          "category": "out_of_scope",
+          "candidate_ids": [
+            "book:1fa1f73d4577a24d:p347:c1",
+            "book:1fa1f73d4577a24d:p54:c1",
+            "book:1fa1f73d4577a24d:p126:c2",
+            "book:1fa1f73d4577a24d:p71:c2",
+            "book:1fa1f73d4577a24d:p73:c1",
+            "book:1fa1f73d4577a24d:p184:c2",
+            "book:1fa1f73d4577a24d:p188:c3",
+            "book:1fa1f73d4577a24d:p31:c2",
+            "book:1fa1f73d4577a24d:p60:c1",
+            "book:1fa1f73d4577a24d:p176:c1",
+            "book:1fa1f73d4577a24d:p454:c2",
+            "book:1fa1f73d4577a24d:p181:c1",
+            "book:1fa1f73d4577a24d:p192:c1",
+            "book:1fa1f73d4577a24d:p856:c1",
+            "book:1fa1f73d4577a24d:p123:c1"
+          ],
+          "before": [
+            "book:1fa1f73d4577a24d:p347:c1",
+            "book:1fa1f73d4577a24d:p54:c1",
+            "book:1fa1f73d4577a24d:p126:c2",
+            "book:1fa1f73d4577a24d:p71:c2",
+            "book:1fa1f73d4577a24d:p73:c1"
+          ],
+          "after": [
+            "book:1fa1f73d4577a24d:p54:c1",
+            "book:1fa1f73d4577a24d:p347:c1",
+            "book:1fa1f73d4577a24d:p176:c1",
+            "book:1fa1f73d4577a24d:p126:c2",
+            "book:1fa1f73d4577a24d:p60:c1"
+          ],
+          "before_first_gold_rank": null,
+          "after_first_gold_rank": null
+        },
+        {
+          "id": "o02",
+          "category": "out_of_scope",
+          "candidate_ids": [
+            "book:1fa1f73d4577a24d:p63:c1",
+            "book:690ef1b93d4de56d:p272:c1",
+            "book:1fa1f73d4577a24d:p848:c1",
+            "book:1fa1f73d4577a24d:p60:c1",
+            "book:59baa5b6b4bde1eb:p861:c1",
+            "book:1fa1f73d4577a24d:p347:c1",
+            "book:1fa1f73d4577a24d:p192:c1",
+            "book:1fa1f73d4577a24d:p609:c1",
+            "book:1fa1f73d4577a24d:p833:c2",
+            "book:1fa1f73d4577a24d:p63:c2",
+            "book:1fa1f73d4577a24d:p423:c1",
+            "book:1fa1f73d4577a24d:p656:c1",
+            "book:1fa1f73d4577a24d:p46:c5",
+            "book:59baa5b6b4bde1eb:p590:c1",
+            "book:1fa1f73d4577a24d:p31:c2"
+          ],
+          "before": [
+            "book:1fa1f73d4577a24d:p63:c1",
+            "book:690ef1b93d4de56d:p272:c1",
+            "book:1fa1f73d4577a24d:p848:c1",
+            "book:1fa1f73d4577a24d:p60:c1",
+            "book:59baa5b6b4bde1eb:p861:c1"
+          ],
+          "after": [
+            "book:59baa5b6b4bde1eb:p590:c1",
+            "book:690ef1b93d4de56d:p272:c1",
+            "book:59baa5b6b4bde1eb:p861:c1",
+            "book:1fa1f73d4577a24d:p833:c2",
+            "book:1fa1f73d4577a24d:p609:c1"
+          ],
+          "before_first_gold_rank": null,
+          "after_first_gold_rank": null
+        },
+        {
+          "id": "o03",
+          "category": "out_of_scope",
+          "candidate_ids": [
+            "book:1fa1f73d4577a24d:p54:c1",
+            "book:1fa1f73d4577a24d:p145:c2",
+            "book:1fa1f73d4577a24d:p894:c7",
+            "book:1fa1f73d4577a24d:p64:c1",
+            "book:1fa1f73d4577a24d:p894:c14",
+            "book:1fa1f73d4577a24d:p60:c1",
+            "book:1fa1f73d4577a24d:p46:c3",
+            "book:1fa1f73d4577a24d:p125:c1",
+            "book:1fa1f73d4577a24d:p49:c1",
+            "book:1fa1f73d4577a24d:p56:c2",
+            "book:1fa1f73d4577a24d:p59:c2",
+            "book:1fa1f73d4577a24d:p194:c1",
+            "book:1fa1f73d4577a24d:p73:c1",
+            "book:1fa1f73d4577a24d:p43:c2",
+            "book:1fa1f73d4577a24d:p72:c1"
+          ],
+          "before": [
+            "book:1fa1f73d4577a24d:p54:c1",
+            "book:1fa1f73d4577a24d:p145:c2",
+            "book:1fa1f73d4577a24d:p894:c7",
+            "book:1fa1f73d4577a24d:p64:c1",
+            "book:1fa1f73d4577a24d:p894:c14"
+          ],
+          "after": [
+            "book:1fa1f73d4577a24d:p59:c2",
+            "book:1fa1f73d4577a24d:p194:c1",
+            "book:1fa1f73d4577a24d:p894:c7",
+            "book:1fa1f73d4577a24d:p56:c2",
+            "book:1fa1f73d4577a24d:p46:c3"
+          ],
+          "before_first_gold_rank": null,
+          "after_first_gold_rank": null
+        },
+        {
+          "id": "o04",
+          "category": "out_of_scope",
+          "candidate_ids": [
+            "book:1fa1f73d4577a24d:p575:c2",
+            "book:40aef427960b9b4b:p650:c1",
+            "book:1fa1f73d4577a24d:p42:c2",
+            "book:23980ff1a36710e3:p338:c1",
+            "book:40aef427960b9b4b:p48:c1",
+            "book:690ef1b93d4de56d:p511:c1",
+            "book:4214772346017635:p165:c1",
+            "book:1fa1f73d4577a24d:p452:c3",
+            "book:b3ef0449af989305:p114:c1",
+            "book:1fa1f73d4577a24d:p985:c1",
+            "book:40aef427960b9b4b:p146:c1",
+            "book:23980ff1a36710e3:p80:c1",
+            "book:1fa1f73d4577a24d:p93:c1",
+            "book:1fa1f73d4577a24d:p818:c1",
+            "book:40aef427960b9b4b:p536:c1"
+          ],
+          "before": [
+            "book:1fa1f73d4577a24d:p575:c2",
+            "book:40aef427960b9b4b:p650:c1",
+            "book:1fa1f73d4577a24d:p42:c2",
+            "book:23980ff1a36710e3:p338:c1",
+            "book:40aef427960b9b4b:p48:c1"
+          ],
+          "after": [
+            "book:1fa1f73d4577a24d:p93:c1",
+            "book:40aef427960b9b4b:p650:c1",
+            "book:690ef1b93d4de56d:p511:c1",
+            "book:4214772346017635:p165:c1",
+            "book:1fa1f73d4577a24d:p452:c3"
+          ],
+          "before_first_gold_rank": null,
+          "after_first_gold_rank": null
+        },
+        {
+          "id": "o05",
+          "category": "out_of_scope",
+          "candidate_ids": [
+            "book:1fa1f73d4577a24d:p72:c1",
+            "book:23980ff1a36710e3:p125:c1",
+            "book:1fa1f73d4577a24d:p347:c1",
+            "book:1fa1f73d4577a24d:p63:c1",
+            "book:1fa1f73d4577a24d:p63:c3",
+            "book:1fa1f73d4577a24d:p60:c1",
+            "book:1fa1f73d4577a24d:p192:c1",
+            "book:1fa1f73d4577a24d:p563:c2",
+            "book:1fa1f73d4577a24d:p58:c2",
+            "book:1fa1f73d4577a24d:p840:c1",
+            "book:1fa1f73d4577a24d:p31:c2",
+            "book:1fa1f73d4577a24d:p46:c5",
+            "book:1fa1f73d4577a24d:p63:c2",
+            "book:1fa1f73d4577a24d:p71:c3",
+            "book:1fa1f73d4577a24d:p59:c1"
+          ],
+          "before": [
+            "book:1fa1f73d4577a24d:p72:c1",
+            "book:23980ff1a36710e3:p125:c1",
+            "book:1fa1f73d4577a24d:p347:c1",
+            "book:1fa1f73d4577a24d:p63:c1",
+            "book:1fa1f73d4577a24d:p63:c3"
+          ],
+          "after": [
+            "book:1fa1f73d4577a24d:p72:c1",
+            "book:23980ff1a36710e3:p125:c1",
+            "book:1fa1f73d4577a24d:p563:c2",
+            "book:1fa1f73d4577a24d:p63:c2",
+            "book:1fa1f73d4577a24d:p46:c5"
+          ],
+          "before_first_gold_rank": null,
+          "after_first_gold_rank": null
+        },
+        {
+          "id": "o06",
+          "category": "out_of_scope",
+          "candidate_ids": [
+            "book:1fa1f73d4577a24d:p54:c1",
+            "book:1fa1f73d4577a24d:p46:c3",
+            "book:1fa1f73d4577a24d:p63:c1",
+            "book:1fa1f73d4577a24d:p68:c1",
+            "book:1fa1f73d4577a24d:p67:c2",
+            "book:1fa1f73d4577a24d:p73:c1",
+            "book:1fa1f73d4577a24d:p46:c4",
+            "book:1fa1f73d4577a24d:p46:c5",
+            "book:1fa1f73d4577a24d:p56:c2",
+            "book:1fa1f73d4577a24d:p145:c2",
+            "book:1fa1f73d4577a24d:p59:c1",
+            "book:1fa1f73d4577a24d:p58:c1",
+            "book:1fa1f73d4577a24d:p46:c9",
+            "book:1fa1f73d4577a24d:p894:c7",
+            "book:1fa1f73d4577a24d:p63:c2"
+          ],
+          "before": [
+            "book:1fa1f73d4577a24d:p54:c1",
+            "book:1fa1f73d4577a24d:p46:c3",
+            "book:1fa1f73d4577a24d:p63:c1",
+            "book:1fa1f73d4577a24d:p68:c1",
+            "book:1fa1f73d4577a24d:p67:c2"
+          ],
+          "after": [
+            "book:1fa1f73d4577a24d:p54:c1",
+            "book:1fa1f73d4577a24d:p46:c4",
+            "book:1fa1f73d4577a24d:p73:c1",
+            "book:1fa1f73d4577a24d:p58:c1",
+            "book:1fa1f73d4577a24d:p56:c2"
+          ],
+          "before_first_gold_rank": null,
+          "after_first_gold_rank": null
+        },
+        {
+          "id": "o07",
+          "category": "out_of_scope",
+          "candidate_ids": [
+            "book:1fa1f73d4577a24d:p60:c1",
+            "book:1fa1f73d4577a24d:p347:c1",
+            "book:1fa1f73d4577a24d:p192:c1",
+            "book:1fa1f73d4577a24d:p188:c2",
+            "book:1fa1f73d4577a24d:p46:c5",
+            "book:1fa1f73d4577a24d:p63:c1",
+            "book:1fa1f73d4577a24d:p31:c2",
+            "book:1fa1f73d4577a24d:p130:c3",
+            "book:1fa1f73d4577a24d:p417:c1",
+            "book:1fa1f73d4577a24d:p59:c1",
+            "book:1fa1f73d4577a24d:p903:c2",
+            "book:1fa1f73d4577a24d:p677:c3",
+            "book:1fa1f73d4577a24d:p184:c2",
+            "book:1fa1f73d4577a24d:p45:c1",
+            "book:1fa1f73d4577a24d:p63:c3"
+          ],
+          "before": [
+            "book:1fa1f73d4577a24d:p60:c1",
+            "book:1fa1f73d4577a24d:p347:c1",
+            "book:1fa1f73d4577a24d:p192:c1",
+            "book:1fa1f73d4577a24d:p188:c2",
+            "book:1fa1f73d4577a24d:p46:c5"
+          ],
+          "after": [
+            "book:1fa1f73d4577a24d:p63:c1",
+            "book:1fa1f73d4577a24d:p46:c5",
+            "book:1fa1f73d4577a24d:p130:c3",
+            "book:1fa1f73d4577a24d:p347:c1",
+            "book:1fa1f73d4577a24d:p417:c1"
+          ],
+          "before_first_gold_rank": null,
+          "after_first_gold_rank": null
+        },
+        {
+          "id": "o08",
+          "category": "out_of_scope",
+          "candidate_ids": [
+            "book:1fa1f73d4577a24d:p72:c2",
+            "book:1fa1f73d4577a24d:p425:c2",
+            "book:1fa1f73d4577a24d:p124:c2",
+            "book:1fa1f73d4577a24d:p46:c3",
+            "book:1fa1f73d4577a24d:p115:c1",
+            "book:1fa1f73d4577a24d:p68:c1",
+            "book:1fa1f73d4577a24d:p284:c1",
+            "book:1fa1f73d4577a24d:p19:c3",
+            "book:1fa1f73d4577a24d:p58:c1",
+            "book:1fa1f73d4577a24d:p124:c1",
+            "book:1fa1f73d4577a24d:p56:c2",
+            "book:1fa1f73d4577a24d:p68:c2",
+            "book:1fa1f73d4577a24d:p72:c1",
+            "book:1fa1f73d4577a24d:p67:c2",
+            "book:1fa1f73d4577a24d:p168:c1"
+          ],
+          "before": [
+            "book:1fa1f73d4577a24d:p72:c2",
+            "book:1fa1f73d4577a24d:p425:c2",
+            "book:1fa1f73d4577a24d:p124:c2",
+            "book:1fa1f73d4577a24d:p46:c3",
+            "book:1fa1f73d4577a24d:p115:c1"
+          ],
+          "after": [
+            "book:1fa1f73d4577a24d:p168:c1",
+            "book:1fa1f73d4577a24d:p72:c2",
+            "book:1fa1f73d4577a24d:p72:c1",
+            "book:1fa1f73d4577a24d:p68:c2",
+            "book:1fa1f73d4577a24d:p68:c1"
+          ],
+          "before_first_gold_rank": null,
+          "after_first_gold_rank": null
+        },
+        {
+          "id": "o09",
+          "category": "out_of_scope",
+          "candidate_ids": [
+            "book:1fa1f73d4577a24d:p63:c1",
+            "book:1fa1f73d4577a24d:p184:c2",
+            "book:1fa1f73d4577a24d:p347:c1",
+            "book:1fa1f73d4577a24d:p63:c3",
+            "book:1fa1f73d4577a24d:p54:c1",
+            "book:1fa1f73d4577a24d:p59:c1",
+            "book:1fa1f73d4577a24d:p63:c2",
+            "book:8e1be29f8f1141be:p436:c1",
+            "book:1fa1f73d4577a24d:p60:c1",
+            "book:1fa1f73d4577a24d:p192:c1",
+            "book:1fa1f73d4577a24d:p426:c1",
+            "book:1fa1f73d4577a24d:p74:c1",
+            "book:1fa1f73d4577a24d:p73:c1",
+            "book:1fa1f73d4577a24d:p903:c2",
+            "book:1fa1f73d4577a24d:p848:c1"
+          ],
+          "before": [
+            "book:1fa1f73d4577a24d:p63:c1",
+            "book:1fa1f73d4577a24d:p184:c2",
+            "book:1fa1f73d4577a24d:p347:c1",
+            "book:1fa1f73d4577a24d:p63:c3",
+            "book:1fa1f73d4577a24d:p54:c1"
+          ],
+          "after": [
+            "book:1fa1f73d4577a24d:p63:c2",
+            "book:1fa1f73d4577a24d:p63:c1",
+            "book:1fa1f73d4577a24d:p54:c1",
+            "book:1fa1f73d4577a24d:p74:c1",
+            "book:1fa1f73d4577a24d:p63:c3"
+          ],
+          "before_first_gold_rank": null,
+          "after_first_gold_rank": null
+        },
+        {
+          "id": "o10",
+          "category": "out_of_scope",
+          "candidate_ids": [
+            "book:1fa1f73d4577a24d:p188:c3",
+            "book:1fa1f73d4577a24d:p32:c1",
+            "book:1fa1f73d4577a24d:p932:c2",
+            "book:1fa1f73d4577a24d:p948:c2",
+            "book:1fa1f73d4577a24d:p184:c2",
+            "book:1fa1f73d4577a24d:p63:c1",
+            "book:1fa1f73d4577a24d:p60:c1",
+            "book:1fa1f73d4577a24d:p176:c1",
+            "book:1fa1f73d4577a24d:p181:c1",
+            "book:1fa1f73d4577a24d:p347:c1",
+            "book:1fa1f73d4577a24d:p192:c1",
+            "book:1fa1f73d4577a24d:p856:c1",
+            "book:1fa1f73d4577a24d:p31:c2",
+            "book:1fa1f73d4577a24d:p32:c2",
+            "book:1fa1f73d4577a24d:p31:c4"
+          ],
+          "before": [
+            "book:1fa1f73d4577a24d:p188:c3",
+            "book:1fa1f73d4577a24d:p32:c1",
+            "book:1fa1f73d4577a24d:p932:c2",
+            "book:1fa1f73d4577a24d:p948:c2",
+            "book:1fa1f73d4577a24d:p184:c2"
+          ],
+          "after": [
+            "book:1fa1f73d4577a24d:p32:c2",
+            "book:1fa1f73d4577a24d:p932:c2",
+            "book:1fa1f73d4577a24d:p63:c1",
+            "book:1fa1f73d4577a24d:p948:c2",
+            "book:1fa1f73d4577a24d:p31:c4"
+          ],
+          "before_first_gold_rank": null,
+          "after_first_gold_rank": null
+        }
+      ],
+      "latency_ms": {
+        "first_stage": {
+          "median": 22.09,
+          "p95": 31.77
+        },
+        "rerank_only": {
+          "median": 3254.65,
+          "p95": 3347.93
+        },
+        "combined": {
+          "median": 3277.11,
+          "p95": 3381.33
+        }
+      }
+    },
+    "runtime_keyword": {
+      "metrics": {
+        "before": {
+          "answerable_count": 30,
+          "out_of_scope_count": 10,
+          "recall_at_1": 0.6666666666666666,
+          "recall_at_3": 0.8,
+          "recall_at_5": 0.8666666666666667,
+          "mrr": 0.7411111111111112,
+          "correct_rejection_rate": 0.0,
+          "by_category": {
+            "direct": {
+              "count": 22,
+              "recall_at_1": 0.6363636363636364,
+              "recall_at_3": 0.7727272727272727,
+              "recall_at_5": 0.8181818181818182,
+              "mrr": 0.7136363636363636
+            },
+            "paraphrase": {
+              "count": 8,
+              "recall_at_1": 0.75,
+              "recall_at_3": 0.875,
+              "recall_at_5": 1.0,
+              "mrr": 0.8166666666666667
+            },
+            "out_of_scope": {
+              "count": 10,
+              "correct_rejection_rate": 0.0
+            }
+          }
+        },
+        "after": {
+          "answerable_count": 30,
+          "out_of_scope_count": 10,
+          "recall_at_1": 0.8333333333333334,
+          "recall_at_3": 0.9,
+          "recall_at_5": 0.9,
+          "mrr": 0.861111111111111,
+          "correct_rejection_rate": 0.0,
+          "by_category": {
+            "direct": {
+              "count": 22,
+              "recall_at_1": 0.8636363636363636,
+              "recall_at_3": 0.8636363636363636,
+              "recall_at_5": 0.8636363636363636,
+              "mrr": 0.8636363636363636
+            },
+            "paraphrase": {
+              "count": 8,
+              "recall_at_1": 0.75,
+              "recall_at_3": 1.0,
+              "recall_at_5": 1.0,
+              "mrr": 0.8541666666666666
+            },
+            "out_of_scope": {
+              "count": 10,
+              "correct_rejection_rate": 0.0
+            }
+          }
+        }
+      },
+      "candidate_recall": 0.9,
+      "rankings": {
+        "before": {
+          "b01": [
+            "book:1fa1f73d4577a24d:p865:c5",
+            "book:1fa1f73d4577a24d:p872:c3",
+            "book:1fa1f73d4577a24d:p985:c1",
+            "book:8e1be29f8f1141be:p287:c1",
+            "book:59baa5b6b4bde1eb:p781:c1"
+          ],
+          "b02": [
+            "book:1fa1f73d4577a24d:p502:c2",
+            "book:1fa1f73d4577a24d:p495:c3",
+            "book:1fa1f73d4577a24d:p86:c1",
+            "book:1fa1f73d4577a24d:p203:c1",
+            "book:1fa1f73d4577a24d:p491:c4"
+          ],
+          "b03": [
+            "book:1fa1f73d4577a24d:p9:c4",
+            "book:1fa1f73d4577a24d:p12:c4",
+            "book:1fa1f73d4577a24d:p98:c1",
+            "book:1fa1f73d4577a24d:p101:c2",
+            "book:1fa1f73d4577a24d:p102:c1"
+          ],
+          "b04": [
+            "book:1fa1f73d4577a24d:p932:c2",
+            "book:1fa1f73d4577a24d:p978:c1",
+            "book:1fa1f73d4577a24d:p990:c1",
+            "book:bf71f6004c533304:p18:c1",
+            "book:bf71f6004c533304:p184:c2"
+          ],
+          "b05": [
+            "book:27f575d58853afc2:p84:c1",
+            "book:1fa1f73d4577a24d:p323:c1",
+            "book:1fa1f73d4577a24d:p428:c1",
+            "book:1fa1f73d4577a24d:p447:c1",
+            "book:1fa1f73d4577a24d:p491:c1"
+          ],
+          "b06": [
+            "book:27f575d58853afc2:p102:c1",
+            "book:1fa1f73d4577a24d:p420:c2",
+            "book:1fa1f73d4577a24d:p744:c2",
+            "book:1fa1f73d4577a24d:p745:c4",
+            "book:1fa1f73d4577a24d:p748:c1"
+          ],
+          "b07": [
+            "book:27f575d58853afc2:p141:c1",
+            "book:1fa1f73d4577a24d:p573:c1",
+            "book:27f575d58853afc2:p256:c1",
+            "book:27f575d58853afc2:p262:c1",
+            "book:1fa1f73d4577a24d:p559:c1"
+          ],
+          "b08": [
+            "book:8e1be29f8f1141be:p149:c1",
+            "book:1fa1f73d4577a24d:p695:c2",
+            "book:1fa1f73d4577a24d:p888:c1",
+            "book:4214772346017635:p150:c1",
+            "book:59baa5b6b4bde1eb:p198:c1"
+          ],
+          "b09": [
+            "book:8e1be29f8f1141be:p268:c1",
+            "book:1fa1f73d4577a24d:p894:c15",
+            "book:8e1be29f8f1141be:p225:c1",
+            "book:40aef427960b9b4b:p402:c1",
+            "book:40aef427960b9b4b:p411:c1"
+          ],
+          "b10": [
+            "book:8e1be29f8f1141be:p93:c1",
+            "book:b3ef0449af989305:p126:c1",
+            "book:1fa1f73d4577a24d:p708:c1",
+            "book:1fa1f73d4577a24d:p724:c2",
+            "book:1fa1f73d4577a24d:p767:c2"
+          ],
+          "b11": [
+            "book:4214772346017635:p103:c1",
+            "book:1fa1f73d4577a24d:p167:c2",
+            "book:40aef427960b9b4b:p312:c1",
+            "book:b3ef0449af989305:p578:c1",
+            "book:1fa1f73d4577a24d:p29:c1"
+          ],
+          "b12": [
+            "book:4214772346017635:p144:c1",
+            "book:1fa1f73d4577a24d:p982:c1",
+            "book:8e1be29f8f1141be:p177:c1",
+            "book:4214772346017635:p145:c1",
+            "book:4214772346017635:p168:c1"
+          ],
+          "b13": [
+            "book:1fa1f73d4577a24d:p495:c1",
+            "book:4214772346017635:p272:c1",
+            "book:1fa1f73d4577a24d:p157:c1",
+            "book:8e1be29f8f1141be:p179:c1",
+            "book:8e1be29f8f1141be:p210:c1"
+          ],
+          "b14": [
+            "book:59baa5b6b4bde1eb:p137:c1",
+            "book:59baa5b6b4bde1eb:p140:c1",
+            "book:59baa5b6b4bde1eb:p237:c1",
+            "book:1fa1f73d4577a24d:p32:c1",
+            "book:1fa1f73d4577a24d:p148:c8"
+          ],
+          "b15": [
+            "book:40aef427960b9b4b:p172:c1",
+            "book:690ef1b93d4de56d:p225:c1",
+            "book:b3ef0449af989305:p383:c1",
+            "book:23980ff1a36710e3:p159:c1",
+            "book:23980ff1a36710e3:p366:c1"
+          ],
+          "b16": [
+            "book:40aef427960b9b4b:p104:c1",
+            "book:1fa1f73d4577a24d:p973:c1",
+            "book:59baa5b6b4bde1eb:p185:c1",
+            "book:1fa1f73d4577a24d:p148:c3",
+            "book:1fa1f73d4577a24d:p868:c2"
+          ],
+          "b17": [
+            "book:690ef1b93d4de56d:p89:c1",
+            "book:1fa1f73d4577a24d:p436:c1",
+            "book:1fa1f73d4577a24d:p439:c2",
+            "book:1fa1f73d4577a24d:p441:c1",
+            "book:1fa1f73d4577a24d:p442:c1"
+          ],
+          "b18": [
+            "book:1fa1f73d4577a24d:p608:c2",
+            "book:690ef1b93d4de56d:p128:c1",
+            "book:690ef1b93d4de56d:p170:c1",
+            "book:59baa5b6b4bde1eb:p855:c1",
+            "book:1fa1f73d4577a24d:p598:c3"
+          ],
+          "b19": [
+            "book:1fa1f73d4577a24d:p478:c1",
+            "book:1fa1f73d4577a24d:p470:c3",
+            "book:1fa1f73d4577a24d:p475:c1",
+            "book:1fa1f73d4577a24d:p483:c1",
+            "book:690ef1b93d4de56d:p59:c1"
+          ],
+          "b20": [
+            "book:b3ef0449af989305:p89:c1",
+            "book:1fa1f73d4577a24d:p978:c1",
+            "book:27f575d58853afc2:p19:c1",
+            "book:40aef427960b9b4b:p31:c1",
+            "book:b3ef0449af989305:p92:c1"
+          ],
+          "b21": [
+            "book:b3ef0449af989305:p80:c1",
+            "book:1fa1f73d4577a24d:p17:c1",
+            "book:1fa1f73d4577a24d:p19:c2",
+            "book:1fa1f73d4577a24d:p32:c2",
+            "book:1fa1f73d4577a24d:p41:c1"
+          ],
+          "b22": [
+            "book:b3ef0449af989305:p297:c1",
+            "book:1fa1f73d4577a24d:p724:c2",
+            "book:1fa1f73d4577a24d:p428:c1",
+            "book:1fa1f73d4577a24d:p470:c3",
+            "book:1fa1f73d4577a24d:p472:c1"
+          ],
+          "b23": [
+            "book:23980ff1a36710e3:p116:c1",
+            "book:59baa5b6b4bde1eb:p14:c1",
+            "book:1fa1f73d4577a24d:p148:c3",
+            "book:1fa1f73d4577a24d:p148:c4",
+            "book:1fa1f73d4577a24d:p149:c6"
+          ],
+          "b24": [
+            "book:23980ff1a36710e3:p154:c1",
+            "book:1fa1f73d4577a24d:p452:c3",
+            "book:1fa1f73d4577a24d:p706:c2",
+            "book:23980ff1a36710e3:p151:c1",
+            "book:59baa5b6b4bde1eb:p316:c1"
+          ],
+          "b25": [
+            "book:23980ff1a36710e3:p135:c1",
+            "book:b3ef0449af989305:p252:c1",
+            "book:4214772346017635:p223:c1",
+            "book:1fa1f73d4577a24d:p745:c2",
+            "book:27f575d58853afc2:p138:c1"
+          ],
+          "b26": [
+            "book:59baa5b6b4bde1eb:p253:c1",
+            "book:1fa1f73d4577a24d:p622:c4",
+            "book:1fa1f73d4577a24d:p622:c5",
+            "book:1fa1f73d4577a24d:p855:c1",
+            "book:1fa1f73d4577a24d:p861:c1"
+          ],
+          "b27": [
+            "book:59baa5b6b4bde1eb:p203:c1",
+            "book:59baa5b6b4bde1eb:p204:c1",
+            "book:1fa1f73d4577a24d:p724:c1",
+            "book:1fa1f73d4577a24d:p724:c2",
+            "book:1fa1f73d4577a24d:p730:c3"
+          ],
+          "b28": [
+            "book:1fa1f73d4577a24d:p514:c1",
+            "book:1fa1f73d4577a24d:p537:c2",
+            "book:1fa1f73d4577a24d:p697:c1",
+            "book:1fa1f73d4577a24d:p760:c3",
+            "book:4214772346017635:p360:c1"
+          ],
+          "b29": [
+            "book:1fa1f73d4577a24d:p622:c5",
+            "book:1fa1f73d4577a24d:p623:c3",
+            "book:1fa1f73d4577a24d:p7:c1",
+            "book:1fa1f73d4577a24d:p19:c2",
+            "book:1fa1f73d4577a24d:p41:c3"
+          ],
+          "b30": [
+            "book:27f575d58853afc2:p62:c1",
+            "book:27f575d58853afc2:p253:c1",
+            "book:27f575d58853afc2:p261:c1",
+            "book:690ef1b93d4de56d:p39:c1",
+            "book:23980ff1a36710e3:p123:c1"
+          ],
+          "o01": [
+            "book:1fa1f73d4577a24d:p6:c4",
+            "book:1fa1f73d4577a24d:p7:c1",
+            "book:1fa1f73d4577a24d:p18:c2",
+            "book:1fa1f73d4577a24d:p19:c2",
+            "book:1fa1f73d4577a24d:p31:c2"
+          ],
+          "o02": [
+            "book:1fa1f73d4577a24d:p32:c3",
+            "book:1fa1f73d4577a24d:p63:c1",
+            "book:1fa1f73d4577a24d:p63:c2",
+            "book:1fa1f73d4577a24d:p72:c2",
+            "book:1fa1f73d4577a24d:p79:c2"
+          ],
+          "o03": [
+            "book:1fa1f73d4577a24d:p6:c1",
+            "book:1fa1f73d4577a24d:p7:c2",
+            "book:1fa1f73d4577a24d:p7:c6",
+            "book:1fa1f73d4577a24d:p9:c2",
+            "book:1fa1f73d4577a24d:p10:c1"
+          ],
+          "o04": [
+            "book:1fa1f73d4577a24d:p42:c2",
+            "book:1fa1f73d4577a24d:p58:c3",
+            "book:1fa1f73d4577a24d:p93:c1",
+            "book:1fa1f73d4577a24d:p148:c5",
+            "book:1fa1f73d4577a24d:p198:c1"
+          ],
+          "o05": [
+            "book:1fa1f73d4577a24d:p63:c3",
+            "book:1fa1f73d4577a24d:p72:c1",
+            "book:1fa1f73d4577a24d:p91:c1",
+            "book:1fa1f73d4577a24d:p123:c1",
+            "book:1fa1f73d4577a24d:p133:c1"
+          ],
+          "o06": [
+            "book:1fa1f73d4577a24d:p814:c1",
+            "book:1fa1f73d4577a24d:p865:c2",
+            "book:8e1be29f8f1141be:p493:c1",
+            "book:1fa1f73d4577a24d:p18:c2",
+            "book:1fa1f73d4577a24d:p19:c4"
+          ],
+          "o07": [
+            "book:1fa1f73d4577a24d:p677:c3",
+            "book:1fa1f73d4577a24d:p6:c4",
+            "book:1fa1f73d4577a24d:p7:c1",
+            "book:1fa1f73d4577a24d:p9:c1",
+            "book:1fa1f73d4577a24d:p19:c2"
+          ],
+          "o08": [
+            "book:1fa1f73d4577a24d:p10:c2",
+            "book:1fa1f73d4577a24d:p14:c1",
+            "book:1fa1f73d4577a24d:p19:c3",
+            "book:1fa1f73d4577a24d:p21:c2",
+            "book:1fa1f73d4577a24d:p21:c3"
+          ],
+          "o09": [
+            "book:1fa1f73d4577a24d:p408:c1",
+            "book:1fa1f73d4577a24d:p6:c4",
+            "book:1fa1f73d4577a24d:p7:c1",
+            "book:1fa1f73d4577a24d:p18:c2",
+            "book:1fa1f73d4577a24d:p19:c2"
+          ],
+          "o10": [
+            "book:1fa1f73d4577a24d:p32:c1",
+            "book:1fa1f73d4577a24d:p32:c2",
+            "book:1fa1f73d4577a24d:p164:c2",
+            "book:1fa1f73d4577a24d:p920:c3",
+            "book:1fa1f73d4577a24d:p921:c1"
+          ]
+        },
+        "after": {
+          "b01": [
+            "book:1fa1f73d4577a24d:p865:c5",
+            "book:1fa1f73d4577a24d:p872:c3",
+            "book:59baa5b6b4bde1eb:p781:c1",
+            "book:1fa1f73d4577a24d:p637:c1",
+            "book:1fa1f73d4577a24d:p985:c1"
+          ],
+          "b02": [
+            "book:1fa1f73d4577a24d:p502:c2",
+            "book:1fa1f73d4577a24d:p496:c1",
+            "book:1fa1f73d4577a24d:p491:c4",
+            "book:1fa1f73d4577a24d:p203:c1",
+            "book:1fa1f73d4577a24d:p500:c1"
+          ],
+          "b03": [
+            "book:1fa1f73d4577a24d:p98:c1",
+            "book:1fa1f73d4577a24d:p887:c1",
+            "book:8e1be29f8f1141be:p46:c1",
+            "book:1fa1f73d4577a24d:p102:c1",
+            "book:1fa1f73d4577a24d:p9:c4"
+          ],
+          "b04": [
+            "book:1fa1f73d4577a24d:p6:c2",
+            "book:1fa1f73d4577a24d:p21:c1",
+            "book:bf71f6004c533304:p184:c2",
+            "book:bf71f6004c533304:p18:c1",
+            "book:1fa1f73d4577a24d:p21:c3"
+          ],
+          "b05": [
+            "book:27f575d58853afc2:p84:c1",
+            "book:1fa1f73d4577a24d:p428:c1",
+            "book:1fa1f73d4577a24d:p588:c2",
+            "book:1fa1f73d4577a24d:p323:c1",
+            "book:1fa1f73d4577a24d:p724:c2"
+          ],
+          "b06": [
+            "book:27f575d58853afc2:p102:c1",
+            "book:1fa1f73d4577a24d:p748:c1",
+            "book:690ef1b93d4de56d:p113:c1",
+            "book:27f575d58853afc2:p266:c1",
+            "book:59baa5b6b4bde1eb:p847:c1"
+          ],
+          "b07": [
+            "book:27f575d58853afc2:p141:c1",
+            "book:1fa1f73d4577a24d:p573:c1",
+            "book:690ef1b93d4de56d:p192:c1",
+            "book:27f575d58853afc2:p256:c1",
+            "book:690ef1b93d4de56d:p548:c1"
+          ],
+          "b08": [
+            "book:8e1be29f8f1141be:p149:c1",
+            "book:4214772346017635:p150:c1",
+            "book:59baa5b6b4bde1eb:p198:c1",
+            "book:1fa1f73d4577a24d:p695:c2",
+            "book:1fa1f73d4577a24d:p993:c2"
+          ],
+          "b09": [
+            "book:8e1be29f8f1141be:p268:c1",
+            "book:23980ff1a36710e3:p69:c1",
+            "book:1fa1f73d4577a24d:p894:c15",
+            "book:40aef427960b9b4b:p554:c1",
+            "book:b3ef0449af989305:p178:c1"
+          ],
+          "b10": [
+            "book:b3ef0449af989305:p126:c1",
+            "book:8e1be29f8f1141be:p93:c1",
+            "book:1fa1f73d4577a24d:p281:c5",
+            "book:1fa1f73d4577a24d:p148:c6",
+            "book:1fa1f73d4577a24d:p470:c3"
+          ],
+          "b11": [
+            "book:4214772346017635:p103:c1",
+            "book:1fa1f73d4577a24d:p166:c1",
+            "book:1fa1f73d4577a24d:p167:c2",
+            "book:b3ef0449af989305:p578:c1",
+            "book:1fa1f73d4577a24d:p140:c3"
+          ],
+          "b12": [
+            "book:4214772346017635:p144:c1",
+            "book:8e1be29f8f1141be:p177:c1",
+            "book:4214772346017635:p531:c1",
+            "book:4214772346017635:p168:c1",
+            "book:4214772346017635:p145:c1"
+          ],
+          "b13": [
+            "book:4214772346017635:p272:c1",
+            "book:1fa1f73d4577a24d:p495:c1",
+            "book:1fa1f73d4577a24d:p493:c1",
+            "book:1fa1f73d4577a24d:p502:c1",
+            "book:1fa1f73d4577a24d:p495:c3"
+          ],
+          "b14": [
+            "book:59baa5b6b4bde1eb:p140:c1",
+            "book:59baa5b6b4bde1eb:p137:c1",
+            "book:4214772346017635:p103:c1",
+            "book:1fa1f73d4577a24d:p459:c1",
+            "book:59baa5b6b4bde1eb:p237:c1"
+          ],
+          "b15": [
+            "book:40aef427960b9b4b:p172:c1",
+            "book:59baa5b6b4bde1eb:p700:c1",
+            "book:690ef1b93d4de56d:p225:c1",
+            "book:59baa5b6b4bde1eb:p82:c1",
+            "book:b3ef0449af989305:p383:c1"
+          ],
+          "b16": [
+            "book:40aef427960b9b4b:p104:c1",
+            "book:40aef427960b9b4b:p103:c1",
+            "book:40aef427960b9b4b:p144:c1",
+            "book:59baa5b6b4bde1eb:p99:c1",
+            "book:40aef427960b9b4b:p92:c1"
+          ],
+          "b17": [
+            "book:690ef1b93d4de56d:p89:c1",
+            "book:1fa1f73d4577a24d:p442:c1",
+            "book:1fa1f73d4577a24d:p436:c1",
+            "book:59baa5b6b4bde1eb:p828:c1",
+            "book:1fa1f73d4577a24d:p448:c1"
+          ],
+          "b18": [
+            "book:690ef1b93d4de56d:p128:c1",
+            "book:690ef1b93d4de56d:p130:c1",
+            "book:27f575d58853afc2:p108:c1",
+            "book:690ef1b93d4de56d:p170:c1",
+            "book:1fa1f73d4577a24d:p608:c2"
+          ],
+          "b19": [
+            "book:690ef1b93d4de56d:p59:c1",
+            "book:1fa1f73d4577a24d:p483:c1",
+            "book:1fa1f73d4577a24d:p470:c3",
+            "book:1fa1f73d4577a24d:p470:c2",
+            "book:1fa1f73d4577a24d:p468:c5"
+          ],
+          "b20": [
+            "book:b3ef0449af989305:p89:c1",
+            "book:b3ef0449af989305:p92:c1",
+            "book:1fa1f73d4577a24d:p78:c1",
+            "book:1fa1f73d4577a24d:p126:c1",
+            "book:59baa5b6b4bde1eb:p71:c1"
+          ],
+          "b21": [
+            "book:b3ef0449af989305:p80:c1",
+            "book:1fa1f73d4577a24d:p47:c4",
+            "book:1fa1f73d4577a24d:p42:c5",
+            "book:1fa1f73d4577a24d:p41:c1",
+            "book:1fa1f73d4577a24d:p46:c12"
+          ],
+          "b22": [
+            "book:b3ef0449af989305:p297:c1",
+            "book:b3ef0449af989305:p298:c1",
+            "book:1fa1f73d4577a24d:p724:c2",
+            "book:1fa1f73d4577a24d:p492:c2",
+            "book:1fa1f73d4577a24d:p751:c2"
+          ],
+          "b23": [
+            "book:23980ff1a36710e3:p116:c1",
+            "book:23980ff1a36710e3:p117:c1",
+            "book:23980ff1a36710e3:p543:c1",
+            "book:23980ff1a36710e3:p500:c1",
+            "book:59baa5b6b4bde1eb:p14:c1"
+          ],
+          "b24": [
+            "book:23980ff1a36710e3:p154:c1",
+            "book:1fa1f73d4577a24d:p437:c1",
+            "book:1fa1f73d4577a24d:p448:c2",
+            "book:59baa5b6b4bde1eb:p316:c1",
+            "book:1fa1f73d4577a24d:p452:c3"
+          ],
+          "b25": [
+            "book:23980ff1a36710e3:p135:c1",
+            "book:4214772346017635:p223:c1",
+            "book:59baa5b6b4bde1eb:p338:c1",
+            "book:b3ef0449af989305:p252:c1",
+            "book:4214772346017635:p229:c1"
+          ],
+          "b26": [
+            "book:59baa5b6b4bde1eb:p253:c1",
+            "book:23980ff1a36710e3:p84:c1",
+            "book:4214772346017635:p211:c1",
+            "book:1fa1f73d4577a24d:p910:c1",
+            "book:59baa5b6b4bde1eb:p758:c1"
+          ],
+          "b27": [
+            "book:59baa5b6b4bde1eb:p204:c1",
+            "book:59baa5b6b4bde1eb:p203:c1",
+            "book:59baa5b6b4bde1eb:p206:c1",
+            "book:59baa5b6b4bde1eb:p9:c1",
+            "book:1fa1f73d4577a24d:p730:c3"
+          ],
+          "b28": [
+            "book:59baa5b6b4bde1eb:p371:c1",
+            "book:4214772346017635:p360:c1",
+            "book:59baa5b6b4bde1eb:p372:c1",
+            "book:1fa1f73d4577a24d:p509:c1",
+            "book:1fa1f73d4577a24d:p537:c2"
+          ],
+          "b29": [
+            "book:1fa1f73d4577a24d:p52:c2",
+            "book:1fa1f73d4577a24d:p41:c3",
+            "book:1fa1f73d4577a24d:p623:c3",
+            "book:1fa1f73d4577a24d:p7:c1",
+            "book:4214772346017635:p31:c1"
+          ],
+          "b30": [
+            "book:27f575d58853afc2:p62:c1",
+            "book:690ef1b93d4de56d:p39:c1",
+            "book:27f575d58853afc2:p253:c1",
+            "book:23980ff1a36710e3:p123:c1",
+            "book:27f575d58853afc2:p261:c1"
+          ],
+          "o01": [
+            "book:1fa1f73d4577a24d:p54:c1",
+            "book:1fa1f73d4577a24d:p46:c5",
+            "book:1fa1f73d4577a24d:p19:c2",
+            "book:1fa1f73d4577a24d:p46:c3",
+            "book:1fa1f73d4577a24d:p41:c3"
+          ],
+          "o02": [
+            "book:1fa1f73d4577a24d:p72:c2",
+            "book:1fa1f73d4577a24d:p284:c2",
+            "book:1fa1f73d4577a24d:p63:c2",
+            "book:1fa1f73d4577a24d:p149:c6",
+            "book:1fa1f73d4577a24d:p79:c2"
+          ],
+          "o03": [
+            "book:1fa1f73d4577a24d:p18:c3",
+            "book:1fa1f73d4577a24d:p19:c4",
+            "book:1fa1f73d4577a24d:p10:c1",
+            "book:1fa1f73d4577a24d:p12:c5",
+            "book:1fa1f73d4577a24d:p18:c1"
+          ],
+          "o04": [
+            "book:1fa1f73d4577a24d:p198:c1",
+            "book:1fa1f73d4577a24d:p317:c1",
+            "book:1fa1f73d4577a24d:p93:c1",
+            "book:1fa1f73d4577a24d:p148:c5",
+            "book:1fa1f73d4577a24d:p513:c1"
+          ],
+          "o05": [
+            "book:1fa1f73d4577a24d:p72:c1",
+            "book:1fa1f73d4577a24d:p563:c2",
+            "book:1fa1f73d4577a24d:p10:c2",
+            "book:1fa1f73d4577a24d:p91:c1",
+            "book:4214772346017635:p204:c1"
+          ],
+          "o06": [
+            "book:1fa1f73d4577a24d:p54:c1",
+            "book:1fa1f73d4577a24d:p72:c2",
+            "book:1fa1f73d4577a24d:p65:c1",
+            "book:8e1be29f8f1141be:p493:c1",
+            "book:1fa1f73d4577a24d:p46:c4"
+          ],
+          "o07": [
+            "book:1fa1f73d4577a24d:p46:c5",
+            "book:1fa1f73d4577a24d:p54:c2",
+            "book:1fa1f73d4577a24d:p61:c2",
+            "book:1fa1f73d4577a24d:p41:c3",
+            "book:1fa1f73d4577a24d:p7:c1"
+          ],
+          "o08": [
+            "book:1fa1f73d4577a24d:p27:c3",
+            "book:1fa1f73d4577a24d:p21:c2",
+            "book:1fa1f73d4577a24d:p59:c1",
+            "book:1fa1f73d4577a24d:p46:c11",
+            "book:1fa1f73d4577a24d:p67:c1"
+          ],
+          "o09": [
+            "book:1fa1f73d4577a24d:p54:c1",
+            "book:1fa1f73d4577a24d:p46:c5",
+            "book:1fa1f73d4577a24d:p46:c3",
+            "book:1fa1f73d4577a24d:p31:c2",
+            "book:1fa1f73d4577a24d:p41:c3"
+          ],
+          "o10": [
+            "book:1fa1f73d4577a24d:p32:c2",
+            "book:1fa1f73d4577a24d:p921:c1",
+            "book:1fa1f73d4577a24d:p928:c1",
+            "book:1fa1f73d4577a24d:p24:c3",
+            "book:1fa1f73d4577a24d:p6:c4"
+          ]
+        }
+      },
+      "per_case": [
+        {
+          "id": "b01",
+          "category": "direct",
+          "candidate_ids": [
+            "book:1fa1f73d4577a24d:p865:c5",
+            "book:1fa1f73d4577a24d:p872:c3",
+            "book:1fa1f73d4577a24d:p985:c1",
+            "book:8e1be29f8f1141be:p287:c1",
+            "book:59baa5b6b4bde1eb:p781:c1",
+            "book:1fa1f73d4577a24d:p145:c5",
+            "book:1fa1f73d4577a24d:p166:c2",
+            "book:1fa1f73d4577a24d:p421:c2",
+            "book:1fa1f73d4577a24d:p441:c1",
+            "book:1fa1f73d4577a24d:p466:c1",
+            "book:1fa1f73d4577a24d:p474:c1",
+            "book:1fa1f73d4577a24d:p599:c1",
+            "book:1fa1f73d4577a24d:p637:c1",
+            "book:1fa1f73d4577a24d:p680:c2",
+            "book:1fa1f73d4577a24d:p704:c2"
+          ],
+          "before": [
+            "book:1fa1f73d4577a24d:p865:c5",
+            "book:1fa1f73d4577a24d:p872:c3",
+            "book:1fa1f73d4577a24d:p985:c1",
+            "book:8e1be29f8f1141be:p287:c1",
+            "book:59baa5b6b4bde1eb:p781:c1"
+          ],
+          "after": [
+            "book:1fa1f73d4577a24d:p865:c5",
+            "book:1fa1f73d4577a24d:p872:c3",
+            "book:59baa5b6b4bde1eb:p781:c1",
+            "book:1fa1f73d4577a24d:p637:c1",
+            "book:1fa1f73d4577a24d:p985:c1"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b02",
+          "category": "paraphrase",
+          "candidate_ids": [
+            "book:1fa1f73d4577a24d:p502:c2",
+            "book:1fa1f73d4577a24d:p495:c3",
+            "book:1fa1f73d4577a24d:p86:c1",
+            "book:1fa1f73d4577a24d:p203:c1",
+            "book:1fa1f73d4577a24d:p491:c4",
+            "book:1fa1f73d4577a24d:p496:c1",
+            "book:1fa1f73d4577a24d:p500:c1",
+            "book:1fa1f73d4577a24d:p500:c3",
+            "book:1fa1f73d4577a24d:p502:c1",
+            "book:1fa1f73d4577a24d:p698:c1",
+            "book:1fa1f73d4577a24d:p990:c1",
+            "book:1fa1f73d4577a24d:p6:c4",
+            "book:1fa1f73d4577a24d:p27:c2",
+            "book:1fa1f73d4577a24d:p46:c5",
+            "book:1fa1f73d4577a24d:p51:c1"
+          ],
+          "before": [
+            "book:1fa1f73d4577a24d:p502:c2",
+            "book:1fa1f73d4577a24d:p495:c3",
+            "book:1fa1f73d4577a24d:p86:c1",
+            "book:1fa1f73d4577a24d:p203:c1",
+            "book:1fa1f73d4577a24d:p491:c4"
+          ],
+          "after": [
+            "book:1fa1f73d4577a24d:p502:c2",
+            "book:1fa1f73d4577a24d:p496:c1",
+            "book:1fa1f73d4577a24d:p491:c4",
+            "book:1fa1f73d4577a24d:p203:c1",
+            "book:1fa1f73d4577a24d:p500:c1"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b03",
+          "category": "paraphrase",
+          "candidate_ids": [
+            "book:1fa1f73d4577a24d:p9:c4",
+            "book:1fa1f73d4577a24d:p12:c4",
+            "book:1fa1f73d4577a24d:p98:c1",
+            "book:1fa1f73d4577a24d:p101:c2",
+            "book:1fa1f73d4577a24d:p102:c1",
+            "book:1fa1f73d4577a24d:p211:c1",
+            "book:1fa1f73d4577a24d:p216:c1",
+            "book:1fa1f73d4577a24d:p325:c1",
+            "book:1fa1f73d4577a24d:p587:c3",
+            "book:1fa1f73d4577a24d:p666:c1",
+            "book:1fa1f73d4577a24d:p705:c1",
+            "book:1fa1f73d4577a24d:p767:c5",
+            "book:1fa1f73d4577a24d:p887:c1",
+            "book:8e1be29f8f1141be:p46:c1",
+            "book:8e1be29f8f1141be:p64:c1"
+          ],
+          "before": [
+            "book:1fa1f73d4577a24d:p9:c4",
+            "book:1fa1f73d4577a24d:p12:c4",
+            "book:1fa1f73d4577a24d:p98:c1",
+            "book:1fa1f73d4577a24d:p101:c2",
+            "book:1fa1f73d4577a24d:p102:c1"
+          ],
+          "after": [
+            "book:1fa1f73d4577a24d:p98:c1",
+            "book:1fa1f73d4577a24d:p887:c1",
+            "book:8e1be29f8f1141be:p46:c1",
+            "book:1fa1f73d4577a24d:p102:c1",
+            "book:1fa1f73d4577a24d:p9:c4"
+          ],
+          "before_first_gold_rank": 3,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b04",
+          "category": "paraphrase",
+          "candidate_ids": [
+            "book:1fa1f73d4577a24d:p932:c2",
+            "book:1fa1f73d4577a24d:p978:c1",
+            "book:1fa1f73d4577a24d:p990:c1",
+            "book:bf71f6004c533304:p18:c1",
+            "book:bf71f6004c533304:p184:c2",
+            "book:8e1be29f8f1141be:p25:c1",
+            "book:690ef1b93d4de56d:p379:c1",
+            "book:59baa5b6b4bde1eb:p54:c1",
+            "book:1fa1f73d4577a24d:p4:c1",
+            "book:1fa1f73d4577a24d:p6:c2",
+            "book:1fa1f73d4577a24d:p20:c1",
+            "book:1fa1f73d4577a24d:p21:c1",
+            "book:1fa1f73d4577a24d:p21:c2",
+            "book:1fa1f73d4577a24d:p21:c3",
+            "book:1fa1f73d4577a24d:p22:c1"
+          ],
+          "before": [
+            "book:1fa1f73d4577a24d:p932:c2",
+            "book:1fa1f73d4577a24d:p978:c1",
+            "book:1fa1f73d4577a24d:p990:c1",
+            "book:bf71f6004c533304:p18:c1",
+            "book:bf71f6004c533304:p184:c2"
+          ],
+          "after": [
+            "book:1fa1f73d4577a24d:p6:c2",
+            "book:1fa1f73d4577a24d:p21:c1",
+            "book:bf71f6004c533304:p184:c2",
+            "book:bf71f6004c533304:p18:c1",
+            "book:1fa1f73d4577a24d:p21:c3"
+          ],
+          "before_first_gold_rank": 5,
+          "after_first_gold_rank": 3
+        },
+        {
+          "id": "b05",
+          "category": "direct",
+          "candidate_ids": [
+            "book:27f575d58853afc2:p84:c1",
+            "book:1fa1f73d4577a24d:p323:c1",
+            "book:1fa1f73d4577a24d:p428:c1",
+            "book:1fa1f73d4577a24d:p447:c1",
+            "book:1fa1f73d4577a24d:p491:c1",
+            "book:1fa1f73d4577a24d:p513:c1",
+            "book:1fa1f73d4577a24d:p548:c1",
+            "book:1fa1f73d4577a24d:p560:c1",
+            "book:1fa1f73d4577a24d:p588:c2",
+            "book:1fa1f73d4577a24d:p624:c6",
+            "book:1fa1f73d4577a24d:p694:c1",
+            "book:1fa1f73d4577a24d:p724:c2",
+            "book:1fa1f73d4577a24d:p730:c3",
+            "book:1fa1f73d4577a24d:p760:c1",
+            "book:1fa1f73d4577a24d:p762:c3"
+          ],
+          "before": [
+            "book:27f575d58853afc2:p84:c1",
+            "book:1fa1f73d4577a24d:p323:c1",
+            "book:1fa1f73d4577a24d:p428:c1",
+            "book:1fa1f73d4577a24d:p447:c1",
+            "book:1fa1f73d4577a24d:p491:c1"
+          ],
+          "after": [
+            "book:27f575d58853afc2:p84:c1",
+            "book:1fa1f73d4577a24d:p428:c1",
+            "book:1fa1f73d4577a24d:p588:c2",
+            "book:1fa1f73d4577a24d:p323:c1",
+            "book:1fa1f73d4577a24d:p724:c2"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b06",
+          "category": "direct",
+          "candidate_ids": [
+            "book:27f575d58853afc2:p102:c1",
+            "book:1fa1f73d4577a24d:p420:c2",
+            "book:1fa1f73d4577a24d:p744:c2",
+            "book:1fa1f73d4577a24d:p745:c4",
+            "book:1fa1f73d4577a24d:p748:c1",
+            "book:1fa1f73d4577a24d:p749:c1",
+            "book:bf71f6004c533304:p135:c1",
+            "book:bf71f6004c533304:p135:c2",
+            "book:27f575d58853afc2:p252:c1",
+            "book:27f575d58853afc2:p266:c1",
+            "book:690ef1b93d4de56d:p113:c1",
+            "book:59baa5b6b4bde1eb:p847:c1",
+            "book:1fa1f73d4577a24d:p6:c4",
+            "book:1fa1f73d4577a24d:p7:c1",
+            "book:1fa1f73d4577a24d:p19:c2"
+          ],
+          "before": [
+            "book:27f575d58853afc2:p102:c1",
+            "book:1fa1f73d4577a24d:p420:c2",
+            "book:1fa1f73d4577a24d:p744:c2",
+            "book:1fa1f73d4577a24d:p745:c4",
+            "book:1fa1f73d4577a24d:p748:c1"
+          ],
+          "after": [
+            "book:27f575d58853afc2:p102:c1",
+            "book:1fa1f73d4577a24d:p748:c1",
+            "book:690ef1b93d4de56d:p113:c1",
+            "book:27f575d58853afc2:p266:c1",
+            "book:59baa5b6b4bde1eb:p847:c1"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b07",
+          "category": "direct",
+          "candidate_ids": [
+            "book:27f575d58853afc2:p141:c1",
+            "book:1fa1f73d4577a24d:p573:c1",
+            "book:27f575d58853afc2:p256:c1",
+            "book:27f575d58853afc2:p262:c1",
+            "book:1fa1f73d4577a24d:p559:c1",
+            "book:1fa1f73d4577a24d:p592:c2",
+            "book:1fa1f73d4577a24d:p775:c1",
+            "book:27f575d58853afc2:p84:c1",
+            "book:4214772346017635:p330:c1",
+            "book:40aef427960b9b4b:p20:c1",
+            "book:690ef1b93d4de56d:p14:c1",
+            "book:690ef1b93d4de56d:p190:c1",
+            "book:690ef1b93d4de56d:p192:c1",
+            "book:690ef1b93d4de56d:p548:c1",
+            "book:690ef1b93d4de56d:p560:c1"
+          ],
+          "before": [
+            "book:27f575d58853afc2:p141:c1",
+            "book:1fa1f73d4577a24d:p573:c1",
+            "book:27f575d58853afc2:p256:c1",
+            "book:27f575d58853afc2:p262:c1",
+            "book:1fa1f73d4577a24d:p559:c1"
+          ],
+          "after": [
+            "book:27f575d58853afc2:p141:c1",
+            "book:1fa1f73d4577a24d:p573:c1",
+            "book:690ef1b93d4de56d:p192:c1",
+            "book:27f575d58853afc2:p256:c1",
+            "book:690ef1b93d4de56d:p548:c1"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b08",
+          "category": "paraphrase",
+          "candidate_ids": [
+            "book:8e1be29f8f1141be:p149:c1",
+            "book:1fa1f73d4577a24d:p695:c2",
+            "book:1fa1f73d4577a24d:p888:c1",
+            "book:4214772346017635:p150:c1",
+            "book:59baa5b6b4bde1eb:p198:c1",
+            "book:1fa1f73d4577a24d:p143:c1",
+            "book:1fa1f73d4577a24d:p145:c1",
+            "book:1fa1f73d4577a24d:p148:c2",
+            "book:1fa1f73d4577a24d:p278:c7",
+            "book:1fa1f73d4577a24d:p281:c5",
+            "book:1fa1f73d4577a24d:p615:c1",
+            "book:1fa1f73d4577a24d:p724:c2",
+            "book:1fa1f73d4577a24d:p841:c6",
+            "book:1fa1f73d4577a24d:p978:c1",
+            "book:1fa1f73d4577a24d:p993:c2"
+          ],
+          "before": [
+            "book:8e1be29f8f1141be:p149:c1",
+            "book:1fa1f73d4577a24d:p695:c2",
+            "book:1fa1f73d4577a24d:p888:c1",
+            "book:4214772346017635:p150:c1",
+            "book:59baa5b6b4bde1eb:p198:c1"
+          ],
+          "after": [
+            "book:8e1be29f8f1141be:p149:c1",
+            "book:4214772346017635:p150:c1",
+            "book:59baa5b6b4bde1eb:p198:c1",
+            "book:1fa1f73d4577a24d:p695:c2",
+            "book:1fa1f73d4577a24d:p993:c2"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b09",
+          "category": "direct",
+          "candidate_ids": [
+            "book:8e1be29f8f1141be:p268:c1",
+            "book:1fa1f73d4577a24d:p894:c15",
+            "book:8e1be29f8f1141be:p225:c1",
+            "book:40aef427960b9b4b:p402:c1",
+            "book:40aef427960b9b4b:p411:c1",
+            "book:40aef427960b9b4b:p424:c1",
+            "book:40aef427960b9b4b:p492:c1",
+            "book:40aef427960b9b4b:p554:c1",
+            "book:40aef427960b9b4b:p577:c1",
+            "book:b3ef0449af989305:p178:c1",
+            "book:23980ff1a36710e3:p30:c1",
+            "book:23980ff1a36710e3:p69:c1",
+            "book:23980ff1a36710e3:p79:c1",
+            "book:59baa5b6b4bde1eb:p265:c1",
+            "book:1fa1f73d4577a24d:p41:c5"
+          ],
+          "before": [
+            "book:8e1be29f8f1141be:p268:c1",
+            "book:1fa1f73d4577a24d:p894:c15",
+            "book:8e1be29f8f1141be:p225:c1",
+            "book:40aef427960b9b4b:p402:c1",
+            "book:40aef427960b9b4b:p411:c1"
+          ],
+          "after": [
+            "book:8e1be29f8f1141be:p268:c1",
+            "book:23980ff1a36710e3:p69:c1",
+            "book:1fa1f73d4577a24d:p894:c15",
+            "book:40aef427960b9b4b:p554:c1",
+            "book:b3ef0449af989305:p178:c1"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b10",
+          "category": "paraphrase",
+          "candidate_ids": [
+            "book:8e1be29f8f1141be:p93:c1",
+            "book:b3ef0449af989305:p126:c1",
+            "book:1fa1f73d4577a24d:p708:c1",
+            "book:1fa1f73d4577a24d:p724:c2",
+            "book:1fa1f73d4577a24d:p767:c2",
+            "book:1fa1f73d4577a24d:p148:c6",
+            "book:1fa1f73d4577a24d:p217:c1",
+            "book:1fa1f73d4577a24d:p231:c1",
+            "book:1fa1f73d4577a24d:p281:c5",
+            "book:1fa1f73d4577a24d:p281:c6",
+            "book:1fa1f73d4577a24d:p332:c1",
+            "book:1fa1f73d4577a24d:p428:c1",
+            "book:1fa1f73d4577a24d:p470:c3",
+            "book:1fa1f73d4577a24d:p491:c4",
+            "book:1fa1f73d4577a24d:p509:c3"
+          ],
+          "before": [
+            "book:8e1be29f8f1141be:p93:c1",
+            "book:b3ef0449af989305:p126:c1",
+            "book:1fa1f73d4577a24d:p708:c1",
+            "book:1fa1f73d4577a24d:p724:c2",
+            "book:1fa1f73d4577a24d:p767:c2"
+          ],
+          "after": [
+            "book:b3ef0449af989305:p126:c1",
+            "book:8e1be29f8f1141be:p93:c1",
+            "book:1fa1f73d4577a24d:p281:c5",
+            "book:1fa1f73d4577a24d:p148:c6",
+            "book:1fa1f73d4577a24d:p470:c3"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 2
+        },
+        {
+          "id": "b11",
+          "category": "direct",
+          "candidate_ids": [
+            "book:4214772346017635:p103:c1",
+            "book:1fa1f73d4577a24d:p167:c2",
+            "book:40aef427960b9b4b:p312:c1",
+            "book:b3ef0449af989305:p578:c1",
+            "book:1fa1f73d4577a24d:p29:c1",
+            "book:1fa1f73d4577a24d:p75:c1",
+            "book:1fa1f73d4577a24d:p140:c3",
+            "book:1fa1f73d4577a24d:p145:c6",
+            "book:1fa1f73d4577a24d:p149:c1",
+            "book:1fa1f73d4577a24d:p152:c2",
+            "book:1fa1f73d4577a24d:p164:c2",
+            "book:1fa1f73d4577a24d:p166:c1",
+            "book:1fa1f73d4577a24d:p281:c1",
+            "book:1fa1f73d4577a24d:p441:c1",
+            "book:1fa1f73d4577a24d:p468:c6"
+          ],
+          "before": [
+            "book:4214772346017635:p103:c1",
+            "book:1fa1f73d4577a24d:p167:c2",
+            "book:40aef427960b9b4b:p312:c1",
+            "book:b3ef0449af989305:p578:c1",
+            "book:1fa1f73d4577a24d:p29:c1"
+          ],
+          "after": [
+            "book:4214772346017635:p103:c1",
+            "book:1fa1f73d4577a24d:p166:c1",
+            "book:1fa1f73d4577a24d:p167:c2",
+            "book:b3ef0449af989305:p578:c1",
+            "book:1fa1f73d4577a24d:p140:c3"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b12",
+          "category": "direct",
+          "candidate_ids": [
+            "book:4214772346017635:p144:c1",
+            "book:1fa1f73d4577a24d:p982:c1",
+            "book:8e1be29f8f1141be:p177:c1",
+            "book:4214772346017635:p145:c1",
+            "book:4214772346017635:p168:c1",
+            "book:4214772346017635:p531:c1",
+            "book:59baa5b6b4bde1eb:p721:c1",
+            "book:1fa1f73d4577a24d:p21:c1",
+            "book:1fa1f73d4577a24d:p624:c3",
+            "book:1fa1f73d4577a24d:p865:c9",
+            "book:1fa1f73d4577a24d:p973:c1",
+            "book:1fa1f73d4577a24d:p975:c2",
+            "book:1fa1f73d4577a24d:p976:c2",
+            "book:1fa1f73d4577a24d:p993:c2",
+            "book:1fa1f73d4577a24d:p996:c2"
+          ],
+          "before": [
+            "book:4214772346017635:p144:c1",
+            "book:1fa1f73d4577a24d:p982:c1",
+            "book:8e1be29f8f1141be:p177:c1",
+            "book:4214772346017635:p145:c1",
+            "book:4214772346017635:p168:c1"
+          ],
+          "after": [
+            "book:4214772346017635:p144:c1",
+            "book:8e1be29f8f1141be:p177:c1",
+            "book:4214772346017635:p531:c1",
+            "book:4214772346017635:p168:c1",
+            "book:4214772346017635:p145:c1"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b13",
+          "category": "direct",
+          "candidate_ids": [
+            "book:1fa1f73d4577a24d:p495:c1",
+            "book:4214772346017635:p272:c1",
+            "book:1fa1f73d4577a24d:p157:c1",
+            "book:8e1be29f8f1141be:p179:c1",
+            "book:8e1be29f8f1141be:p210:c1",
+            "book:4214772346017635:p507:c1",
+            "book:1fa1f73d4577a24d:p157:c2",
+            "book:1fa1f73d4577a24d:p201:c1",
+            "book:1fa1f73d4577a24d:p205:c1",
+            "book:1fa1f73d4577a24d:p332:c1",
+            "book:1fa1f73d4577a24d:p466:c3",
+            "book:1fa1f73d4577a24d:p467:c2",
+            "book:1fa1f73d4577a24d:p493:c1",
+            "book:1fa1f73d4577a24d:p495:c3",
+            "book:1fa1f73d4577a24d:p502:c1"
+          ],
+          "before": [
+            "book:1fa1f73d4577a24d:p495:c1",
+            "book:4214772346017635:p272:c1",
+            "book:1fa1f73d4577a24d:p157:c1",
+            "book:8e1be29f8f1141be:p179:c1",
+            "book:8e1be29f8f1141be:p210:c1"
+          ],
+          "after": [
+            "book:4214772346017635:p272:c1",
+            "book:1fa1f73d4577a24d:p495:c1",
+            "book:1fa1f73d4577a24d:p493:c1",
+            "book:1fa1f73d4577a24d:p502:c1",
+            "book:1fa1f73d4577a24d:p495:c3"
+          ],
+          "before_first_gold_rank": 2,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b14",
+          "category": "direct",
+          "candidate_ids": [
+            "book:59baa5b6b4bde1eb:p137:c1",
+            "book:59baa5b6b4bde1eb:p140:c1",
+            "book:59baa5b6b4bde1eb:p237:c1",
+            "book:1fa1f73d4577a24d:p32:c1",
+            "book:1fa1f73d4577a24d:p148:c8",
+            "book:1fa1f73d4577a24d:p447:c1",
+            "book:1fa1f73d4577a24d:p459:c1",
+            "book:1fa1f73d4577a24d:p532:c1",
+            "book:1fa1f73d4577a24d:p534:c3",
+            "book:1fa1f73d4577a24d:p537:c4",
+            "book:1fa1f73d4577a24d:p575:c1",
+            "book:1fa1f73d4577a24d:p588:c3",
+            "book:1fa1f73d4577a24d:p805:c1",
+            "book:1fa1f73d4577a24d:p909:c1",
+            "book:4214772346017635:p103:c1"
+          ],
+          "before": [
+            "book:59baa5b6b4bde1eb:p137:c1",
+            "book:59baa5b6b4bde1eb:p140:c1",
+            "book:59baa5b6b4bde1eb:p237:c1",
+            "book:1fa1f73d4577a24d:p32:c1",
+            "book:1fa1f73d4577a24d:p148:c8"
+          ],
+          "after": [
+            "book:59baa5b6b4bde1eb:p140:c1",
+            "book:59baa5b6b4bde1eb:p137:c1",
+            "book:4214772346017635:p103:c1",
+            "book:1fa1f73d4577a24d:p459:c1",
+            "book:59baa5b6b4bde1eb:p237:c1"
+          ],
+          "before_first_gold_rank": null,
+          "after_first_gold_rank": null
+        },
+        {
+          "id": "b15",
+          "category": "direct",
+          "candidate_ids": [
+            "book:40aef427960b9b4b:p172:c1",
+            "book:690ef1b93d4de56d:p225:c1",
+            "book:b3ef0449af989305:p383:c1",
+            "book:23980ff1a36710e3:p159:c1",
+            "book:23980ff1a36710e3:p366:c1",
+            "book:59baa5b6b4bde1eb:p82:c1",
+            "book:59baa5b6b4bde1eb:p700:c1",
+            "book:1fa1f73d4577a24d:p6:c1",
+            "book:1fa1f73d4577a24d:p13:c1",
+            "book:1fa1f73d4577a24d:p534:c5",
+            "book:1fa1f73d4577a24d:p572:c1",
+            "book:1fa1f73d4577a24d:p971:c1",
+            "book:1fa1f73d4577a24d:p996:c1",
+            "book:1fa1f73d4577a24d:p997:c1",
+            "book:40aef427960b9b4b:p12:c1"
+          ],
+          "before": [
+            "book:40aef427960b9b4b:p172:c1",
+            "book:690ef1b93d4de56d:p225:c1",
+            "book:b3ef0449af989305:p383:c1",
+            "book:23980ff1a36710e3:p159:c1",
+            "book:23980ff1a36710e3:p366:c1"
+          ],
+          "after": [
+            "book:40aef427960b9b4b:p172:c1",
+            "book:59baa5b6b4bde1eb:p700:c1",
+            "book:690ef1b93d4de56d:p225:c1",
+            "book:59baa5b6b4bde1eb:p82:c1",
+            "book:b3ef0449af989305:p383:c1"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b16",
+          "category": "direct",
+          "candidate_ids": [
+            "book:40aef427960b9b4b:p104:c1",
+            "book:1fa1f73d4577a24d:p973:c1",
+            "book:59baa5b6b4bde1eb:p185:c1",
+            "book:1fa1f73d4577a24d:p148:c3",
+            "book:1fa1f73d4577a24d:p868:c2",
+            "book:40aef427960b9b4b:p92:c1",
+            "book:40aef427960b9b4b:p98:c1",
+            "book:40aef427960b9b4b:p103:c1",
+            "book:40aef427960b9b4b:p116:c1",
+            "book:40aef427960b9b4b:p119:c1",
+            "book:40aef427960b9b4b:p144:c1",
+            "book:40aef427960b9b4b:p626:c1",
+            "book:b3ef0449af989305:p492:c1",
+            "book:59baa5b6b4bde1eb:p89:c1",
+            "book:59baa5b6b4bde1eb:p99:c1"
+          ],
+          "before": [
+            "book:40aef427960b9b4b:p104:c1",
+            "book:1fa1f73d4577a24d:p973:c1",
+            "book:59baa5b6b4bde1eb:p185:c1",
+            "book:1fa1f73d4577a24d:p148:c3",
+            "book:1fa1f73d4577a24d:p868:c2"
+          ],
+          "after": [
+            "book:40aef427960b9b4b:p104:c1",
+            "book:40aef427960b9b4b:p103:c1",
+            "book:40aef427960b9b4b:p144:c1",
+            "book:59baa5b6b4bde1eb:p99:c1",
+            "book:40aef427960b9b4b:p92:c1"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b17",
+          "category": "paraphrase",
+          "candidate_ids": [
+            "book:690ef1b93d4de56d:p89:c1",
+            "book:1fa1f73d4577a24d:p436:c1",
+            "book:1fa1f73d4577a24d:p439:c2",
+            "book:1fa1f73d4577a24d:p441:c1",
+            "book:1fa1f73d4577a24d:p442:c1",
+            "book:1fa1f73d4577a24d:p448:c1",
+            "book:1fa1f73d4577a24d:p500:c2",
+            "book:8e1be29f8f1141be:p370:c1",
+            "book:4214772346017635:p310:c1",
+            "book:23980ff1a36710e3:p151:c1",
+            "book:59baa5b6b4bde1eb:p369:c1",
+            "book:59baa5b6b4bde1eb:p828:c1",
+            "book:59baa5b6b4bde1eb:p830:c1",
+            "book:59baa5b6b4bde1eb:p836:c1",
+            "book:59baa5b6b4bde1eb:p840:c1"
+          ],
+          "before": [
+            "book:690ef1b93d4de56d:p89:c1",
+            "book:1fa1f73d4577a24d:p436:c1",
+            "book:1fa1f73d4577a24d:p439:c2",
+            "book:1fa1f73d4577a24d:p441:c1",
+            "book:1fa1f73d4577a24d:p442:c1"
+          ],
+          "after": [
+            "book:690ef1b93d4de56d:p89:c1",
+            "book:1fa1f73d4577a24d:p442:c1",
+            "book:1fa1f73d4577a24d:p436:c1",
+            "book:59baa5b6b4bde1eb:p828:c1",
+            "book:1fa1f73d4577a24d:p448:c1"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b18",
+          "category": "direct",
+          "candidate_ids": [
+            "book:1fa1f73d4577a24d:p608:c2",
+            "book:690ef1b93d4de56d:p128:c1",
+            "book:690ef1b93d4de56d:p170:c1",
+            "book:59baa5b6b4bde1eb:p855:c1",
+            "book:1fa1f73d4577a24d:p598:c3",
+            "book:1fa1f73d4577a24d:p602:c1",
+            "book:1fa1f73d4577a24d:p606:c1",
+            "book:1fa1f73d4577a24d:p681:c2",
+            "book:1fa1f73d4577a24d:p730:c2",
+            "book:1fa1f73d4577a24d:p730:c3",
+            "book:1fa1f73d4577a24d:p760:c1",
+            "book:27f575d58853afc2:p108:c1",
+            "book:8e1be29f8f1141be:p397:c1",
+            "book:40aef427960b9b4b:p552:c1",
+            "book:690ef1b93d4de56d:p130:c1"
+          ],
+          "before": [
+            "book:1fa1f73d4577a24d:p608:c2",
+            "book:690ef1b93d4de56d:p128:c1",
+            "book:690ef1b93d4de56d:p170:c1",
+            "book:59baa5b6b4bde1eb:p855:c1",
+            "book:1fa1f73d4577a24d:p598:c3"
+          ],
+          "after": [
+            "book:690ef1b93d4de56d:p128:c1",
+            "book:690ef1b93d4de56d:p130:c1",
+            "book:27f575d58853afc2:p108:c1",
+            "book:690ef1b93d4de56d:p170:c1",
+            "book:1fa1f73d4577a24d:p608:c2"
+          ],
+          "before_first_gold_rank": 2,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b19",
+          "category": "direct",
+          "candidate_ids": [
+            "book:1fa1f73d4577a24d:p478:c1",
+            "book:1fa1f73d4577a24d:p470:c3",
+            "book:1fa1f73d4577a24d:p475:c1",
+            "book:1fa1f73d4577a24d:p483:c1",
+            "book:690ef1b93d4de56d:p59:c1",
+            "book:1fa1f73d4577a24d:p468:c5",
+            "book:1fa1f73d4577a24d:p470:c2",
+            "book:1fa1f73d4577a24d:p479:c1",
+            "book:59baa5b6b4bde1eb:p397:c1",
+            "book:1fa1f73d4577a24d:p466:c1",
+            "book:1fa1f73d4577a24d:p467:c4",
+            "book:1fa1f73d4577a24d:p468:c2",
+            "book:1fa1f73d4577a24d:p468:c3",
+            "book:1fa1f73d4577a24d:p468:c4",
+            "book:1fa1f73d4577a24d:p470:c1"
+          ],
+          "before": [
+            "book:1fa1f73d4577a24d:p478:c1",
+            "book:1fa1f73d4577a24d:p470:c3",
+            "book:1fa1f73d4577a24d:p475:c1",
+            "book:1fa1f73d4577a24d:p483:c1",
+            "book:690ef1b93d4de56d:p59:c1"
+          ],
+          "after": [
+            "book:690ef1b93d4de56d:p59:c1",
+            "book:1fa1f73d4577a24d:p483:c1",
+            "book:1fa1f73d4577a24d:p470:c3",
+            "book:1fa1f73d4577a24d:p470:c2",
+            "book:1fa1f73d4577a24d:p468:c5"
+          ],
+          "before_first_gold_rank": 5,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b20",
+          "category": "paraphrase",
+          "candidate_ids": [
+            "book:b3ef0449af989305:p89:c1",
+            "book:1fa1f73d4577a24d:p978:c1",
+            "book:27f575d58853afc2:p19:c1",
+            "book:40aef427960b9b4b:p31:c1",
+            "book:b3ef0449af989305:p92:c1",
+            "book:b3ef0449af989305:p96:c1",
+            "book:b3ef0449af989305:p484:c1",
+            "book:59baa5b6b4bde1eb:p71:c1",
+            "book:59baa5b6b4bde1eb:p72:c1",
+            "book:1fa1f73d4577a24d:p68:c4",
+            "book:1fa1f73d4577a24d:p78:c1",
+            "book:1fa1f73d4577a24d:p79:c1",
+            "book:1fa1f73d4577a24d:p117:c1",
+            "book:1fa1f73d4577a24d:p126:c1",
+            "book:1fa1f73d4577a24d:p126:c3"
+          ],
+          "before": [
+            "book:b3ef0449af989305:p89:c1",
+            "book:1fa1f73d4577a24d:p978:c1",
+            "book:27f575d58853afc2:p19:c1",
+            "book:40aef427960b9b4b:p31:c1",
+            "book:b3ef0449af989305:p92:c1"
+          ],
+          "after": [
+            "book:b3ef0449af989305:p89:c1",
+            "book:b3ef0449af989305:p92:c1",
+            "book:1fa1f73d4577a24d:p78:c1",
+            "book:1fa1f73d4577a24d:p126:c1",
+            "book:59baa5b6b4bde1eb:p71:c1"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b21",
+          "category": "direct",
+          "candidate_ids": [
+            "book:b3ef0449af989305:p80:c1",
+            "book:1fa1f73d4577a24d:p17:c1",
+            "book:1fa1f73d4577a24d:p19:c2",
+            "book:1fa1f73d4577a24d:p32:c2",
+            "book:1fa1f73d4577a24d:p41:c1",
+            "book:1fa1f73d4577a24d:p42:c5",
+            "book:1fa1f73d4577a24d:p43:c1",
+            "book:1fa1f73d4577a24d:p46:c1",
+            "book:1fa1f73d4577a24d:p46:c3",
+            "book:1fa1f73d4577a24d:p46:c6",
+            "book:1fa1f73d4577a24d:p46:c8",
+            "book:1fa1f73d4577a24d:p46:c12",
+            "book:1fa1f73d4577a24d:p47:c1",
+            "book:1fa1f73d4577a24d:p47:c4",
+            "book:1fa1f73d4577a24d:p49:c2"
+          ],
+          "before": [
+            "book:b3ef0449af989305:p80:c1",
+            "book:1fa1f73d4577a24d:p17:c1",
+            "book:1fa1f73d4577a24d:p19:c2",
+            "book:1fa1f73d4577a24d:p32:c2",
+            "book:1fa1f73d4577a24d:p41:c1"
+          ],
+          "after": [
+            "book:b3ef0449af989305:p80:c1",
+            "book:1fa1f73d4577a24d:p47:c4",
+            "book:1fa1f73d4577a24d:p42:c5",
+            "book:1fa1f73d4577a24d:p41:c1",
+            "book:1fa1f73d4577a24d:p46:c12"
+          ],
+          "before_first_gold_rank": null,
+          "after_first_gold_rank": null
+        },
+        {
+          "id": "b22",
+          "category": "direct",
+          "candidate_ids": [
+            "book:b3ef0449af989305:p297:c1",
+            "book:1fa1f73d4577a24d:p724:c2",
+            "book:1fa1f73d4577a24d:p428:c1",
+            "book:1fa1f73d4577a24d:p470:c3",
+            "book:1fa1f73d4577a24d:p472:c1",
+            "book:1fa1f73d4577a24d:p492:c2",
+            "book:1fa1f73d4577a24d:p537:c1",
+            "book:1fa1f73d4577a24d:p547:c2",
+            "book:1fa1f73d4577a24d:p623:c3",
+            "book:1fa1f73d4577a24d:p624:c5",
+            "book:1fa1f73d4577a24d:p729:c2",
+            "book:1fa1f73d4577a24d:p751:c2",
+            "book:1fa1f73d4577a24d:p760:c1",
+            "book:bf71f6004c533304:p131:c1",
+            "book:b3ef0449af989305:p298:c1"
+          ],
+          "before": [
+            "book:b3ef0449af989305:p297:c1",
+            "book:1fa1f73d4577a24d:p724:c2",
+            "book:1fa1f73d4577a24d:p428:c1",
+            "book:1fa1f73d4577a24d:p470:c3",
+            "book:1fa1f73d4577a24d:p472:c1"
+          ],
+          "after": [
+            "book:b3ef0449af989305:p297:c1",
+            "book:b3ef0449af989305:p298:c1",
+            "book:1fa1f73d4577a24d:p724:c2",
+            "book:1fa1f73d4577a24d:p492:c2",
+            "book:1fa1f73d4577a24d:p751:c2"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b23",
+          "category": "direct",
+          "candidate_ids": [
+            "book:23980ff1a36710e3:p116:c1",
+            "book:59baa5b6b4bde1eb:p14:c1",
+            "book:1fa1f73d4577a24d:p148:c3",
+            "book:1fa1f73d4577a24d:p148:c4",
+            "book:1fa1f73d4577a24d:p149:c6",
+            "book:1fa1f73d4577a24d:p159:c1",
+            "book:1fa1f73d4577a24d:p167:c2",
+            "book:b3ef0449af989305:p17:c1",
+            "book:23980ff1a36710e3:p117:c1",
+            "book:23980ff1a36710e3:p500:c1",
+            "book:23980ff1a36710e3:p543:c1",
+            "book:59baa5b6b4bde1eb:p6:c1",
+            "book:59baa5b6b4bde1eb:p98:c1",
+            "book:59baa5b6b4bde1eb:p313:c1",
+            "book:1fa1f73d4577a24d:p19:c4"
+          ],
+          "before": [
+            "book:23980ff1a36710e3:p116:c1",
+            "book:59baa5b6b4bde1eb:p14:c1",
+            "book:1fa1f73d4577a24d:p148:c3",
+            "book:1fa1f73d4577a24d:p148:c4",
+            "book:1fa1f73d4577a24d:p149:c6"
+          ],
+          "after": [
+            "book:23980ff1a36710e3:p116:c1",
+            "book:23980ff1a36710e3:p117:c1",
+            "book:23980ff1a36710e3:p543:c1",
+            "book:23980ff1a36710e3:p500:c1",
+            "book:59baa5b6b4bde1eb:p14:c1"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b24",
+          "category": "direct",
+          "candidate_ids": [
+            "book:23980ff1a36710e3:p154:c1",
+            "book:1fa1f73d4577a24d:p452:c3",
+            "book:1fa1f73d4577a24d:p706:c2",
+            "book:23980ff1a36710e3:p151:c1",
+            "book:59baa5b6b4bde1eb:p316:c1",
+            "book:59baa5b6b4bde1eb:p845:c1",
+            "book:1fa1f73d4577a24d:p437:c1",
+            "book:1fa1f73d4577a24d:p444:c1",
+            "book:1fa1f73d4577a24d:p447:c1",
+            "book:1fa1f73d4577a24d:p448:c2",
+            "book:1fa1f73d4577a24d:p452:c2",
+            "book:1fa1f73d4577a24d:p459:c1",
+            "book:1fa1f73d4577a24d:p474:c1",
+            "book:1fa1f73d4577a24d:p532:c1",
+            "book:1fa1f73d4577a24d:p537:c3"
+          ],
+          "before": [
+            "book:23980ff1a36710e3:p154:c1",
+            "book:1fa1f73d4577a24d:p452:c3",
+            "book:1fa1f73d4577a24d:p706:c2",
+            "book:23980ff1a36710e3:p151:c1",
+            "book:59baa5b6b4bde1eb:p316:c1"
+          ],
+          "after": [
+            "book:23980ff1a36710e3:p154:c1",
+            "book:1fa1f73d4577a24d:p437:c1",
+            "book:1fa1f73d4577a24d:p448:c2",
+            "book:59baa5b6b4bde1eb:p316:c1",
+            "book:1fa1f73d4577a24d:p452:c3"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b25",
+          "category": "paraphrase",
+          "candidate_ids": [
+            "book:23980ff1a36710e3:p135:c1",
+            "book:b3ef0449af989305:p252:c1",
+            "book:4214772346017635:p223:c1",
+            "book:1fa1f73d4577a24d:p745:c2",
+            "book:27f575d58853afc2:p138:c1",
+            "book:8e1be29f8f1141be:p303:c1",
+            "book:8e1be29f8f1141be:p307:c1",
+            "book:8e1be29f8f1141be:p334:c1",
+            "book:4214772346017635:p220:c1",
+            "book:4214772346017635:p229:c1",
+            "book:4214772346017635:p257:c1",
+            "book:b3ef0449af989305:p256:c1",
+            "book:23980ff1a36710e3:p130:c1",
+            "book:59baa5b6b4bde1eb:p338:c1",
+            "book:59baa5b6b4bde1eb:p339:c1"
+          ],
+          "before": [
+            "book:23980ff1a36710e3:p135:c1",
+            "book:b3ef0449af989305:p252:c1",
+            "book:4214772346017635:p223:c1",
+            "book:1fa1f73d4577a24d:p745:c2",
+            "book:27f575d58853afc2:p138:c1"
+          ],
+          "after": [
+            "book:23980ff1a36710e3:p135:c1",
+            "book:4214772346017635:p223:c1",
+            "book:59baa5b6b4bde1eb:p338:c1",
+            "book:b3ef0449af989305:p252:c1",
+            "book:4214772346017635:p229:c1"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b26",
+          "category": "direct",
+          "candidate_ids": [
+            "book:59baa5b6b4bde1eb:p253:c1",
+            "book:1fa1f73d4577a24d:p622:c4",
+            "book:1fa1f73d4577a24d:p622:c5",
+            "book:1fa1f73d4577a24d:p855:c1",
+            "book:1fa1f73d4577a24d:p861:c1",
+            "book:1fa1f73d4577a24d:p890:c1",
+            "book:1fa1f73d4577a24d:p910:c1",
+            "book:4214772346017635:p211:c1",
+            "book:690ef1b93d4de56d:p471:c1",
+            "book:23980ff1a36710e3:p84:c1",
+            "book:59baa5b6b4bde1eb:p90:c1",
+            "book:59baa5b6b4bde1eb:p278:c1",
+            "book:59baa5b6b4bde1eb:p758:c1",
+            "book:59baa5b6b4bde1eb:p806:c1",
+            "book:1fa1f73d4577a24d:p140:c1"
+          ],
+          "before": [
+            "book:59baa5b6b4bde1eb:p253:c1",
+            "book:1fa1f73d4577a24d:p622:c4",
+            "book:1fa1f73d4577a24d:p622:c5",
+            "book:1fa1f73d4577a24d:p855:c1",
+            "book:1fa1f73d4577a24d:p861:c1"
+          ],
+          "after": [
+            "book:59baa5b6b4bde1eb:p253:c1",
+            "book:23980ff1a36710e3:p84:c1",
+            "book:4214772346017635:p211:c1",
+            "book:1fa1f73d4577a24d:p910:c1",
+            "book:59baa5b6b4bde1eb:p758:c1"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b27",
+          "category": "direct",
+          "candidate_ids": [
+            "book:59baa5b6b4bde1eb:p203:c1",
+            "book:59baa5b6b4bde1eb:p204:c1",
+            "book:1fa1f73d4577a24d:p724:c1",
+            "book:1fa1f73d4577a24d:p724:c2",
+            "book:1fa1f73d4577a24d:p730:c3",
+            "book:59baa5b6b4bde1eb:p9:c1",
+            "book:59baa5b6b4bde1eb:p206:c1",
+            "book:1fa1f73d4577a24d:p282:c1",
+            "book:1fa1f73d4577a24d:p428:c1",
+            "book:1fa1f73d4577a24d:p437:c1",
+            "book:1fa1f73d4577a24d:p438:c1",
+            "book:1fa1f73d4577a24d:p447:c1",
+            "book:1fa1f73d4577a24d:p478:c1",
+            "book:1fa1f73d4577a24d:p491:c2",
+            "book:1fa1f73d4577a24d:p492:c1"
+          ],
+          "before": [
+            "book:59baa5b6b4bde1eb:p203:c1",
+            "book:59baa5b6b4bde1eb:p204:c1",
+            "book:1fa1f73d4577a24d:p724:c1",
+            "book:1fa1f73d4577a24d:p724:c2",
+            "book:1fa1f73d4577a24d:p730:c3"
+          ],
+          "after": [
+            "book:59baa5b6b4bde1eb:p204:c1",
+            "book:59baa5b6b4bde1eb:p203:c1",
+            "book:59baa5b6b4bde1eb:p206:c1",
+            "book:59baa5b6b4bde1eb:p9:c1",
+            "book:1fa1f73d4577a24d:p730:c3"
+          ],
+          "before_first_gold_rank": 2,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b28",
+          "category": "direct",
+          "candidate_ids": [
+            "book:1fa1f73d4577a24d:p514:c1",
+            "book:1fa1f73d4577a24d:p537:c2",
+            "book:1fa1f73d4577a24d:p697:c1",
+            "book:1fa1f73d4577a24d:p760:c3",
+            "book:4214772346017635:p360:c1",
+            "book:59baa5b6b4bde1eb:p371:c1",
+            "book:59baa5b6b4bde1eb:p372:c1",
+            "book:1fa1f73d4577a24d:p66:c1",
+            "book:1fa1f73d4577a24d:p429:c1",
+            "book:1fa1f73d4577a24d:p445:c1",
+            "book:1fa1f73d4577a24d:p461:c1",
+            "book:1fa1f73d4577a24d:p509:c1",
+            "book:1fa1f73d4577a24d:p706:c3",
+            "book:1fa1f73d4577a24d:p727:c4",
+            "book:1fa1f73d4577a24d:p760:c1"
+          ],
+          "before": [
+            "book:1fa1f73d4577a24d:p514:c1",
+            "book:1fa1f73d4577a24d:p537:c2",
+            "book:1fa1f73d4577a24d:p697:c1",
+            "book:1fa1f73d4577a24d:p760:c3",
+            "book:4214772346017635:p360:c1"
+          ],
+          "after": [
+            "book:59baa5b6b4bde1eb:p371:c1",
+            "book:4214772346017635:p360:c1",
+            "book:59baa5b6b4bde1eb:p372:c1",
+            "book:1fa1f73d4577a24d:p509:c1",
+            "book:1fa1f73d4577a24d:p537:c2"
+          ],
+          "before_first_gold_rank": null,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "b29",
+          "category": "direct",
+          "candidate_ids": [
+            "book:1fa1f73d4577a24d:p622:c5",
+            "book:1fa1f73d4577a24d:p623:c3",
+            "book:1fa1f73d4577a24d:p7:c1",
+            "book:1fa1f73d4577a24d:p19:c2",
+            "book:1fa1f73d4577a24d:p41:c3",
+            "book:1fa1f73d4577a24d:p52:c2",
+            "book:1fa1f73d4577a24d:p146:c1",
+            "book:1fa1f73d4577a24d:p530:c1",
+            "book:1fa1f73d4577a24d:p641:c1",
+            "book:1fa1f73d4577a24d:p702:c4",
+            "book:1fa1f73d4577a24d:p982:c1",
+            "book:8e1be29f8f1141be:p55:c1",
+            "book:8e1be29f8f1141be:p228:c1",
+            "book:8e1be29f8f1141be:p430:c1",
+            "book:4214772346017635:p31:c1"
+          ],
+          "before": [
+            "book:1fa1f73d4577a24d:p622:c5",
+            "book:1fa1f73d4577a24d:p623:c3",
+            "book:1fa1f73d4577a24d:p7:c1",
+            "book:1fa1f73d4577a24d:p19:c2",
+            "book:1fa1f73d4577a24d:p41:c3"
+          ],
+          "after": [
+            "book:1fa1f73d4577a24d:p52:c2",
+            "book:1fa1f73d4577a24d:p41:c3",
+            "book:1fa1f73d4577a24d:p623:c3",
+            "book:1fa1f73d4577a24d:p7:c1",
+            "book:4214772346017635:p31:c1"
+          ],
+          "before_first_gold_rank": null,
+          "after_first_gold_rank": null
+        },
+        {
+          "id": "b30",
+          "category": "direct",
+          "candidate_ids": [
+            "book:27f575d58853afc2:p62:c1",
+            "book:27f575d58853afc2:p253:c1",
+            "book:27f575d58853afc2:p261:c1",
+            "book:690ef1b93d4de56d:p39:c1",
+            "book:23980ff1a36710e3:p123:c1",
+            "book:1fa1f73d4577a24d:p102:c1",
+            "book:1fa1f73d4577a24d:p120:c1",
+            "book:1fa1f73d4577a24d:p125:c1",
+            "book:1fa1f73d4577a24d:p127:c4",
+            "book:1fa1f73d4577a24d:p129:c1",
+            "book:1fa1f73d4577a24d:p149:c5",
+            "book:1fa1f73d4577a24d:p149:c6",
+            "book:1fa1f73d4577a24d:p155:c1",
+            "book:1fa1f73d4577a24d:p156:c1",
+            "book:1fa1f73d4577a24d:p157:c2"
+          ],
+          "before": [
+            "book:27f575d58853afc2:p62:c1",
+            "book:27f575d58853afc2:p253:c1",
+            "book:27f575d58853afc2:p261:c1",
+            "book:690ef1b93d4de56d:p39:c1",
+            "book:23980ff1a36710e3:p123:c1"
+          ],
+          "after": [
+            "book:27f575d58853afc2:p62:c1",
+            "book:690ef1b93d4de56d:p39:c1",
+            "book:27f575d58853afc2:p253:c1",
+            "book:23980ff1a36710e3:p123:c1",
+            "book:27f575d58853afc2:p261:c1"
+          ],
+          "before_first_gold_rank": 1,
+          "after_first_gold_rank": 1
+        },
+        {
+          "id": "o01",
+          "category": "out_of_scope",
+          "candidate_ids": [
+            "book:1fa1f73d4577a24d:p6:c4",
+            "book:1fa1f73d4577a24d:p7:c1",
+            "book:1fa1f73d4577a24d:p18:c2",
+            "book:1fa1f73d4577a24d:p19:c2",
+            "book:1fa1f73d4577a24d:p31:c2",
+            "book:1fa1f73d4577a24d:p41:c3",
+            "book:1fa1f73d4577a24d:p46:c3",
+            "book:1fa1f73d4577a24d:p46:c4",
+            "book:1fa1f73d4577a24d:p46:c5",
+            "book:1fa1f73d4577a24d:p52:c2",
+            "book:1fa1f73d4577a24d:p54:c1",
+            "book:1fa1f73d4577a24d:p54:c2",
+            "book:1fa1f73d4577a24d:p59:c1",
+            "book:1fa1f73d4577a24d:p60:c1",
+            "book:1fa1f73d4577a24d:p61:c1"
+          ],
+          "before": [
+            "book:1fa1f73d4577a24d:p6:c4",
+            "book:1fa1f73d4577a24d:p7:c1",
+            "book:1fa1f73d4577a24d:p18:c2",
+            "book:1fa1f73d4577a24d:p19:c2",
+            "book:1fa1f73d4577a24d:p31:c2"
+          ],
+          "after": [
+            "book:1fa1f73d4577a24d:p54:c1",
+            "book:1fa1f73d4577a24d:p46:c5",
+            "book:1fa1f73d4577a24d:p19:c2",
+            "book:1fa1f73d4577a24d:p46:c3",
+            "book:1fa1f73d4577a24d:p41:c3"
+          ],
+          "before_first_gold_rank": null,
+          "after_first_gold_rank": null
+        },
+        {
+          "id": "o02",
+          "category": "out_of_scope",
+          "candidate_ids": [
+            "book:1fa1f73d4577a24d:p32:c3",
+            "book:1fa1f73d4577a24d:p63:c1",
+            "book:1fa1f73d4577a24d:p63:c2",
+            "book:1fa1f73d4577a24d:p72:c2",
+            "book:1fa1f73d4577a24d:p79:c2",
+            "book:1fa1f73d4577a24d:p120:c1",
+            "book:1fa1f73d4577a24d:p129:c1",
+            "book:1fa1f73d4577a24d:p138:c1",
+            "book:1fa1f73d4577a24d:p149:c2",
+            "book:1fa1f73d4577a24d:p149:c4",
+            "book:1fa1f73d4577a24d:p149:c6",
+            "book:1fa1f73d4577a24d:p151:c1",
+            "book:1fa1f73d4577a24d:p164:c2",
+            "book:1fa1f73d4577a24d:p284:c2",
+            "book:1fa1f73d4577a24d:p420:c3"
+          ],
+          "before": [
+            "book:1fa1f73d4577a24d:p32:c3",
+            "book:1fa1f73d4577a24d:p63:c1",
+            "book:1fa1f73d4577a24d:p63:c2",
+            "book:1fa1f73d4577a24d:p72:c2",
+            "book:1fa1f73d4577a24d:p79:c2"
+          ],
+          "after": [
+            "book:1fa1f73d4577a24d:p72:c2",
+            "book:1fa1f73d4577a24d:p284:c2",
+            "book:1fa1f73d4577a24d:p63:c2",
+            "book:1fa1f73d4577a24d:p149:c6",
+            "book:1fa1f73d4577a24d:p79:c2"
+          ],
+          "before_first_gold_rank": null,
+          "after_first_gold_rank": null
+        },
+        {
+          "id": "o03",
+          "category": "out_of_scope",
+          "candidate_ids": [
+            "book:1fa1f73d4577a24d:p6:c1",
+            "book:1fa1f73d4577a24d:p7:c2",
+            "book:1fa1f73d4577a24d:p7:c6",
+            "book:1fa1f73d4577a24d:p9:c2",
+            "book:1fa1f73d4577a24d:p10:c1",
+            "book:1fa1f73d4577a24d:p12:c1",
+            "book:1fa1f73d4577a24d:p12:c4",
+            "book:1fa1f73d4577a24d:p12:c5",
+            "book:1fa1f73d4577a24d:p13:c1",
+            "book:1fa1f73d4577a24d:p15:c1",
+            "book:1fa1f73d4577a24d:p18:c1",
+            "book:1fa1f73d4577a24d:p18:c3",
+            "book:1fa1f73d4577a24d:p19:c4",
+            "book:1fa1f73d4577a24d:p19:c5",
+            "book:1fa1f73d4577a24d:p23:c1"
+          ],
+          "before": [
+            "book:1fa1f73d4577a24d:p6:c1",
+            "book:1fa1f73d4577a24d:p7:c2",
+            "book:1fa1f73d4577a24d:p7:c6",
+            "book:1fa1f73d4577a24d:p9:c2",
+            "book:1fa1f73d4577a24d:p10:c1"
+          ],
+          "after": [
+            "book:1fa1f73d4577a24d:p18:c3",
+            "book:1fa1f73d4577a24d:p19:c4",
+            "book:1fa1f73d4577a24d:p10:c1",
+            "book:1fa1f73d4577a24d:p12:c5",
+            "book:1fa1f73d4577a24d:p18:c1"
+          ],
+          "before_first_gold_rank": null,
+          "after_first_gold_rank": null
+        },
+        {
+          "id": "o04",
+          "category": "out_of_scope",
+          "candidate_ids": [
+            "book:1fa1f73d4577a24d:p42:c2",
+            "book:1fa1f73d4577a24d:p58:c3",
+            "book:1fa1f73d4577a24d:p93:c1",
+            "book:1fa1f73d4577a24d:p148:c5",
+            "book:1fa1f73d4577a24d:p198:c1",
+            "book:1fa1f73d4577a24d:p317:c1",
+            "book:1fa1f73d4577a24d:p441:c1",
+            "book:1fa1f73d4577a24d:p452:c3",
+            "book:1fa1f73d4577a24d:p466:c4",
+            "book:1fa1f73d4577a24d:p495:c3",
+            "book:1fa1f73d4577a24d:p513:c1",
+            "book:1fa1f73d4577a24d:p575:c2",
+            "book:1fa1f73d4577a24d:p588:c4",
+            "book:1fa1f73d4577a24d:p622:c2",
+            "book:1fa1f73d4577a24d:p636:c1"
+          ],
+          "before": [
+            "book:1fa1f73d4577a24d:p42:c2",
+            "book:1fa1f73d4577a24d:p58:c3",
+            "book:1fa1f73d4577a24d:p93:c1",
+            "book:1fa1f73d4577a24d:p148:c5",
+            "book:1fa1f73d4577a24d:p198:c1"
+          ],
+          "after": [
+            "book:1fa1f73d4577a24d:p198:c1",
+            "book:1fa1f73d4577a24d:p317:c1",
+            "book:1fa1f73d4577a24d:p93:c1",
+            "book:1fa1f73d4577a24d:p148:c5",
+            "book:1fa1f73d4577a24d:p513:c1"
+          ],
+          "before_first_gold_rank": null,
+          "after_first_gold_rank": null
+        },
+        {
+          "id": "o05",
+          "category": "out_of_scope",
+          "candidate_ids": [
+            "book:1fa1f73d4577a24d:p63:c3",
+            "book:1fa1f73d4577a24d:p72:c1",
+            "book:1fa1f73d4577a24d:p91:c1",
+            "book:1fa1f73d4577a24d:p123:c1",
+            "book:1fa1f73d4577a24d:p133:c1",
+            "book:1fa1f73d4577a24d:p563:c2",
+            "book:1fa1f73d4577a24d:p840:c1",
+            "book:4214772346017635:p204:c1",
+            "book:1fa1f73d4577a24d:p6:c2",
+            "book:1fa1f73d4577a24d:p6:c4",
+            "book:1fa1f73d4577a24d:p7:c1",
+            "book:1fa1f73d4577a24d:p10:c2",
+            "book:1fa1f73d4577a24d:p17:c2",
+            "book:1fa1f73d4577a24d:p17:c3",
+            "book:1fa1f73d4577a24d:p18:c2"
+          ],
+          "before": [
+            "book:1fa1f73d4577a24d:p63:c3",
+            "book:1fa1f73d4577a24d:p72:c1",
+            "book:1fa1f73d4577a24d:p91:c1",
+            "book:1fa1f73d4577a24d:p123:c1",
+            "book:1fa1f73d4577a24d:p133:c1"
+          ],
+          "after": [
+            "book:1fa1f73d4577a24d:p72:c1",
+            "book:1fa1f73d4577a24d:p563:c2",
+            "book:1fa1f73d4577a24d:p10:c2",
+            "book:1fa1f73d4577a24d:p91:c1",
+            "book:4214772346017635:p204:c1"
+          ],
+          "before_first_gold_rank": null,
+          "after_first_gold_rank": null
+        },
+        {
+          "id": "o06",
+          "category": "out_of_scope",
+          "candidate_ids": [
+            "book:1fa1f73d4577a24d:p814:c1",
+            "book:1fa1f73d4577a24d:p865:c2",
+            "book:8e1be29f8f1141be:p493:c1",
+            "book:1fa1f73d4577a24d:p18:c2",
+            "book:1fa1f73d4577a24d:p19:c4",
+            "book:1fa1f73d4577a24d:p23:c2",
+            "book:1fa1f73d4577a24d:p27:c2",
+            "book:1fa1f73d4577a24d:p46:c3",
+            "book:1fa1f73d4577a24d:p46:c4",
+            "book:1fa1f73d4577a24d:p54:c1",
+            "book:1fa1f73d4577a24d:p62:c2",
+            "book:1fa1f73d4577a24d:p65:c1",
+            "book:1fa1f73d4577a24d:p67:c2",
+            "book:1fa1f73d4577a24d:p72:c2",
+            "book:1fa1f73d4577a24d:p73:c1"
+          ],
+          "before": [
+            "book:1fa1f73d4577a24d:p814:c1",
+            "book:1fa1f73d4577a24d:p865:c2",
+            "book:8e1be29f8f1141be:p493:c1",
+            "book:1fa1f73d4577a24d:p18:c2",
+            "book:1fa1f73d4577a24d:p19:c4"
+          ],
+          "after": [
+            "book:1fa1f73d4577a24d:p54:c1",
+            "book:1fa1f73d4577a24d:p72:c2",
+            "book:1fa1f73d4577a24d:p65:c1",
+            "book:8e1be29f8f1141be:p493:c1",
+            "book:1fa1f73d4577a24d:p46:c4"
+          ],
+          "before_first_gold_rank": null,
+          "after_first_gold_rank": null
+        },
+        {
+          "id": "o07",
+          "category": "out_of_scope",
+          "candidate_ids": [
+            "book:1fa1f73d4577a24d:p677:c3",
+            "book:1fa1f73d4577a24d:p6:c4",
+            "book:1fa1f73d4577a24d:p7:c1",
+            "book:1fa1f73d4577a24d:p9:c1",
+            "book:1fa1f73d4577a24d:p19:c2",
+            "book:1fa1f73d4577a24d:p31:c2",
+            "book:1fa1f73d4577a24d:p41:c3",
+            "book:1fa1f73d4577a24d:p45:c1",
+            "book:1fa1f73d4577a24d:p46:c5",
+            "book:1fa1f73d4577a24d:p52:c2",
+            "book:1fa1f73d4577a24d:p54:c2",
+            "book:1fa1f73d4577a24d:p59:c1",
+            "book:1fa1f73d4577a24d:p60:c1",
+            "book:1fa1f73d4577a24d:p61:c1",
+            "book:1fa1f73d4577a24d:p61:c2"
+          ],
+          "before": [
+            "book:1fa1f73d4577a24d:p677:c3",
+            "book:1fa1f73d4577a24d:p6:c4",
+            "book:1fa1f73d4577a24d:p7:c1",
+            "book:1fa1f73d4577a24d:p9:c1",
+            "book:1fa1f73d4577a24d:p19:c2"
+          ],
+          "after": [
+            "book:1fa1f73d4577a24d:p46:c5",
+            "book:1fa1f73d4577a24d:p54:c2",
+            "book:1fa1f73d4577a24d:p61:c2",
+            "book:1fa1f73d4577a24d:p41:c3",
+            "book:1fa1f73d4577a24d:p7:c1"
+          ],
+          "before_first_gold_rank": null,
+          "after_first_gold_rank": null
+        },
+        {
+          "id": "o08",
+          "category": "out_of_scope",
+          "candidate_ids": [
+            "book:1fa1f73d4577a24d:p10:c2",
+            "book:1fa1f73d4577a24d:p14:c1",
+            "book:1fa1f73d4577a24d:p19:c3",
+            "book:1fa1f73d4577a24d:p21:c2",
+            "book:1fa1f73d4577a24d:p21:c3",
+            "book:1fa1f73d4577a24d:p22:c3",
+            "book:1fa1f73d4577a24d:p27:c3",
+            "book:1fa1f73d4577a24d:p27:c4",
+            "book:1fa1f73d4577a24d:p46:c3",
+            "book:1fa1f73d4577a24d:p46:c11",
+            "book:1fa1f73d4577a24d:p58:c1",
+            "book:1fa1f73d4577a24d:p59:c1",
+            "book:1fa1f73d4577a24d:p60:c1",
+            "book:1fa1f73d4577a24d:p61:c1",
+            "book:1fa1f73d4577a24d:p67:c1"
+          ],
+          "before": [
+            "book:1fa1f73d4577a24d:p10:c2",
+            "book:1fa1f73d4577a24d:p14:c1",
+            "book:1fa1f73d4577a24d:p19:c3",
+            "book:1fa1f73d4577a24d:p21:c2",
+            "book:1fa1f73d4577a24d:p21:c3"
+          ],
+          "after": [
+            "book:1fa1f73d4577a24d:p27:c3",
+            "book:1fa1f73d4577a24d:p21:c2",
+            "book:1fa1f73d4577a24d:p59:c1",
+            "book:1fa1f73d4577a24d:p46:c11",
+            "book:1fa1f73d4577a24d:p67:c1"
+          ],
+          "before_first_gold_rank": null,
+          "after_first_gold_rank": null
+        },
+        {
+          "id": "o09",
+          "category": "out_of_scope",
+          "candidate_ids": [
+            "book:1fa1f73d4577a24d:p408:c1",
+            "book:1fa1f73d4577a24d:p6:c4",
+            "book:1fa1f73d4577a24d:p7:c1",
+            "book:1fa1f73d4577a24d:p18:c2",
+            "book:1fa1f73d4577a24d:p19:c2",
+            "book:1fa1f73d4577a24d:p31:c2",
+            "book:1fa1f73d4577a24d:p41:c3",
+            "book:1fa1f73d4577a24d:p46:c3",
+            "book:1fa1f73d4577a24d:p46:c4",
+            "book:1fa1f73d4577a24d:p46:c5",
+            "book:1fa1f73d4577a24d:p52:c2",
+            "book:1fa1f73d4577a24d:p54:c1",
+            "book:1fa1f73d4577a24d:p54:c2",
+            "book:1fa1f73d4577a24d:p59:c1",
+            "book:1fa1f73d4577a24d:p60:c1"
+          ],
+          "before": [
+            "book:1fa1f73d4577a24d:p408:c1",
+            "book:1fa1f73d4577a24d:p6:c4",
+            "book:1fa1f73d4577a24d:p7:c1",
+            "book:1fa1f73d4577a24d:p18:c2",
+            "book:1fa1f73d4577a24d:p19:c2"
+          ],
+          "after": [
+            "book:1fa1f73d4577a24d:p54:c1",
+            "book:1fa1f73d4577a24d:p46:c5",
+            "book:1fa1f73d4577a24d:p46:c3",
+            "book:1fa1f73d4577a24d:p31:c2",
+            "book:1fa1f73d4577a24d:p41:c3"
+          ],
+          "before_first_gold_rank": null,
+          "after_first_gold_rank": null
+        },
+        {
+          "id": "o10",
+          "category": "out_of_scope",
+          "candidate_ids": [
+            "book:1fa1f73d4577a24d:p32:c1",
+            "book:1fa1f73d4577a24d:p32:c2",
+            "book:1fa1f73d4577a24d:p164:c2",
+            "book:1fa1f73d4577a24d:p920:c3",
+            "book:1fa1f73d4577a24d:p921:c1",
+            "book:1fa1f73d4577a24d:p928:c1",
+            "book:1fa1f73d4577a24d:p932:c2",
+            "book:1fa1f73d4577a24d:p948:c2",
+            "book:1fa1f73d4577a24d:p6:c1",
+            "book:1fa1f73d4577a24d:p6:c4",
+            "book:1fa1f73d4577a24d:p7:c1",
+            "book:1fa1f73d4577a24d:p19:c2",
+            "book:1fa1f73d4577a24d:p24:c1",
+            "book:1fa1f73d4577a24d:p24:c2",
+            "book:1fa1f73d4577a24d:p24:c3"
+          ],
+          "before": [
+            "book:1fa1f73d4577a24d:p32:c1",
+            "book:1fa1f73d4577a24d:p32:c2",
+            "book:1fa1f73d4577a24d:p164:c2",
+            "book:1fa1f73d4577a24d:p920:c3",
+            "book:1fa1f73d4577a24d:p921:c1"
+          ],
+          "after": [
+            "book:1fa1f73d4577a24d:p32:c2",
+            "book:1fa1f73d4577a24d:p921:c1",
+            "book:1fa1f73d4577a24d:p928:c1",
+            "book:1fa1f73d4577a24d:p24:c3",
+            "book:1fa1f73d4577a24d:p6:c4"
+          ],
+          "before_first_gold_rank": null,
+          "after_first_gold_rank": null
+        }
+      ],
+      "latency_ms": {
+        "first_stage": {
+          "median": 56.17,
+          "p95": 70.73
+        },
+        "rerank_only": {
+          "median": 3286.7,
+          "p95": 3351.98
+        },
+        "combined": {
+          "median": 3343.71,
+          "p95": 3411.99
+        }
+      }
+    }
+  }
+}

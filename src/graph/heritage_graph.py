@@ -26,6 +26,7 @@ class HeritageKnowledgeGraph:
     # 节点类型定义
     NODE_TYPES = {
         "craft": "技艺",
+        "category": "非遗门类",
         "material": "材料",
         "tool": "工具",
         "inheritor": "传承人",

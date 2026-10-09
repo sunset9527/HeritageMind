@@ -12,31 +12,25 @@ const layoutOptions = [
 const filterOptions = [
   { value: null, label: '全部类型' },
   { value: 'craft', label: '技艺' },
-  { value: 'material', label: '材料' },
-  { value: 'tool', label: '工具' },
+  { value: 'category', label: '非遗门类' },
   { value: 'inheritor', label: '传承人' },
   { value: 'region', label: '地域' },
-  { value: 'dynasty', label: '朝代' },
   { value: 'source', label: '来源资料' },
 ]
 
 const nodeColors: Record<string, string> = {
   craft: '#FF6B6B',
-  material: '#4ECDC4',
-  tool: '#45B7D1',
+  category: '#4ECDC4',
   inheritor: '#96CEB4',
   region: '#FFEAA7',
-  dynasty: '#DDA0DD',
   source: '#5C6BC0',
 }
 
 const nodeLabels: Record<string, string> = {
   craft: '技艺',
-  material: '材料',
-  tool: '工具',
+  category: '非遗门类',
   inheritor: '传承人',
   region: '地域',
-  dynasty: '朝代',
   source: '来源资料',
 }
 
@@ -55,22 +49,22 @@ onMounted(async () => {
     <p class="page-kicker">关系探索</p>
     <h1 class="page-title">知识图谱</h1>
     <p class="page-intro">
-      非遗技艺 · 材料 · 工具 · 传承人 · 地域 · 朝代 多维关联
+      当前活动图书语料中的项目 · 门类 · 地域 · 传承人 · 图书来源关联
     </p>
 
     <!-- Stats -->
     <div class="grid grid-cols-3 gap-4 mb-6">
-      <div class="card graph-stat text-center">
-        <div class="stat-num">{{ totalNodes }}</div>
-        <div class="stat-label">节点总数</div>
+      <div class="card graph-stat text-center" style="background: #293025">
+        <div data-testid="graph-node-count" class="stat-num" style="color: #f4f0e7">{{ totalNodes }}</div>
+        <div data-testid="graph-node-label" class="stat-label" style="color: #d3d8cc">节点总数</div>
       </div>
-      <div class="card graph-stat text-center">
-        <div class="stat-num">{{ totalEdges }}</div>
-        <div class="stat-label">关系边数</div>
+      <div class="card graph-stat text-center" style="background: #293025">
+        <div class="stat-num" style="color: #f4f0e7">{{ totalEdges }}</div>
+        <div class="stat-label" style="color: #d3d8cc">关系边数</div>
       </div>
-      <div class="card graph-stat text-center">
-        <div class="stat-num">{{ nodeTypeCount }} 种</div>
-        <div class="stat-label">节点类型</div>
+      <div class="card graph-stat text-center" style="background: #293025">
+        <div class="stat-num" style="color: #f4f0e7">{{ nodeTypeCount }} 种</div>
+        <div class="stat-label" style="color: #d3d8cc">节点类型</div>
       </div>
     </div>
 
@@ -131,5 +125,5 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.graph-stat { background: #fffaf0; border-top: 3px solid var(--heritage); }.graph-stat:nth-child(2) { border-top-color: var(--history); }.graph-stat:nth-child(3) { border-top-color: var(--accent); }
+.graph-stat { border-top: 3px solid var(--heritage); }.graph-stat:nth-child(2) { border-top-color: var(--history); }.graph-stat:nth-child(3) { border-top-color: var(--accent); }
 </style>

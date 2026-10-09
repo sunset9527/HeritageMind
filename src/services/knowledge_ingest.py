@@ -2,12 +2,14 @@
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from pathlib import Path
 
 from sqlalchemy.orm import Session
 
+from src.database import SessionLocal, init_db
 from src.models.knowledge import KnowledgeDocument, KnowledgeIngestRun
 from src.models.platform import CraftEntry, SourceEvidence
-from src.services.knowledge_manifest import KnowledgeManifest
+from src.services.knowledge_manifest import KnowledgeManifest, load_manifest
 from src.services.platform_content import make_slug
 
 
@@ -17,6 +19,9 @@ class IngestResult:
     updated_count: int
     skipped_count: int
     run_id: int
+
+
+DEFAULT_MANIFEST_PATH = Path(__file__).resolve().parents[2] / "data" / "knowledge_sources" / "manifest.json"
 
 
 def ingest_manifest(db: Session, manifest: KnowledgeManifest, *, actor_id: int | None) -> IngestResult:
@@ -88,3 +93,18 @@ def ingest_manifest(db: Session, manifest: KnowledgeManifest, *, actor_id: int |
         skipped_count=skipped_count,
         run_id=run.id,
     )
+
+
+def run_configured_manifest_import(manifest_path: Path = DEFAULT_MANIFEST_PATH) -> IngestResult:
+    """Import the reviewed local manifest as one committed database transaction."""
+    init_db()
+    db = SessionLocal()
+    try:
+        result = ingest_manifest(db, load_manifest(manifest_path), actor_id=None)
+        db.commit()
+        return result
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()

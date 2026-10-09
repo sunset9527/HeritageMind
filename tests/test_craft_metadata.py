@@ -38,7 +38,7 @@ def test_build_craft_metadata_groups_evidence_and_keeps_uncertain_fields_honest(
 
     corpus_path = _write_active_corpus(tmp_path, [
         _document(12, "传统技艺类：景泰蓝制作技艺。景泰蓝以铜胎、掐丝和点蓝工艺闻名。"),
-        _document(13, "景泰蓝制作技艺国家级代表性传承人钟连盛，长期从事景泰蓝创作。"),
+        _document(13, "景泰蓝制作技艺国家级代表性传承人钟连盛，长期从事景泰蓝创作。", book_title="国家级非物质文化遗产项目代表性传承人大典 第1卷"),
         _document(14, "张三参观了景泰蓝制作技艺展览。"),
     ])
 
@@ -188,14 +188,52 @@ def test_build_craft_metadata_attaches_explicit_inheritor_from_a_general_book_to
 
     corpus_path = _write_active_corpus(tmp_path, [
         _document(1, "民间文学（共计2项）\nI-1\n布洛陀广西壮族自治区\nI-2\n白蛇传传说浙江省", book_title="第一批国家级非物质文化遗产名录图典"),
-        _document(2, "布洛陀国家级代表性传承人张三，长期从事相关传承工作。", book_title="传承人大典"),
+        _document(2, "布洛陀国家级代表性传承人张三，长期从事相关传承工作。", book_title="国家级非物质文化遗产项目代表性传承人大典 第1卷"),
     ])
 
     result = build_craft_metadata(corpus_path)
     buluotuo = next(item for item in result["projects"] if item["project_name"] == "布洛陀")
 
     assert buluotuo["inheritors"][0]["name"] == "张三"
-    assert buluotuo["inheritors"][0]["evidence"][0]["book_title"] == "传承人大典"
+    assert buluotuo["inheritors"][0]["evidence"][0]["book_title"] == "国家级非物质文化遗产项目代表性传承人大典 第1卷"
+
+
+def test_build_craft_metadata_ignores_person_mentions_outside_the_inheritor_volume(tmp_path):
+    from src.services.craft_metadata import build_craft_metadata
+
+    corpus_path = _write_active_corpus(tmp_path, [
+        _document(1, "民间文学（共计2项）\nI-1\n布洛陀广西壮族自治区\nI-2\n白蛇传传说浙江省"),
+        _document(2, "布洛陀国家级代表性传承人张三，长期从事相关传承工作。", book_title="非遗通识读本"),
+        _document(3, "布洛陀国家级代表性传承人李四，长期从事相关传承工作。", book_title="国家级非物质文化遗产项目代表性传承人大典 第1卷"),
+    ])
+
+    result = build_craft_metadata(corpus_path)
+    buluotuo = next(item for item in result["projects"] if item["project_name"] == "布洛陀")
+    assert [person["name"] for person in buluotuo["inheritors"]] == ["李四"]
+
+
+def test_build_craft_metadata_never_creates_column_header_as_a_project(tmp_path):
+    from src.services.craft_metadata import build_craft_metadata
+
+    corpus_path = _write_active_corpus(tmp_path, [
+        _document(1, "民俗（共计2项）\nX-1\n申报地区或单位：山东省菏泽市\nX-2\n枣梆山东省菏泽市", book_title="第二批国家级非物质文化遗产名录简介"),
+    ])
+
+    result = build_craft_metadata(corpus_path)
+    assert "申报地区或单位" not in [item["project_name"] for item in result["projects"]]
+
+
+def test_build_craft_metadata_does_not_use_the_catalogue_as_the_encyclopedia_description(tmp_path):
+    from src.services.craft_metadata import build_craft_metadata
+
+    corpus_path = _write_active_corpus(tmp_path, [
+        _document(1, "民间文学（共计2项）\nI-1\n布洛陀广西壮族自治区\nI-2\n白蛇传传说浙江省"),
+        _document(2, "布洛陀\n申报地区或单位：广西壮族自治区田阳县\n布洛陀是壮族的长篇诗体创世神话。", book_title="第一批国家级非物质文化遗产名录图典"),
+    ])
+
+    result = build_craft_metadata(corpus_path)
+    buluotuo = next(item for item in result["projects"] if item["project_name"] == "布洛陀")
+    assert buluotuo["description"]["text"] == "布洛陀是壮族的长篇诗体创世神话。"
 
 
 def test_build_craft_metadata_does_not_treat_inheritor_status_text_as_a_person_name(tmp_path):
@@ -244,3 +282,39 @@ def test_build_craft_metadata_rejects_a_category_name_captured_as_an_explicit_pr
     ])
 
     assert build_craft_metadata(corpus_path)["projects"] == []
+
+
+def test_profile_description_skips_ocr_caption_before_substantive_sentence():
+    from src.services.craft_metadata import _profile_description
+
+    text = (
+        "布洛陀\n申报地区或单位：\n布洛陀经博环社\n市海陀散北山\n"
+        "广西壮族自治区田阳县\n2布洛陀\n"
+        "布洛陀是壮族先民口碑文学中的创世神话人物，在当地长期口头传承。"
+    )
+
+    assert _profile_description(text, "布洛陀", "第一批国家级非物质文化遗产名录图典") == (
+        "布洛陀是壮族先民口碑文学中的创世神话人物，在当地长期口头传承。"
+    )
+
+
+def test_profile_description_skips_form_fields_and_keeps_clean_sentence():
+    from src.services.craft_metadata import _profile_description
+
+    text = "皮影戏\n申报地区或单位：陕西省\n皮影戏·华县皮影戏申报地区或单位：陕西省项目保护单位：某机构皮影戏形成于清代。"
+
+    assert _profile_description(text, "皮影戏", "第三批国家级非物质文化遗产名录图典 上") == "皮影戏形成于清代。"
+
+
+def test_profile_description_keeps_two_book_sentences_for_context():
+    from src.services.craft_metadata import _profile_description
+
+    text = (
+        "湘剧\n申报地区或单位：湖南省\n"
+        "湘剧是湖南省的地方戏曲，流传于湘南。"
+        "它融合了昆腔和高腔，形成鲜明的地方声腔。"
+    )
+
+    assert _profile_description(text, "湘剧", "第一批国家级非物质文化遗产名录图典") == (
+        "湘剧是湖南省的地方戏曲，流传于湘南。它融合了昆腔和高腔，形成鲜明的地方声腔。"
+    )

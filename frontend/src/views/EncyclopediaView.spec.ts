@@ -38,7 +38,7 @@ describe('EncyclopediaView', () => {
     await flushPromises()
 
     expect(listEncyclopedia).toHaveBeenCalledTimes(2)
-    expect(wrapper.text()).toContain('暂未发布百科条目')
+    expect(wrapper.text()).toContain('当前图书语料暂未生成百科条目')
   })
 
   it('uses the shared image component instead of constructing a static image path', async () => {
@@ -57,5 +57,7 @@ describe('EncyclopediaView', () => {
     const image = wrapper.getComponent(EncyclopediaImage)
     expect(image.props('image')).toEqual({ url: null, status: 'unavailable' })
     expect(wrapper.html()).not.toContain('/crafts/土家族民间故事.jpg')
+    expect(wrapper.get('h2').classes()).toContain('entry-card-title')
+    expect(wrapper.get('.entry-copy p').classes()).toContain('entry-card-summary')
   })
 })

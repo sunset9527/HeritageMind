@@ -17,10 +17,11 @@ EXPECTED_COUNTS = {
 }
 
 
-def test_retrieval_v1_has_fixed_case_mix_and_resolvable_evidence_ids():
+def test_retrieval_v1_has_fixed_case_mix_and_resolvable_evidence_ids(tmp_path):
     cases = load_retrieval_cases(DATASET_PATH)
     counts = Counter(case["category"] for case in cases)
-    available_ids = {document["id"] for document in HeritageDocumentLoader().load_craft_documents()}
+    legacy_loader = HeritageDocumentLoader(local_books_corpus_path=tmp_path / "inactive_books")
+    available_ids = {document["id"] for document in legacy_loader.load_craft_documents()}
 
     assert len(cases) == 120
     assert counts == EXPECTED_COUNTS

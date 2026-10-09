@@ -17,6 +17,7 @@ import logging
 logging.basicConfig(level=logging.ERROR)
 
 from config import Settings, settings
+from src.retrieval.document_loader import HeritageDocumentLoader
 from src.retrieval.retriever import MultiSourceRetriever
 
 Q_SEMANTIC = "哪个非遗项目的雕刻技法最擅长表现人物？"
@@ -74,11 +75,13 @@ class TestRerankerWiring:
         finally:
             settings.reranker_enabled = old
 
-    def test_craft_boost_rank1_protected(self):
+    def test_craft_boost_rank1_protected(self, tmp_path):
         """技艺名置顶文档保持 rank1（硬规则不被 rerank/排序冲掉）"""
         old = settings.reranker_enabled
         settings.reranker_enabled = False
-        retriever = _new_retriever()
+        retriever = MultiSourceRetriever(
+            document_loader=HeritageDocumentLoader(local_books_corpus_path=tmp_path / "inactive_books")
+        )
         try:
             results = retriever.retrieve(Q_CRAFT, top_k=5)
             assert results, "检索不应为空"

@@ -14,6 +14,7 @@ P2优化测试：⑤技艺名精确匹配置顶 + ①「技艺→工序→细节
 
 import os
 import sys
+from tempfile import TemporaryDirectory
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -292,9 +293,9 @@ class TestHierarchicalGrouping:
 
 class TestRealDataSmoke:
 
-    def test_real_docs_craft_name_full_coverage(self):
+    def test_real_docs_craft_name_full_coverage(self, tmp_path):
         """真实 loader：所有文档的 metadata.craft_name 全部是中文名（不再回退拼音）"""
-        loader = HeritageDocumentLoader()
+        loader = HeritageDocumentLoader(local_books_corpus_path=tmp_path / "inactive_books")
         docs = loader.load_craft_documents()
         manifest = load_manifest(Path(__file__).parents[1] / "data" / "knowledge_sources" / "manifest.json")
         assert len(docs) == 23 + len(manifest.documents)
@@ -302,9 +303,9 @@ class TestRealDataSmoke:
         assert missing == [], f"仍有文档 craft_name 回退为拼音 id: {missing}"
         print(f"\n[真实数据] 已加载 {len(docs)} 篇，craft_name 中文名覆盖率 100%")
 
-    def test_real_docs_include_published_curated_evidence_metadata(self):
+    def test_real_docs_include_published_curated_evidence_metadata(self, tmp_path):
         """来源化资料必须带稳定文档键、来源和已发布状态，供引用链路复用。"""
-        docs = HeritageDocumentLoader().load_craft_documents()
+        docs = HeritageDocumentLoader(local_books_corpus_path=tmp_path / "inactive_books").load_craft_documents()
         curated = next(doc for doc in docs if doc["id"] == "curated:jingtailan-ihchina-001")
 
         assert curated["metadata"]["craft_id"] == "jingtailan"
@@ -313,9 +314,11 @@ class TestRealDataSmoke:
         assert curated["metadata"]["publication_status"] == "published"
         assert curated["metadata"]["source_url"].startswith("https://www.ihchina.cn/")
 
-    def test_real_docs_boost_rank1(self):
+    def test_real_docs_boost_rank1(self, tmp_path):
         """真实数据：query 含技艺名 → 该技艺文档必在 rank1"""
-        retriever = MultiSourceRetriever()
+        retriever = MultiSourceRetriever(
+            document_loader=HeritageDocumentLoader(local_books_corpus_path=tmp_path / "inactive_books")
+        )
         for query, expect_id in [
             ("景泰蓝的制作工艺是怎样的？", "jingtailan"),
             ("苏绣有哪些艺术特色？", "suxiu"),
@@ -327,9 +330,11 @@ class TestRealDataSmoke:
             print(f"[真实置顶] {query[:18]}… → rank1={ids[0]}")
             assert ids[0] == expect_id, f"query='{query}' rank1 应为 {expect_id}，实际 {ids}"
 
-    def test_real_docs_no_craft_query_unchanged(self):
+    def test_real_docs_no_craft_query_unchanged(self, tmp_path):
         """真实数据：不含技艺名的难题 → 置顶开关不影响排序（零回归）"""
-        retriever = MultiSourceRetriever()
+        retriever = MultiSourceRetriever(
+            document_loader=HeritageDocumentLoader(local_books_corpus_path=tmp_path / "inactive_books")
+        )
         old = settings.craft_boost_enabled
         try:
             settings.craft_boost_enabled = False
@@ -341,9 +346,11 @@ class TestRealDataSmoke:
         print(f"\n[真实零回归] 关闭: {off_ids} | 开启: {on_ids}")
         assert off_ids == on_ids
 
-    def test_real_docs_retrieve_grouped(self):
+    def test_real_docs_retrieve_grouped(self, tmp_path):
         """真实数据：retrieve_grouped 返回完整技艺视图（整篇文档场景每组 1 篇）"""
-        retriever = MultiSourceRetriever()
+        retriever = MultiSourceRetriever(
+            document_loader=HeritageDocumentLoader(local_books_corpus_path=tmp_path / "inactive_books")
+        )
         result = retriever.retrieve_grouped("景泰蓝的制作工艺", top_k=3)
         assert result["matched_crafts"] == ["景泰蓝"]
         assert "jingtailan" in result["groups"]
@@ -379,9 +386,10 @@ def main():
         if name.startswith("test_"):
             getattr(t, name)()
     t = TestRealDataSmoke()
-    for name in dir(t):
-        if name.startswith("test_"):
-            getattr(t, name)()
+    with TemporaryDirectory() as test_dir:
+        for name in dir(t):
+            if name.startswith("test_"):
+                getattr(t, name)(Path(test_dir))
     print("\n" + "=" * 60)
     print("全部测试通过 ✅")
     print("=" * 60)

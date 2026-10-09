@@ -23,4 +23,21 @@ describe('CraftDetailView', () => {
 
     expect(wrapper.getComponent(EncyclopediaImage).props('image')).toEqual({ url: null, status: 'unavailable' })
   })
+
+  it('renders full detail content once without repeating the card summary', async () => {
+    vi.mocked(getCraft).mockResolvedValue({
+      name: '苗族古歌',
+      slug: '苗族古歌',
+      summary: '用于列表的简短摘要。',
+      content: '来自书籍的完整正文。',
+      image: { url: '/local-books/images/craft', status: 'extracted' },
+    })
+
+    const wrapper = mount(CraftDetailView)
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('来自书籍的完整正文。')
+    expect(wrapper.text()).not.toContain('用于列表的简短摘要。')
+    expect(wrapper.get('.detail-copy').classes()).toContain('detail-copy')
+  })
 })

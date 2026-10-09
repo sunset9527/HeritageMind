@@ -68,6 +68,9 @@ _REGION_PATTERN = re.compile(
 _EXCERPT_LIMIT = 280
 _DESCRIPTION_LIMIT = 900
 _NON_NAME_FRAGMENTS = ("严重", "萎缩", "日益", "减少", "稀少", "不足", "困难", "画作", "作品", "表演", "场景")
+_NON_PROJECT_NAMES = frozenset({
+    "申报地区或单位", "申报地区", "项目保护单位", "保护单位", "项目名称", "序号", "编号",
+})
 
 
 def build_craft_metadata(corpus_path: Path | str) -> dict[str, Any]:
@@ -149,7 +152,6 @@ def _add_document_projects(
             project = projects.setdefault(_normalized_project_name(project_name), _new_project(project_name))
             catalogue_evidence = _evidence(document_id, segment, metadata)
             _append_unique_evidence(project["sources"], catalogue_evidence)
-            _append_description(project["description"], catalogue_evidence)
             if current_category:
                 _set_category(project, current_category, catalogue_evidence)
             if region:
@@ -165,7 +167,6 @@ def _add_document_projects(
     for project_name in explicit_project_names:
         project = projects.setdefault(_normalized_project_name(project_name), _new_project(project_name))
         _append_unique_evidence(project["sources"], evidence)
-        _append_description(project["description"], evidence)
         _set_category(project, category_by_project[project_name], evidence)
 
     project_names = list(OrderedDict.fromkeys(
@@ -175,14 +176,16 @@ def _add_document_projects(
         key = _normalized_project_name(project_name)
         project = projects.setdefault(key, _new_project(project_name))
         _append_unique_evidence(project["sources"], evidence)
-        _append_description(project["description"], evidence)
         category = category_by_project.get(project_name)
         if category:
             _set_category(project, category, evidence)
+        profile_text = _profile_description(text, project_name, book_title)
+        if profile_text:
+            _append_description(project["description"], _evidence(document_id, profile_text, metadata))
 
     # Multiple project names on one page make an automatic person-to-project
     # association ambiguous, so leave those candidates out rather than guessing.
-    if len(project_names) != 1:
+    if len(project_names) != 1 or not _is_inheritor_volume(book_title):
         return
     project = projects[_normalized_project_name(project_names[0])]
     for match in _INHERITOR_PATTERN.finditer(text):
@@ -227,8 +230,10 @@ def _attach_known_project_mentions(
         matched_keys.add(_normalized_project_name(match.group(0)))
         evidence = _evidence(document_id, text, metadata, focus_start=match.start(), focus_end=match.end())
         _append_unique_evidence(project["sources"], evidence)
-        _append_description(project["description"], evidence)
-    if len(matched_keys) == 1:
+        profile_text = _profile_description(text, match.group(0), str(metadata.get("book_title", "")))
+        if profile_text:
+            _append_description(project["description"], _evidence(document_id, profile_text, metadata))
+    if len(matched_keys) == 1 and _is_inheritor_volume(str(metadata.get("book_title", ""))):
         project = projects[matched_keys.pop()]
         for match in _INHERITOR_PATTERN.finditer(text):
             evidence = _evidence(document_id, text, metadata, focus_start=match.start(), focus_end=match.end())
@@ -292,11 +297,49 @@ def _is_valid_project_name(name: str) -> bool:
     return (
         2 <= len(name) <= 48
         and "共计" not in name
+        and name not in _NON_PROJECT_NAMES
+        and not any(name.startswith(label) for label in ("申报地区", "项目保护单位"))
         and not re.search(r"[0-9A-Za-z\[\]-]", name)
         and not name.startswith("族")
         and name not in _CATEGORY_ALIASES
         and name not in _CATEGORY_ALIASES.values()
     )
+
+
+def _is_inheritor_volume(book_title: str) -> bool:
+    return "国家级非物质文化遗产项目代表性传承人大典" in book_title
+
+
+def _profile_description(text: str, project_name: str, book_title: str) -> str:
+    """Keep a project page's own prose, never a catalogue or an incidental mention."""
+    if not _is_catalogue_source(book_title) or re.match(r"\s*(?:目录|附录|索引)", text):
+        return ""
+    heading = re.search(rf"(?m)^\s*(?:\d{{1,4}}\s*)?{re.escape(project_name)}\s*$", text)
+    if heading is None:
+        return ""
+    section = text[heading.end():]
+    if "申报地区或单位" not in section[:500]:
+        return ""
+    # The first project sentence can follow noisy captions and OCR metadata.
+    # OCR wraps prose mid-sentence; match after removing those line breaks.
+    prose = re.sub(r"\s+", "", section)
+    preferred = re.search(
+        rf"{re.escape(project_name)}(?:是|为|源于|起源于|发源于|流传于|主要|属于|形成于|由|位于|兴起于|始于)[^。！？]{{2,220}}[。！？]",
+        prose,
+    )
+    match = preferred or re.search(rf"{re.escape(project_name)}[^。！？]{{18,220}}[。！？]", prose)
+    if match is None:
+        return ""
+    description = re.sub(r"\s+", "", match.group(0))
+    blocked = ("申报地区或单位", "项目保护单位", "名录图典", "目录", "索引", "附录")
+    if any(marker in description for marker in blocked):
+        return ""
+    following = re.match(r"[^。！？]{12,190}[。！？]", prose[match.end():])
+    if following is not None:
+        next_sentence = following.group(0)
+        if not any(marker in next_sentence for marker in blocked) and not re.match(r"\d{1,4}[IVXⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ]", next_sentence):
+            description += next_sentence
+    return description[:_DESCRIPTION_LIMIT]
 
 
 def _set_category(project: dict[str, Any], category: str, evidence: dict[str, Any]) -> None:

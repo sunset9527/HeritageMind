@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-type ImageStatus = 'verified' | 'legacy_local' | 'pending_review' | 'unavailable'
+type ImageStatus = 'verified' | 'legacy_local' | 'pending_review' | 'extracted' | 'unavailable'
 
 const props = defineProps<{
   name: string

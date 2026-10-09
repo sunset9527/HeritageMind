@@ -79,6 +79,8 @@ from src.models.favorite import Favorite
 from src.models.platform import AuditLog, CraftEntry, GraphChangeCandidate, InheritorProfile, SourceEvidence
 from src.services.graph_curation import merge_approved_candidate
 from src.services.platform_content import approve_graph_candidate, make_slug, reject_graph_candidate
+from src.services.dashboard_summary import get_dashboard_summary
+from src.services.active_books_public import ActiveBooksProjection
 from src.services.encyclopedia_images import load_image_manifest, resolve_encyclopedia_image
 from src.services.ai_search import AiSearchService
 from src.services.mcp_tools import search_web
@@ -98,6 +100,7 @@ knowledge_graph: Optional[HeritageKnowledgeGraph] = None
 document_loader: Optional[HeritageDocumentLoader] = None
 retriever: Optional[MultiSourceRetriever] = None
 visualizer: Optional[HeritageGraphVisualizer] = None
+active_books_projection: Optional[ActiveBooksProjection] = None
 
 # v1.4 音频转写 worker 生命周期句柄（lifespan 启动/停止）
 _worker_stop: Optional[asyncio.Event] = None
@@ -107,7 +110,7 @@ _worker_task: Optional[asyncio.Task] = None
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """应用生命周期管理"""
-    global workflow, knowledge_graph, document_loader, retriever, visualizer
+    global workflow, knowledge_graph, document_loader, retriever, visualizer, active_books_projection
     global _worker_stop, _worker_task
 
     logger.info("初始化应用...")
@@ -127,16 +130,24 @@ async def lifespan(app: FastAPI):
     # 初始化工作流
     workflow = get_workflow()
     
-    # 初始化知识图谱
-    knowledge_graph = HeritageKnowledgeGraph()
-    if not knowledge_graph.load_from_json():
-        # 如果文件不存在，构建初始图谱
-        builder = KnowledgeGraphBuilder()
-        knowledge_graph = builder.build_initial_graph()
-        knowledge_graph.save_to_json()
+    # 活动图书语料存在时，公开图谱与百科共用同一份元数据；旧图谱/数据库仍保留。
+    active_books_projection = ActiveBooksProjection.try_load()
+    if active_books_projection is not None:
+        knowledge_graph = active_books_projection.build_graph()
+        logger.info(
+            "已从活动图书元数据构建公开图谱：%s 个项目",
+            active_books_projection.dashboard_summary()["project_count"],
+        )
+    else:
+        knowledge_graph = HeritageKnowledgeGraph()
+        if not knowledge_graph.load_from_json():
+            # 如果文件不存在，构建初始图谱
+            builder = KnowledgeGraphBuilder()
+            knowledge_graph = builder.build_initial_graph()
+            knowledge_graph.save_to_json()
 
-    from src.services.graph_projection import sync_curated_source_nodes
-    sync_curated_source_nodes(knowledge_graph)
+        from src.services.graph_projection import sync_curated_source_nodes
+        sync_curated_source_nodes(knowledge_graph)
     
     # 初始化可视化器
     visualizer = HeritageGraphVisualizer(knowledge_graph)
@@ -701,9 +712,10 @@ async def upload_document(
 async def get_graph_stats(db: Session = Depends(get_db)):
     """获取知识图谱统计信息"""
     try:
-        from src.services.graph_projection import sync_curated_source_nodes, sync_published_platform_nodes
-        sync_published_platform_nodes(db, knowledge_graph)
-        sync_curated_source_nodes(knowledge_graph)
+        if active_books_projection is None:
+            from src.services.graph_projection import sync_curated_source_nodes, sync_published_platform_nodes
+            sync_published_platform_nodes(db, knowledge_graph)
+            sync_curated_source_nodes(knowledge_graph)
         stats = knowledge_graph.get_statistics()
         return GraphStatsResponse(**stats)
     except Exception as e:
@@ -726,9 +738,10 @@ async def visualize_graph(
     try:
         if visualizer is None:
             raise HTTPException(status_code=503, detail="可视化器未初始化")
-        from src.services.graph_projection import sync_curated_source_nodes, sync_published_platform_nodes
-        sync_published_platform_nodes(db, knowledge_graph)
-        sync_curated_source_nodes(knowledge_graph)
+        if active_books_projection is None:
+            from src.services.graph_projection import sync_curated_source_nodes, sync_published_platform_nodes
+            sync_published_platform_nodes(db, knowledge_graph)
+            sync_curated_source_nodes(knowledge_graph)
         
         html = visualizer.render_interactive(
             filter_type=filter_type,
@@ -822,6 +835,13 @@ async def switch_profile(request: UserProfileRequest):
 @app.get("/crafts")
 async def list_crafts():
     """获取支持的技艺列表"""
+    if active_books_projection is not None:
+        return {
+            "crafts": [
+                {"id": entry["slug"], "name": entry["name"]}
+                for entry in active_books_projection.encyclopedia_entries()
+            ]
+        }
     return {
         "crafts": [
             {"id": "jingtailan", "name": "景泰蓝"},
@@ -913,6 +933,18 @@ async def get_server_config():
         base_url=base,
         provider=provider,
     )
+
+
+# ============================================================================
+# 首页统计接口
+# ============================================================================
+
+@app.get("/dashboard/summary")
+async def get_dashboard_summary_endpoint(db: Session = Depends(get_db)):
+    """获取当前公开知识库的首页统计。"""
+    if active_books_projection is not None:
+        return active_books_projection.dashboard_summary()
+    return get_dashboard_summary(db)
 
 
 # ============================================================================
@@ -1676,10 +1708,24 @@ def _serialize_inheritor(row: InheritorProfile, db: Session) -> Dict[str, Any]:
 
 @app.get("/encyclopedia")
 async def list_encyclopedia(db: Session = Depends(get_db)):
-    """List only published craft entries for the public encyclopedia."""
+    """List the public encyclopedia for the active corpus when available."""
+    if active_books_projection is not None:
+        return {"items": active_books_projection.encyclopedia_entries()}
     rows = db.query(CraftEntry).filter(CraftEntry.status == "published").order_by(CraftEntry.name).all()
     images = _load_public_encyclopedia_images()
     return {"items": [_serialize_encyclopedia_entry(row, images) for row in rows]}
+
+
+@app.get("/local-books/images/{craft_id}")
+async def get_active_books_image(craft_id: str):
+    """Serve only the image explicitly manifested for an active-books project."""
+    if active_books_projection is None:
+        raise HTTPException(status_code=404, detail="当前没有活动图书图片资产")
+    image_path = active_books_projection.image_file(craft_id)
+    if image_path is None:
+        raise HTTPException(status_code=404, detail="图书图片不存在")
+    from fastapi.responses import FileResponse
+    return FileResponse(str(image_path))
 
 
 @app.post("/search/ai")
@@ -1698,6 +1744,11 @@ async def ai_search(request: GraphQueryRequest, db: Session = Depends(get_db)):
 
 @app.get("/encyclopedia/{slug}")
 async def get_encyclopedia_entry(slug: str, db: Session = Depends(get_db)):
+    if active_books_projection is not None:
+        entry = active_books_projection.encyclopedia_entry(slug)
+        if entry is None:
+            raise HTTPException(status_code=404, detail="技艺百科条目不存在")
+        return entry
     row = db.query(CraftEntry).filter(CraftEntry.slug == slug, CraftEntry.status == "published").first()
     if row is None:
         raise HTTPException(status_code=404, detail="技艺百科条目不存在")
@@ -1710,12 +1761,19 @@ async def get_encyclopedia_entry(slug: str, db: Session = Depends(get_db)):
 
 @app.get("/inheritors")
 async def list_inheritors(db: Session = Depends(get_db)):
+    if active_books_projection is not None:
+        return {"items": active_books_projection.inheritors()}
     rows = db.query(InheritorProfile).filter(InheritorProfile.status == "published").order_by(InheritorProfile.name).all()
     return {"items": [_serialize_inheritor(row, db) for row in rows]}
 
 
 @app.get("/inheritors/{slug}")
 async def get_inheritor(slug: str, db: Session = Depends(get_db)):
+    if active_books_projection is not None:
+        inheritor = active_books_projection.inheritor(slug)
+        if inheritor is None:
+            raise HTTPException(status_code=404, detail="传承人档案不存在")
+        return inheritor
     row = db.query(InheritorProfile).filter(InheritorProfile.slug == slug, InheritorProfile.status == "published").first()
     if row is None:
         raise HTTPException(status_code=404, detail="传承人档案不存在")

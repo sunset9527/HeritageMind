@@ -1,6 +1,8 @@
 import axios, { type AxiosInstance, type InternalAxiosRequestConfig, type AxiosError } from 'axios'
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api'
+// 开发环境使用 Vite 的 /api 代理；生产环境使用部署时注入的地址或同源反向代理。
+const configuredApiBase = import.meta.env.VITE_API_BASE_URL
+const API_BASE = configuredApiBase || '/api'
 export const PAGE_REQUEST_TIMEOUT_MS = 15_000
 
 const client: AxiosInstance = axios.create({
