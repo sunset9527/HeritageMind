@@ -51,38 +51,8 @@ services:
       retries: 3
       start_period: 15s
 
-  # === Streamlit frontend (existing, default) ===
+  # === Vue 3 development frontend (default) ===
   frontend:
-    build:
-      context: .
-      target: frontend
-    container_name: heritagemind-frontend
-    restart: unless-stopped
-    ports:
-      - "8501:8501"
-    environment:
-      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-sk-your-key-here}
-      - API_BASE_URL=http://api:8000
-      - DATABASE_URL=mysql+pymysql://root:heritagemind@mysql:3306/heritagemind
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-change-me-in-production}
-      - LOG_LEVEL=INFO
-    volumes:
-      - chroma_data:/app/data/chroma_db
-      - craft_data:/app/data
-    depends_on:
-      api:
-        condition: service_healthy
-    networks:
-      - heritagemind-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 20s
-
-  # === Vue 3 frontend (opt-in via --profile vue) ===
-  vue-frontend:
     build:
       context: ./frontend
       target: development
@@ -101,8 +71,6 @@ services:
         condition: service_healthy
     networks:
       - heritagemind-network
-    profiles:
-      - vue
 
   # === Nginx production (opt-in via --profile production) ===
   vue-nginx:

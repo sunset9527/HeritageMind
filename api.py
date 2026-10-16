@@ -86,6 +86,7 @@ from src.services.ai_search import AiSearchService
 from src.services.mcp_tools import search_web
 from src.retrieval.multimodal_search import search_images_by_text, search_similar_images, index_all_images
 from src.utils.llm import set_request_override, clear_request_override
+from src.app_metadata import API_DESCRIPTION, APP_VERSION
 
 # 配置日志
 logging.basicConfig(
@@ -190,23 +191,8 @@ async def lifespan(app: FastAPI):
 # 创建FastAPI应用
 app = FastAPI(
     title="HeritageMind — 非遗知识平台 API",
-    description="""
-## 概述
-基于多智能体协作的非遗知识问答与保存平台。
-
-### 功能模块
-- **问答**: 三专家 Agent 协作 + 辩论引擎 + 知识缺口检测
-- **知识库**: 23 种非遗技艺，55,000 字知识文档
-- **知识图谱**: 65 节点交互式可视化
-- **多媒体**: 图片/音频上传与存储
-- **认证**: JWT 登录注册
-
-### 使用方式
-1. 无需认证的端点可直接调用（如 /query、/graph/visualize）
-2. 需要认证的端点（🔒）需携带 `Authorization: Bearer <token>`
-3. 可通过 `X-API-Key` / `X-Model` header 自定义 LLM 配置
-    """,
-    version="2.2.0",
+    description=API_DESCRIPTION,
+    version=APP_VERSION,
     lifespan=lifespan,
     docs_url="/docs",
     redoc_url="/redoc",
@@ -280,13 +266,6 @@ class UserProfileRequest(BaseModel):
     profile: str = Field(..., description="用户画像类型")
 
 
-class DocumentUploadResponse(BaseModel):
-    """文档上传响应"""
-    success: bool
-    document_id: str
-    message: str
-
-
 class GraphStatsResponse(BaseModel):
     """图谱统计响应"""
     total_nodes: int
@@ -304,7 +283,7 @@ async def root():
     """根路径"""
     return {
         "name": "非遗知识问答系统API",
-        "version": "1.0.0",
+        "version": APP_VERSION,
         "description": "基于多智能体的非遗知识保存与传承平台"
     }
 
@@ -624,84 +603,6 @@ async def query_stream(
                 clear_request_override()
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
-
-
-@app.post("/query/simple")
-async def simple_query(
-    question: str = Form(...),
-    user_profile: str = Form("curious"),
-    include_narrative: bool = Form(False)
-):
-    """
-    简化版问答接口（表单提交）
-    """
-    try:
-        response = workflow.query(
-            question=question,
-            user_profile=user_profile,
-            include_narrative=include_narrative
-        )
-        
-        return response
-        
-    except Exception as e:
-        logger.error(f"问答处理失败: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-# ============================================================================
-# 文档上传接口
-# ============================================================================
-
-@app.post("/upload", response_model=DocumentUploadResponse)
-async def upload_document(
-    craft_id: str = Form(...),
-    file: UploadFile = File(...)
-):
-    """
-    上传非遗文档
-    
-    - **craft_id**: 技艺ID
-    - **file**: 文档文件（支持txt, md, json）
-    """
-    try:
-        # 检查文件类型
-        allowed_types = ["text/plain", "text/markdown", "application/json"]
-        if file.content_type not in allowed_types:
-            raise HTTPException(
-                status_code=400,
-                detail=f"不支持的文件类型: {file.content_type}"
-            )
-        
-        # 读取内容
-        content = await file.read()
-        text_content = content.decode("utf-8")
-        
-        # 保存文档
-        success = document_loader.add_document(craft_id, text_content)
-        
-        if success:
-            # 重新加载检索器
-            global retriever
-            retriever = MultiSourceRetriever(document_loader=document_loader)
-            
-            return DocumentUploadResponse(
-                success=True,
-                document_id=craft_id,
-                message=f"文档 {craft_id} 上传成功"
-            )
-        else:
-            return DocumentUploadResponse(
-                success=False,
-                document_id=craft_id,
-                message="文档保存失败"
-            )
-            
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"文档上传失败: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ============================================================================

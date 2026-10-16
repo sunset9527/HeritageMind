@@ -446,64 +446,6 @@ class DispatcherAgent:
                 parts.append(f"[{expert_display}]\n\n{responses[expert]}\n")
         
         return "\n".join(parts)
-    def _get_agent_type(self, agent_name: str) -> str:
-        """获取Agent类型描述"""
-        types = {
-            "craft_expert": "技艺知识专家",
-            "history_expert": "历史文化专家",
-            "heritage_expert": "传承现状专家"
-        }
-        return types.get(agent_name, "未知专家")
-    
-    def fuse_with_debate(
-        # ⚠️ TODO(2026-08-15): 当前未接线，仅供后续功能扩展
-        self,
-        responses: Dict[str, str],
-        question: str,
-        analysis: Dict[str, Any],
-        agents: Optional[Dict[str, Any]] = None,
-        user_profile: str = "curious"
-    ) -> Tuple[str, Optional[Dict[str, Any]]]:
-        """
-        使用辩论引擎融合回答（如果适合辩论）
-        
-        Args:
-            responses: 专家回答字典 {agent_name: response}
-            question: 原始问题
-            analysis: 问题分析结果
-            agents: 可选的Agent实例字典
-            user_profile: 用户画像类型
-        
-        Returns:
-            Tuple[str, Optional[Dict]]: (融合结果, 辩论会话字典或None)
-        """
-        # 如果没有辩论引擎，降级到普通融合
-        if self.debate_engine is None:
-            return self.fuse_responses(responses, question, user_profile), None
-        
-        # 判断是否应该使用辩论模式
-        should_debate, mode = self.debate_engine.should_debate(question, analysis)
-        
-        if not should_debate:
-            return self.fuse_responses(responses, question, user_profile), None
-        
-        logger.info(f"触发辩论模式: {mode}")
-        
-        try:
-            # 运行完整辩论流程
-            debate_session = self.debate_engine.run_full_debate(
-                question=question,
-                mode=mode,
-                context={"analysis": analysis, "initial_responses": responses}
-            )
-            
-            # 返回综合结果和辩论会话
-            return debate_session.final_synthesis, debate_session.to_dict()
-            
-        except Exception as e:
-            logger.error(f"辩论融合失败，降级到普通融合: {e}")
-            return self.fuse_responses(responses, question, user_profile), None
-
     def should_trigger_debate(
         self,
         question: str,

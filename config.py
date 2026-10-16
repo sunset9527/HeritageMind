@@ -117,9 +117,6 @@ class Settings(BaseSettings):
     api_host: str = Field(default="0.0.0.0", description="API服务主机")
     api_port: int = Field(default=8001, description="API服务端口")
 
-    # Streamlit配置
-    streamlit_port: int = Field(default=8501, description="Streamlit服务端口")
-
     # 日志配置
     log_level: str = Field(
         default="INFO",

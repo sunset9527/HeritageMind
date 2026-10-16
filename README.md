@@ -26,6 +26,26 @@ FastAPI · Vue 3 · LangGraph · BM25 · BGE-M3 · bge-reranker-base · ChromaDB
 | 工程回归 | 最近一次后端全量离线回归为 331 通过、1 跳过、0 失败，耗时 35.56 秒；见 [工程化测试记录](docs/engineering-test-2026-10-05.md)。 |
 | 历史资料包 | data/knowledge_sources 保留已发布来源化资料，供未激活图书语料时加载；它不等于当前活动图书语料。 |
 
+## 交付状态
+
+| 状态 | 当前边界 |
+| --- | --- |
+| 已实现 | Vue 3 前端、FastAPI API、登录与会话、混合检索、Reranker、多 Agent、引用与知识缺口、百科、图谱、媒体和管理后台均已有代码与自动化回归。 |
+| 占位或降级 | Redis、Embedding、Reranker、Whisper、MCP 等可选依赖不可用时会走受限路径；具体降级是否完整可见仍需后续阶段收口。 |
+| 依赖外部配置 | LLM 问答、本地向量模型、Reranker、联网 MCP 工具及生产数据库需要相应密钥、模型或服务；百度/Web 搜索不是默认可用能力。 |
+| 尚未上线 | 域名、HTTPS、当前主分支 ECS 部署、生产备份恢复与回滚尚未完成最终验收，不应描述为生产可用。 |
+
+## 统计口径
+
+| 口径 | 含义 |
+| --- | --- |
+| 官方名录覆盖 | 已建立的国家级名录索引广度，不代表完成深度研究。 |
+| 深度资料覆盖 | 满足来源、事实维度、审核和发布要求的项目数量。 |
+| 图片覆盖 | 具备已核验来源和展示许可的实拍图项目数量。 |
+| 活动图书片段 | 当前本地活动语料的切分结果，不等于公开可分发数据。 |
+| 图谱规模 | 当前运行版本的节点与边，应从 `/graph/stats` 动态读取。 |
+| 检索指标 | 固定语料、题集、模型和参数下的召回表现，不等于回答正确率。 |
+
 ## 功能与边界
 
 | 能力 | 实现 | 边界 |
@@ -268,14 +288,14 @@ CPU 上 rerank 增量延迟中位数为：项目关键词 3,359.66 ms/题，BM25
 Compose 的 api 服务与 MySQL 运行在 Docker 网络中，API 内部端口是 8000；Vue 开发容器通过 http://api:8000 访问它。
 
 ~~~powershell
-# 启动 MySQL 与 API；不会启动默认 Streamlit 前端
-docker compose up --build mysql api
+# 默认启动 MySQL、API 与 Vue 开发前端；浏览器访问 5173
+docker compose up --build
 
-# 另开窗口启动 Vue 开发容器，浏览器访问 5173
-docker compose --profile vue up --build vue-frontend
+# 生产静态前端使用 Nginx profile；正式上线前仍需完成部署验收
+docker compose --profile production up --build mysql api vue-nginx
 ~~~
 
-默认 frontend 服务是保留的 Streamlit 界面，端口 8501；Vue 服务是 vue profile 下的 vue-frontend。生产 Nginx 使用 production profile；域名、HTTPS、管理员初始化和上线边界见 [部署交接文档](deploy/README.md)。不要把 Compose 示例默认密码用于公网。
+默认 `frontend` 服务是 Vue 开发服务器。生产 Nginx 使用 production profile；域名、HTTPS、管理员初始化和上线边界见 [部署交接文档](deploy/README.md)。不要把 Compose 示例默认密码用于公网。
 
 ## 7. 常见问题
 
