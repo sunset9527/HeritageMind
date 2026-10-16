@@ -23,7 +23,7 @@ FastAPI · Vue 3 · LangGraph · BM25 · BGE-M3 · bge-reranker-base · ChromaDB
 | 默认可切换语料 | 可将本地 PDF/EPUB 构建为活动图书语料；正文目录被 Git 忽略，避免提交受版权保护的原文。 |
 | 当前评测语料 | heritage-books-v1：10 本书、7,688 个片段；哈希、题集和判分口径见 [图书评测协议](docs/evaluation-protocol-books-v1.md)。 |
 | Rerank 对照 | 本地 bge-reranker-base 实际加载成功；120 题中，项目关键词 Recall@1 从 61.0% 升至 80.0%，BM25 Recall@5 从 89.0% 升至 95.0%。 |
-| 工程回归 | 最近一次后端全量离线回归为 331 通过、1 跳过、0 失败，耗时 35.56 秒；见 [工程化测试记录](docs/engineering-test-2026-10-05.md)。 |
+| 工程回归 | 阶段 0 基线 `6e6b156`：后端 338 通过、1 跳过、0 失败；前端 19 个测试文件、32 个测试通过；见 [2026-10-16 工程测试记录](docs/engineering-test-2026-10-16.md)。 |
 | 历史资料包 | data/knowledge_sources 保留已发布来源化资料，供未激活图书语料时加载；它不等于当前活动图书语料。 |
 
 ## 交付状态
@@ -176,7 +176,7 @@ npm run dev
 python -m pytest tests/ -q -p no:cacheprovider --basetemp (Join-Path $env:TEMP 'heritagemind-pytest')
 ~~~
 
-该命令不调用外部 LLM 或本地模型。2026-10-06 当前工作区复测为 331 passed, 1 skipped；测试范围与首次失败定位见 [工程化测试记录](docs/engineering-test-2026-10-05.md)。
+该命令不调用外部 LLM 或本地模型。2026-10-16 在阶段 0 基线 `6e6b156` 上复测为 338 passed、1 skipped、7 warnings，耗时 40.13 秒；警告来源与验证边界见 [工程测试记录](docs/engineering-test-2026-10-16.md)。
 
 ### 前端测试和构建
 
@@ -187,7 +187,7 @@ npm run build
 Pop-Location
 ~~~
 
-npm run build 同时执行 Vue TypeScript 检查和 Vite 生产构建。最近一次工程记录中，28 个前端测试通过，构建通过但入口包有体积警告；构建成功不能替代性能验收。
+npm run build 同时执行 Vue TypeScript 检查和 Vite 生产构建。2026-10-15 验证为 19 个测试文件、32 个测试通过；构建成功，但入口 JS 为 1,096.62 kB（gzip 364.79 kB），仍有大于 500 kB 的分包警告。构建成功不能替代阶段 5 的性能验收。
 
 ### 静态检查现状
 
