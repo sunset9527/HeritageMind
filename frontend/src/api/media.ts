@@ -1,5 +1,7 @@
 import client from './client'
 
+export type MediaStatus = 'draft' | 'reviewed' | 'published'
+
 export interface MediaItem {
   id: number
   craft_name: string
@@ -9,6 +11,7 @@ export interface MediaItem {
   mime_type: string
   size: number
   title: string
+  status: MediaStatus
   created_at: string
   url: string
 }
@@ -38,6 +41,18 @@ export async function listMedia(craftName?: string, mediaType?: string): Promise
   return data
 }
 
+export async function listAdminMedia(craftName?: string, mediaType?: string): Promise<MediaListResponse> {
+  const params: Record<string, string> = {}
+  if (craftName) params.craft_name = craftName
+  if (mediaType) params.media_type = mediaType
+  const { data } = await client.get<MediaListResponse>('/admin/media', { params })
+  return data
+}
+
 export async function deleteMedia(id: number): Promise<void> {
   await client.delete(`/media/${id}`)
+}
+
+export async function updateMediaStatus(id: number, status: MediaStatus): Promise<void> {
+  await client.put(`/media/${id}/status`, { status })
 }

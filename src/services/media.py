@@ -69,6 +69,7 @@ def list_media(
     media_type: Optional[str] = None,
     limit: int = 50,
     offset: int = 0,
+    status: Optional[str] = None,
 ) -> tuple:
     """列出媒体文件"""
     stmt = select(MediaDocument)
@@ -76,15 +77,82 @@ def list_media(
         stmt = stmt.where(MediaDocument.craft_name == craft_name)
     if media_type:
         stmt = stmt.where(MediaDocument.media_type == MediaType(media_type))
+    if status:
+        stmt = stmt.where(MediaDocument.status == status)
+    count_stmt = select(func.count()).select_from(stmt.order_by(None).subquery())
     stmt = stmt.order_by(MediaDocument.created_at.desc()).offset(offset).limit(limit)
 
-    total = db.scalar(select(func.count(MediaDocument.id)))
+    total = db.scalar(count_stmt)
     items = db.scalars(stmt).all()
     return items, total or 0
 
 
-def get_media(db: Session, media_id: int) -> Optional[MediaDocument]:
-    return db.get(MediaDocument, media_id)
+def get_media(
+    db: Session,
+    media_id: int,
+    status: Optional[str] = None,
+) -> Optional[MediaDocument]:
+    stmt = select(MediaDocument).where(MediaDocument.id == media_id)
+    if status:
+        stmt = stmt.where(MediaDocument.status == status)
+    return db.scalar(stmt)
+
+
+def get_media_by_storage_key(
+    db: Session,
+    media_type: str,
+    filename: str,
+    status: Optional[str] = None,
+) -> Optional[MediaDocument]:
+    """按数据库记录解析媒体文件，避免公开接口绕过审核状态。"""
+    try:
+        normalized_type = MediaType(media_type)
+    except ValueError:
+        return None
+    stmt = select(MediaDocument).where(
+        MediaDocument.media_type == normalized_type,
+        MediaDocument.filename == filename,
+    )
+    if status:
+        stmt = stmt.where(MediaDocument.status == status)
+    return db.scalar(stmt)
+
+
+def list_published_media(
+    db: Session,
+    craft_name: Optional[str] = None,
+    media_type: Optional[str] = None,
+    limit: int = 50,
+    offset: int = 0,
+) -> tuple:
+    """公开媒体列表：发布状态由服务层固定，调用者不能放宽。"""
+    return list_media(
+        db,
+        craft_name=craft_name,
+        media_type=media_type,
+        limit=limit,
+        offset=offset,
+        status="published",
+    )
+
+
+def get_published_media(db: Session, media_id: int) -> Optional[MediaDocument]:
+    """返回已发布媒体；草稿、审核中和不存在记录均视为不可见。"""
+    return get_media(db, media_id, status="published")
+
+
+def get_published_media_by_storage_name(
+    db: Session,
+    media_type: str,
+    filename: str,
+) -> Optional[MediaDocument]:
+    """按存储名返回已发布媒体，供公开文件路由使用。"""
+    return get_media_by_storage_key(
+        db,
+        media_type=media_type,
+        filename=filename,
+        status="published",
+    )
 
 
 def delete_media(db: Session, media_id: int) -> bool:

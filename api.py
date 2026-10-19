@@ -59,7 +59,17 @@ from src.services.session_memory import (
 from src.models.user_preference import UserPreference
 from src.services.prompt import create_prompt, get_prompt, list_prompts, update_prompt, delete_prompt
 from src.schemas.prompt import PromptCreate, PromptUpdate, PromptResponse, PromptListResponse
-from src.services.media import upload_media, list_media, get_media, delete_media, get_media_url, STORAGE_ROOT
+from src.services.media import (
+    STORAGE_ROOT,
+    delete_media,
+    get_media,
+    get_media_url,
+    get_published_media,
+    get_published_media_by_storage_name,
+    list_media,
+    list_published_media,
+    upload_media,
+)
 from src.schemas.media import MediaResponse, MediaListResponse, MediaUpdateStatus
 from src.models.media import MediaDocument, MediaType
 from src.models.audio_transcript import AudioTranscript, AudioTranscriptStatus
@@ -868,7 +878,12 @@ async def get_document_summary():
 # ============================================================================
 
 @app.get("/prompts", response_model=PromptListResponse)
-async def list_prompt_templates(limit: int = 50, offset: int = 0, db: Session = Depends(get_db)):
+async def list_prompt_templates(
+    limit: int = 50,
+    offset: int = 0,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
     """获取 Prompt 模板列表"""
     items, total = list_prompts(db, limit, offset)
     return PromptListResponse(
@@ -878,7 +893,11 @@ async def list_prompt_templates(limit: int = 50, offset: int = 0, db: Session = 
 
 
 @app.post("/prompts", response_model=PromptResponse)
-async def create_prompt_template(data: PromptCreate, db: Session = Depends(get_db)):
+async def create_prompt_template(
+    data: PromptCreate,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
     """创建 Prompt 模板"""
     existing = await _get_prompt_by_name_safe(db, data.name)
     if existing:
@@ -887,7 +906,11 @@ async def create_prompt_template(data: PromptCreate, db: Session = Depends(get_d
 
 
 @app.get("/prompts/{prompt_id}", response_model=PromptResponse)
-async def get_prompt_template(prompt_id: int, db: Session = Depends(get_db)):
+async def get_prompt_template(
+    prompt_id: int,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
     """获取单个 Prompt 模板"""
     prompt = get_prompt(db, prompt_id)
     if not prompt:
@@ -896,7 +919,12 @@ async def get_prompt_template(prompt_id: int, db: Session = Depends(get_db)):
 
 
 @app.put("/prompts/{prompt_id}", response_model=PromptResponse)
-async def update_prompt_template(prompt_id: int, data: PromptUpdate, db: Session = Depends(get_db)):
+async def update_prompt_template(
+    prompt_id: int,
+    data: PromptUpdate,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
     """更新 Prompt 模板（自动递增版本号）"""
     prompt = update_prompt(db, prompt_id, data)
     if not prompt:
@@ -905,7 +933,11 @@ async def update_prompt_template(prompt_id: int, data: PromptUpdate, db: Session
 
 
 @app.delete("/prompts/{prompt_id}")
-async def delete_prompt_template(prompt_id: int, db: Session = Depends(get_db)):
+async def delete_prompt_template(
+    prompt_id: int,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
     """删除 Prompt 模板"""
     ok = delete_prompt(db, prompt_id)
     if not ok:
@@ -929,6 +961,7 @@ async def upload_media_file(
     craft_name: str = Form(...),
     media_type: str = Form("image"),
     title: str = Form(""),
+    _: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     """上传图片或音频文件"""
@@ -953,23 +986,46 @@ async def upload_media_file(
 @app.get("/media/list", response_model=MediaListResponse)
 async def list_media_files(craft_name: Optional[str] = None, media_type: Optional[str] = None,
                            limit: int = 50, offset: int = 0, db: Session = Depends(get_db)):
-    """列出媒体文件"""
-    items, total = list_media(db, craft_name, media_type, limit, offset)
+    """列出已发布的媒体文件。"""
+    items, total = list_published_media(db, craft_name, media_type, limit, offset)
     result = []
     for item in items:
         r = MediaResponse.model_validate(item); r.url = get_media_url(item); result.append(r)
     return MediaListResponse(items=result, total=total)
 
 
+@app.get("/admin/media", response_model=MediaListResponse)
+async def list_admin_media_files(
+    craft_name: Optional[str] = None,
+    media_type: Optional[str] = None,
+    limit: int = 50,
+    offset: int = 0,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """列出全部媒体文件，包含草稿和处理中的记录。"""
+    items, total = list_media(db, craft_name, media_type, limit, offset)
+    result = []
+    for item in items:
+        response = MediaResponse.model_validate(item)
+        response.url = get_media_url(item) if item.status == "published" else ""
+        result.append(response)
+    return MediaListResponse(items=result, total=total)
+
+
 @app.get("/media/{media_id}", response_model=MediaResponse)
 async def get_media_file(media_id: int, db: Session = Depends(get_db)):
-    doc = get_media(db, media_id)
+    doc = get_published_media(db, media_id)
     if not doc: raise HTTPException(status_code=404, detail="文件不存在")
     resp = MediaResponse.model_validate(doc); resp.url = get_media_url(doc); return resp
 
 
 @app.delete("/media/{media_id}")
-async def delete_media_item(media_id: int, db: Session = Depends(get_db)):
+async def delete_media_item(
+    media_id: int,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
     ok = delete_media(db, media_id)
     if not ok:
         raise HTTPException(status_code=404, detail="文件不存在")
@@ -977,7 +1033,12 @@ async def delete_media_item(media_id: int, db: Session = Depends(get_db)):
 
 
 @app.put("/media/{media_id}/status")
-async def update_media_status(media_id: int, body: MediaUpdateStatus, db: Session = Depends(get_db)):
+async def update_media_status(
+    media_id: int,
+    body: MediaUpdateStatus,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
     doc = get_media(db, media_id)
     if not doc: raise HTTPException(status_code=404, detail="文件不存在")
     doc.status = body.status
@@ -985,7 +1046,10 @@ async def update_media_status(media_id: int, body: MediaUpdateStatus, db: Sessio
     return {"id": media_id, "status": body.status}
 
 @app.post("/knowledge/rebuild-embeddings")
-async def rebuild_embeddings(db: Session = Depends(get_db)):
+async def rebuild_embeddings(
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
     from src.retrieval.embeddings import EmbeddingManager, reset_embedding_model
     reset_embedding_model()
     global retriever
@@ -1000,9 +1064,17 @@ async def delete_media_file(media_id: int, db: Session = Depends(get_db)):
 
 
 @app.get("/media/file/{media_type}/{filename}")
-async def serve_media_file(media_type: str, filename: str):
-    file_path = STORAGE_ROOT / media_type / filename
-    if not file_path.exists(): raise HTTPException(status_code=404, detail="文件不存在")
+async def serve_media_file(
+    media_type: str,
+    filename: str,
+    db: Session = Depends(get_db),
+):
+    doc = get_published_media_by_storage_name(db, media_type, filename)
+    if not doc:
+        raise HTTPException(status_code=404, detail="文件不存在")
+    file_path = STORAGE_ROOT / doc.media_type.value / doc.filename
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="文件不存在")
     from fastapi.responses import FileResponse
     return FileResponse(str(file_path))
 
@@ -1028,7 +1100,10 @@ async def search_similar_image(file: UploadFile = File(...), top_k: int = 6,
 
 
 @app.post("/search/index-images")
-async def rebuild_image_index(db: Session = Depends(get_db)):
+async def rebuild_image_index(
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
     """重建图片向量索引"""
     count = index_all_images(db)
     return {"indexed": count, "message": f"已索引 {count} 张图片"}
@@ -1057,13 +1132,21 @@ def _to_transcript_status(media_id: int, tr: Optional[AudioTranscript]) -> Trans
 
 
 @app.get("/media/{media_id}/transcript", response_model=TranscriptStatusResponse)
-async def get_media_transcript(media_id: int, db: Session = Depends(get_db)):
+async def get_media_transcript(
+    media_id: int,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
     """查询音频转写状态（上传后轮询 UPLOADED→TRANSCRIBING→INDEXED/FAILED）。无记录返回 status=none。"""
     return _to_transcript_status(media_id, get_transcript(db, media_id))
 
 
 @app.post("/media/{media_id}/transcribe", response_model=AudioTranscribeEnqueueResponse)
-async def enqueue_media_transcribe(media_id: int, db: Session = Depends(get_db)):
+async def enqueue_media_transcribe(
+    media_id: int,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
     """手动触发/重试转写：无记录→建 sidecar 入队；UPLOADED/FAILED→复位入队；转写中/已完成→409。"""
     from src.services.queue import push_audio_job
 
@@ -1120,27 +1203,35 @@ async def search_audio(
         if cur is None or h["score"] > cur["score"]:
             best[h["media_id"]] = h
     media_map = {
-        d.id: d for d in db.scalars(select(MediaDocument).where(MediaDocument.id.in_(list(best)))).all()
+        d.id: d for d in db.scalars(select(MediaDocument).where(
+            MediaDocument.id.in_(list(best)),
+            MediaDocument.status == "published",
+        )).all()
     }
     results: List[AudioSearchHit] = []
     for h in best.values():
         d = media_map.get(h["media_id"])
+        if d is None:
+            continue
         results.append(AudioSearchHit(
             media_id=h["media_id"],
             craft_name=h["craft_name"],
-            title=d.title if d else h["title"],
-            original_name=d.original_name if d else "",
-            url=get_media_url(d) if d else "",
+            title=d.title,
+            original_name=d.original_name,
+            url=get_media_url(d),
             snippet=h["snippet"],
             score=h["score"],
-            media_status=d.status if d else "draft",
+            media_status=d.status,
         ))
     results.sort(key=lambda r: r.score, reverse=True)
     return AudioSearchResponse(query=q, top_k=top_k, total=len(results), results=results)
 
 
 @app.post("/search/audio/index")
-async def rebuild_audio_index(db: Session = Depends(get_db)):
+async def rebuild_audio_index(
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
     """重建音频转写向量索引：遍历 status=INDEXED 的 sidecar，用其 full_text 全量重放。"""
     rows = db.scalars(
         select(AudioTranscript).where(AudioTranscript.status == AudioTranscriptStatus.INDEXED.value)
@@ -1163,6 +1254,15 @@ async def rebuild_audio_index(db: Session = Depends(get_db)):
 async def add_favorite(craft_name: str = Form(...), chat_id: Optional[int] = Form(None),
                        note: str = Form(""), current_user: User = Depends(get_current_user),
                        db: Session = Depends(get_db)):
+    if chat_id is not None:
+        from src.models.chat import ChatHistory
+
+        owned_chat_id = db.scalar(select(ChatHistory.id).where(
+            ChatHistory.id == chat_id,
+            ChatHistory.user_id == current_user.id,
+        ))
+        if owned_chat_id is None:
+            raise HTTPException(status_code=404, detail="聊天记录不存在")
     fav = Favorite(user_id=current_user.id, craft_name=craft_name, chat_id=chat_id, note=note)
     db.add(fav); db.commit(); db.refresh(fav)
     return {"id": fav.id, "craft_name": fav.craft_name, "created_at": fav.created_at.isoformat()}
@@ -1238,6 +1338,7 @@ def _get_craft_list():
 
 @app.post("/documents/upload")
 async def upload_document(file: UploadFile = File(...), craft_name: str = Form(...),
+                          _: User = Depends(require_admin),
                           db: Session = Depends(get_db)):
     """上传文档（PDF/Word/Markdown/TXT），自动解析文本"""
     if not file.filename or not file.content_type:

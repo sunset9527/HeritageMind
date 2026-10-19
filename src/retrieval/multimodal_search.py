@@ -33,7 +33,10 @@ def _cosine(a: List[float], b: List[float]) -> float:
 def search_images_by_text(db, query: str, top_k: int = 6) -> List[Dict[str, Any]]:
     """文搜图：用文本描述搜索已上传图片（基于标题+描述向量匹配）"""
     from sqlalchemy import select
-    docs = list(db.scalars(select(MediaDocument).where(MediaDocument.media_type == "image")))
+    docs = list(db.scalars(select(MediaDocument).where(
+        MediaDocument.media_type == "image",
+        MediaDocument.status == "published",
+    )))
 
     if not docs:
         return []
@@ -84,7 +87,10 @@ def search_similar_images(db, image_bytes: bytes, top_k: int = 6) -> List[Dict[s
         pass
 
     from sqlalchemy import select
-    docs = list(db.scalars(select(MediaDocument).where(MediaDocument.media_type == "image")))
+    docs = list(db.scalars(select(MediaDocument).where(
+        MediaDocument.media_type == "image",
+        MediaDocument.status == "published",
+    )))
     results = []
 
     if emb:

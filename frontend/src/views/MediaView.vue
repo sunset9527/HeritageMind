@@ -1,15 +1,26 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { uploadMedia, listMedia, deleteMedia, type MediaItem } from '@/api/media'
+import { computed, ref, onMounted } from 'vue'
+import {
+  uploadMedia,
+  listMedia,
+  listAdminMedia,
+  deleteMedia,
+  updateMediaStatus,
+  type MediaItem,
+  type MediaStatus,
+} from '@/api/media'
 import { getCrafts } from '@/api/meta'
+import { useAuthStore } from '@/stores/auth'
 import type { CraftItem } from '@/types'
 import { ElMessage } from 'element-plus'
 
+const auth = useAuthStore()
 const crafts = ref<CraftItem[]>([])
 const mediaItems = ref<MediaItem[]>([])
 const uploading = ref(false)
 const selectedCraft = ref('')
 const filterType = ref('')
+const isAdmin = computed(() => auth.user?.role === 'admin')
 
 const form = ref({ craft_name: '', media_type: 'image', title: '' })
 
@@ -20,12 +31,14 @@ onMounted(async () => {
 
 async function loadMedia() {
   try {
-    const resp = await listMedia(filterType.value || undefined, filterType.value || undefined)
+    const listFn = isAdmin.value ? listAdminMedia : listMedia
+    const resp = await listFn(selectedCraft.value || undefined, filterType.value || undefined)
     mediaItems.value = resp.items
   } catch { /* */ }
 }
 
 async function handleUpload(e: Event) {
+  if (!isAdmin.value) return
   const input = e.target as HTMLInputElement
   const file = input.files?.[0]
   if (!file || !form.value.craft_name) return
@@ -39,11 +52,26 @@ async function handleUpload(e: Event) {
 }
 
 async function handleDelete(id: number) {
+  if (!isAdmin.value) return
   try {
     await deleteMedia(id)
     ElMessage.success('已删除')
     await loadMedia()
   } catch { ElMessage.error('删除失败') }
+}
+
+async function handleStatusChange(item: MediaItem, event: Event) {
+  if (!isAdmin.value) return
+  const status = (event.target as HTMLSelectElement).value as MediaStatus
+  const previous = item.status
+  item.status = status
+  try {
+    await updateMediaStatus(item.id, status)
+    ElMessage.success('状态已更新')
+  } catch {
+    item.status = previous
+    ElMessage.error('状态更新失败')
+  }
 }
 
 function formatSize(bytes: number) {
@@ -54,11 +82,11 @@ function formatSize(bytes: number) {
 <template>
   <div class="heritage-page max-w-5xl mx-auto px-6 py-10">
     <p class="page-kicker">资料归档</p>
-    <h1 class="page-title">多媒体管理</h1>
-    <p class="page-intro">上传图片和音频，丰富非遗知识库</p>
+    <h1 class="page-title">{{ isAdmin ? '多媒体管理' : '多媒体资源' }}</h1>
+    <p class="page-intro">{{ isAdmin ? '上传图片和音频，丰富非遗知识库' : '浏览已审核发布的非遗图片和音频' }}</p>
 
     <!-- Upload -->
-    <div class="setting-section">
+    <div v-if="isAdmin" class="setting-section">
       <h3>📤 上传文件</h3>
       <div class="flex flex-wrap gap-3 items-end">
         <div>
@@ -93,6 +121,10 @@ function formatSize(bytes: number) {
       <div class="flex items-center justify-between mb-4">
         <h3>🖼️ 媒体库 ({{ mediaItems.length }})</h3>
         <div class="flex gap-2">
+          <select v-model="selectedCraft" @change="loadMedia" class="text-xs border rounded-lg px-2 py-1.5 bg-white">
+            <option value="">全部技艺</option>
+            <option v-for="c in crafts" :key="c.id" :value="c.name">{{ c.name }}</option>
+          </select>
           <select v-model="filterType" @change="loadMedia" class="text-xs border rounded-lg px-2 py-1.5 bg-white">
             <option value="">全部</option>
             <option value="image">图片</option>
@@ -116,9 +148,15 @@ function formatSize(bytes: number) {
           <div class="p-2">
             <div class="text-xs font-medium truncate">{{ item.title || item.original_name }}</div>
             <div class="text-[11px] text-[var(--text-tertiary)]">{{ item.craft_name }} · {{ formatSize(item.size) }}</div>
+            <select v-if="isAdmin" :value="item.status" @change="handleStatusChange(item, $event)"
+                    class="mt-1 w-full text-[11px] border rounded px-1 py-0.5 bg-white">
+              <option value="draft">草稿</option>
+              <option value="reviewed">已审核</option>
+              <option value="published">已发布</option>
+            </select>
           </div>
           <!-- Delete -->
-          <button @click="handleDelete(item.id)"
+          <button v-if="isAdmin" @click="handleDelete(item.id)"
                   class="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/50 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity border-0 cursor-pointer">
             ✕
           </button>
