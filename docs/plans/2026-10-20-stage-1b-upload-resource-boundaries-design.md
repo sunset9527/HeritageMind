@@ -193,7 +193,7 @@ pending -> processing -> ready
 {"version": 1, "kind": "document_parse", "entity_id": 42}
 ```
 
-支持的 `kind` 至少包括文档解析、音频转写、知识索引重建和图片索引维护。
+支持的 `kind` 至少包括文档解析、音频转写、知识索引重建、图片索引维护和音频索引重建。
 
 - 消息只携带任务类型与实体 ID，不携带正文、路径或密钥。
 - worker 使用条件更新原子抢占，重复消息不会重复执行。
@@ -235,6 +235,8 @@ API 不执行 OCR、Whisper、Embedding 或全库索引。独立 worker 由调�
 
 `/search/index-images` 同样改为维护任务，避免接口未来执行真实图片索引时重新阻塞 Web 进程。
 
+`/search/audio/index` 当前会在请求内遍历全部已转写音频并重放向量，同样改为维护任务；重建先写新的版本化 collection，成功后切换活动 collection，失败继续使用旧 collection。
+
 ## 11. API 契约
 
 ### 11.1 调整
@@ -248,6 +250,8 @@ API 不执行 OCR、Whisper、Embedding 或全库索引。独立 worker 由调�
 - `POST /knowledge/rebuild-embeddings`
   - 返回 `202` 和维护任务 ID。
 - `POST /search/index-images`
+  - 返回 `202` 和维护任务 ID。
+- `POST /search/audio/index`
   - 返回 `202` 和维护任务 ID。
 
 ### 11.2 新增管理员接口
