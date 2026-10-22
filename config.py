@@ -3,14 +3,50 @@
 使用pydantic-settings管理配置，API Key从环境变量读取
 """
 
+import json
 import os
-from typing import List, Optional
-from pydantic_settings import BaseSettings
+from ipaddress import ip_address
+from typing import List, Literal, Optional
+from urllib.parse import urlsplit
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field, field_validator
 
 
 class Settings(BaseSettings):
     """系统配置类"""
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore",
+        # 列表同时支持 JSON 和逗号分隔值，由下面的 validator 统一处理。
+        enable_decoding=False,
+    )
+
+    # ================= 生产安全与可靠性边界（阶段 1C/1D） =================
+    app_env: Literal["development", "test", "production"] = Field(default="development")
+    cors_allowed_origins: List[str] = Field(default_factory=list)
+    cors_allow_credentials: bool = Field(default=False)
+    anonymous_query_enabled: bool = Field(default=False)
+    anonymous_query_quota: int = Field(default=20, gt=0)
+    anonymous_query_window_seconds: int = Field(default=60, gt=0)
+    authenticated_query_quota: int = Field(default=120, gt=0)
+    authenticated_query_window_seconds: int = Field(default=60, gt=0)
+    trusted_proxy_ips: List[str] = Field(default_factory=list)
+    trust_proxy_headers: bool = Field(default=False)
+    request_concurrency_limit: int = Field(default=32, gt=0)
+    server_model_timeout_seconds: int = Field(default=60, gt=0)
+    model_connect_timeout_seconds: int = Field(default=10, gt=0)
+    model_read_timeout_seconds: int = Field(default=60, gt=0)
+    hsts_enabled: bool = Field(default=False)
+    require_https: bool = Field(default=False)
+    server_answer_enabled: bool = Field(default=True)
+    allowed_model_base_url_hosts: List[str] = Field(
+        default_factory=lambda: ["api.deepseek.com", "open.bigmodel.cn"]
+    )
+    allow_localhost_model_base_url: bool = Field(default=False)
 
     # DeepSeek API配置
     deepseek_api_key: str = Field(
@@ -416,6 +452,101 @@ class Settings(BaseSettings):
         description="文档、媒体与索引维护任务的统一 Redis 队列 key",
     )
 
+    @field_validator(
+        "cors_allowed_origins",
+        "trusted_proxy_ips",
+        "allowed_model_base_url_hosts",
+        mode="before",
+    )
+    @classmethod
+    def parse_list_setting(cls, value):
+        """支持 JSON 数组或逗号分隔环境变量，拒绝易被忽略的空条目。"""
+        if value is None:
+            return []
+        if isinstance(value, str):
+            text = value.strip()
+            if not text:
+                return []
+            if text.startswith("["):
+                try:
+                    value = json.loads(text)
+                except json.JSONDecodeError as exc:
+                    raise ValueError("列表配置必须是 JSON 数组或逗号分隔字符串") from exc
+            else:
+                value = text.split(",")
+        if not isinstance(value, (list, tuple)):
+            raise ValueError("列表配置必须是 JSON 数组或逗号分隔字符串")
+        items = []
+        for item in value:
+            if not isinstance(item, str) or not item.strip():
+                raise ValueError("列表配置不能包含空条目")
+            items.append(item.strip())
+        return items
+
+    @field_validator("trusted_proxy_ips")
+    @classmethod
+    def validate_trusted_proxy_ips(cls, values: List[str]) -> List[str]:
+        for value in values:
+            try:
+                ip_address(value)
+            except ValueError as exc:
+                raise ValueError("可信代理必须是有效 IP 地址") from exc
+        return values
+
+    @field_validator("allowed_model_base_url_hosts")
+    @classmethod
+    def validate_model_hosts(cls, values: List[str]) -> List[str]:
+        for value in values:
+            if (
+                value == "*"
+                or any(char in value for char in ":/@?#[]")
+                or value.startswith(".")
+                or value.endswith(".")
+                or any(not label or not label.replace("-", "").isalnum() for label in value.split("."))
+            ):
+                raise ValueError("允许的模型主机必须是不含协议、端口或路径的主机名")
+        return values
+
+    @field_validator("cors_allowed_origins")
+    @classmethod
+    def validate_cors_origins(cls, values: List[str]) -> List[str]:
+        for value in values:
+            if value == "*":
+                continue
+            parsed = urlsplit(value)
+            if (
+                parsed.scheme not in {"http", "https"}
+                or not parsed.hostname
+                or parsed.username
+                or parsed.password
+                or parsed.path not in {"", "/"}
+                or parsed.query
+                or parsed.fragment
+            ):
+                raise ValueError("CORS 来源必须是 HTTP(S) origin")
+        return values
+
+    @field_validator("deepseek_base_url", "zhipu_base_url")
+    @classmethod
+    def validate_model_base_url_format(cls, value: str) -> str:
+        """只校验静态 URL 结构；环境策略由 startup_validation 统一决定。"""
+        parsed = urlsplit(value)
+        try:
+            port = parsed.port
+        except ValueError as exc:
+            raise ValueError("模型 Base URL 端口无效") from exc
+        if (
+            parsed.scheme not in {"http", "https"}
+            or not parsed.hostname
+            or parsed.username
+            or parsed.password
+            or parsed.query
+            or parsed.fragment
+            or port is not None and not 1 <= port <= 65535
+        ):
+            raise ValueError("模型 Base URL 必须是无凭据的 HTTP(S) URL")
+        return value
+
     @field_validator("deepseek_api_key", mode="before")
     @classmethod
     def get_api_key_from_env(cls, v: str) -> str:
@@ -436,14 +567,6 @@ class Settings(BaseSettings):
                         pass
                 return ""
         return v
-
-    class Config:
-        """Pydantic配置"""
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = False
-        extra = "ignore"
-
 
 # 全局配置实例
 settings = Settings()
