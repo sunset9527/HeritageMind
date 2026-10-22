@@ -19,6 +19,25 @@
 
 不要将 `.env`、私钥或真实证书提交到 Git。
 
+## 数据迁移与独立 worker
+
+每次发布先迁移数据库，再启动 API 与 worker：
+
+```bash
+docker compose -f docker-compose.production.yml run --rm api python -m alembic upgrade head
+docker compose -f docker-compose.production.yml up -d api worker nginx
+```
+
+Windows 本地开发需另开一个 PowerShell 窗口运行消费者（API 不再内嵌消费者）：
+
+```powershell
+python -m src.workers.upload_worker
+```
+
+用 `/health` 检查 API；用 `docker compose ps` 和 `docker compose logs worker` 检查 worker。后台记录进入 `failed` 时，先查看 `error_code/error_message`，修复依赖或文件问题后再通过管理员重试接口入队，禁止直接改库凑状态。
+
+发布失败时执行 rollback：停止新容器、恢复上一镜像与上一份活动索引清单；只有确认 007 迁移前媒体表来源后才执行 `python -m alembic downgrade 006`。上传卷先备份再回滚，禁止删除共享卷。
+
 ## 管理员初始化（首次部署后执行一次）
 
 系统不会预置管理员账号，也不会把用户名或密码写进仓库。部署完成后，在服务器项目目录执行下列命令；将三个示例值替换成你自己的值，密码至少 12 位。

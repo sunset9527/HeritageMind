@@ -17,6 +17,15 @@ from src.models.favorite import Favorite
 from src.models.audio_transcript import AudioTranscript, AudioTranscriptStatus
 from src.models.platform import AuditLog, CraftEntry, GraphChangeCandidate, InheritorProfile, SourceEvidence
 from src.models.knowledge import KnowledgeDocument, KnowledgeIngestRun
+from src.models.upload import (
+    DocumentProcessingStatus,
+    DocumentUpload,
+    MaintenanceJob,
+    MaintenanceJobKind,
+    ProcessingStatus,
+    ReviewStatus,
+    WorkerHeartbeat,
+)
 
 __all__ = [
     "Base",
@@ -39,4 +48,11 @@ __all__ = [
     "SourceEvidence",
     "KnowledgeDocument",
     "KnowledgeIngestRun",
+    "DocumentProcessingStatus",
+    "DocumentUpload",
+    "MaintenanceJob",
+    "MaintenanceJobKind",
+    "ProcessingStatus",
+    "ReviewStatus",
+    "WorkerHeartbeat",
 ]

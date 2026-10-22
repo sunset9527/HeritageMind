@@ -1,19 +1,22 @@
 """多媒体文件存储服务 — 本地文件系统（可切换 MinIO）"""
+import json
 import os
-import uuid
 import logging
-from typing import Optional, List, BinaryIO
+from typing import Optional
 from pathlib import Path
 from sqlalchemy.orm import Session
 from sqlalchemy import select, func
 
 from config import settings
 from src.models.media import MediaDocument, MediaType
+from src.models.audio_transcript import AudioTranscript, AudioTranscriptStatus
+from src.models.platform import AuditLog
+from src.services.upload_security import StagedUpload, resolve_under
 
 logger = logging.getLogger(__name__)
 
 # 存储根目录
-STORAGE_ROOT = Path(settings.crafts_doc_path).parent / "media"
+STORAGE_ROOT = Path(settings.media_storage_path)
 
 
 def _get_storage_path(media_type: str) -> Path:
@@ -22,44 +25,89 @@ def _get_storage_path(media_type: str) -> Path:
     return p
 
 
-def _generate_filename(original_name: str) -> str:
-    ext = original_name.rsplit(".", 1)[-1] if "." in original_name else ""
-    return f"{uuid.uuid4().hex}.{ext}" if ext else uuid.uuid4().hex
-
-
-def upload_media(
+def persist_staged_media(
     db: Session,
-    file: BinaryIO,
-    original_name: str,
-    mime_type: str,
+    *,
+    staged: StagedUpload,
+    storage_root: Path | str = STORAGE_ROOT,
+    craft_id: str,
     craft_name: str,
     media_type: str,
     title: str = "",
+    uploaded_by_user_id: int | None = None,
 ) -> MediaDocument:
-    """上传媒体文件"""
-    # 保存到本地
-    filename = _generate_filename(original_name)
-    storage_path = _get_storage_path(media_type)
-    file_path = storage_path / filename
+    """原子发布已验证媒体，并在同一事务写媒体、sidecar 与审计记录。
 
-    content = file.read()
-    file_size = len(content)
-    file_path.write_bytes(content)
+    文件先以 ``.part`` 存在。数据库 flush 成功后才原子改名；最终 commit
+    失败则删除已发布文件，避免数据库与文件系统任一侧出现孤儿。
+    """
+    normalized_type = MediaType(media_type)
+    target_directory = Path(storage_root) / normalized_type.value
+    target_directory.mkdir(parents=True, exist_ok=True)
+    final_path = resolve_under(target_directory, staged.storage_name)
+    published = False
 
-    # 写数据库
     doc = MediaDocument(
+        craft_id=craft_id,
         craft_name=craft_name,
-        media_type=MediaType(media_type),
-        filename=filename,
-        original_name=original_name,
-        mime_type=mime_type,
-        size=file_size,
-        title=title or original_name,
+        media_type=normalized_type,
+        filename=staged.storage_name,
+        original_name=staged.original_name,
+        mime_type=staged.mime_type,
+        size=staged.size_bytes,
+        content_sha256=staged.content_sha256,
+        uploaded_by_user_id=uploaded_by_user_id,
+        title=title or staged.original_name,
+        status="draft",
     )
-    db.add(doc)
-    db.commit()
-    db.refresh(doc)
-    logger.info(f"Media uploaded: {filename} ({file_size} bytes) -> {craft_name}")
+    try:
+        db.add(doc)
+        db.flush()
+        if normalized_type is MediaType.AUDIO:
+            db.add(
+                AudioTranscript(
+                    media_id=doc.id,
+                    craft_name=craft_name,
+                    status=AudioTranscriptStatus.UPLOADED.value,
+                    attempts=0,
+                )
+            )
+        db.add(
+            AuditLog(
+                actor_user_id=uploaded_by_user_id,
+                action="media.uploaded",
+                subject_type="media",
+                subject_id=doc.id,
+                detail=json.dumps(
+                    {
+                        "craft_id": craft_id,
+                        "media_type": normalized_type.value,
+                        "size_bytes": staged.size_bytes,
+                        "sha256": staged.content_sha256,
+                    },
+                    ensure_ascii=False,
+                ),
+            )
+        )
+        db.flush()
+        os.replace(staged.temp_path, final_path)
+        published = True
+        db.commit()
+        db.refresh(doc)
+    except Exception:
+        db.rollback()
+        try:
+            (final_path if published else staged.temp_path).unlink(missing_ok=True)
+        except OSError:
+            logger.exception("清理失败的媒体上传文件时出错")
+        raise
+
+    logger.info(
+        "Media uploaded: %s (%s bytes) -> %s",
+        staged.storage_name,
+        staged.size_bytes,
+        craft_id,
+    )
     return doc
 
 

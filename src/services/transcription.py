@@ -16,6 +16,13 @@ logger = logging.getLogger(__name__)
 _whisper_model = None  # 进程级懒加载单例
 
 
+class AudioValidationError(ValueError):
+    def __init__(self, code: str, detail: str):
+        super().__init__(detail)
+        self.code = code
+        self.detail = detail
+
+
 @dataclass
 class TranscribeResult:
     """转写结果"""
@@ -50,6 +57,37 @@ def reset_whisper_model() -> None:
     _whisper_model = None
 
 
+def probe_audio_duration_seconds(path: str | Path) -> float | None:
+    """用 PyAV 仅读取容器/音轨元数据，不加载 Whisper。"""
+    try:
+        import av
+    except ImportError as exc:
+        raise AudioValidationError("dependency_missing", "PyAV 音频预检依赖未安装") from exc
+    try:
+        with av.open(str(path)) as container:
+            if container.duration is not None:
+                return float(container.duration * av.time_base)
+            durations = [
+                float(stream.duration * stream.time_base)
+                for stream in container.streams.audio
+                if stream.duration is not None and stream.time_base is not None
+            ]
+            return max(durations) if durations else None
+    except AudioValidationError:
+        raise
+    except Exception as exc:
+        raise AudioValidationError("audio_decode_failed", "音频无法解码") from exc
+
+
+def validate_audio_duration(path: str | Path, *, max_seconds: float) -> float:
+    duration = probe_audio_duration_seconds(path)
+    if duration is None or duration <= 0:
+        raise AudioValidationError("audio_duration_unknown", "无法可靠识别音频时长")
+    if duration > max_seconds:
+        raise AudioValidationError("audio_duration_exceeded", "音频时长超过 30 分钟")
+    return duration
+
+
 def transcribe_audio_file(path: str, language: Optional[str] = None) -> TranscribeResult:
     """转写单个音频文件。
 
@@ -68,6 +106,7 @@ def transcribe_audio_file(path: str, language: Optional[str] = None) -> Transcri
     if not p.exists():
         raise FileNotFoundError(f"音频文件不存在: {path}")
 
+    validate_audio_duration(p, max_seconds=settings.audio_max_duration_seconds)
     model = get_whisper_model()
     segments_iter, info = model.transcribe(
         str(p),
@@ -83,6 +122,8 @@ def transcribe_audio_file(path: str, language: Optional[str] = None) -> Transcri
         segs.append((seg.start, seg.end, seg.text))
 
     text = "".join(texts).strip()
+    if len(text) > settings.document_max_chars:
+        raise AudioValidationError("transcript_too_large", "音频转写文本字符数超限")
     if not text:
         logger.warning(f"转写为空文本: {path}")
     return TranscribeResult(

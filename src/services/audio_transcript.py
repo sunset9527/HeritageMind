@@ -143,6 +143,28 @@ def mark_failed(db, media_id: int, error: str) -> None:
     db.commit()
 
 
+def save_transcription(
+    db,
+    media_id: int,
+    *,
+    language: Optional[str],
+    duration_ms: Optional[int],
+    full_text: str,
+) -> None:
+    """索引前先持久化昂贵的转写结果，索引失败重试时不再运行 Whisper。"""
+    db.execute(
+        update(AudioTranscript)
+        .where(AudioTranscript.media_id == media_id)
+        .values(
+            language=language,
+            duration_ms=duration_ms,
+            full_text=full_text,
+        )
+        .execution_options(synchronize_session=False)
+    )
+    db.commit()
+
+
 # --------------------------------------------------------------------------- #
 # 入队 / sweep
 # --------------------------------------------------------------------------- #

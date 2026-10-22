@@ -28,4 +28,18 @@ describe('MediaView authorization UX', () => {
     expect(mediaApiSource).toContain("client.put(`/media/${id}/status`, { status })")
     expect(viewSource).toContain('@change="handleStatusChange(item, $event)"')
   })
+
+  it('uses exact upload formats and displays resource limits', () => {
+    expect(viewSource).toContain('.jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp')
+    expect(viewSource).toContain('.mp3,.wav,.m4a,.flac,.ogg,audio/mpeg,audio/wav,audio/mp4,audio/flac,audio/ogg')
+    expect(viewSource).toContain('图片最大 10 MiB')
+    expect(viewSource).toContain('音频最大 50 MiB，时长不超过 30 分钟')
+  })
+
+  it('keeps the stable craft id and shows backend error detail', () => {
+    expect(viewSource).toContain("form = ref({ craft_id: ''")
+    expect(viewSource).toContain('getMediaErrorMessage(error)')
+    expect(mediaApiSource).toContain("form.append('craft_id', craft.id)")
+    expect(mediaApiSource).toContain("form.append('craft_name', craft.name)")
+  })
 })

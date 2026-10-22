@@ -166,6 +166,14 @@ npm run dev
 
 访问 http://127.0.0.1:5173。Vite 将 /api 代理给后端，不要将 API 地址写死在页面代码里。
 
+第三个 PowerShell 窗口启动独立上传、转写与索引 worker：
+
+~~~powershell
+python -m src.workers.upload_worker
+~~~
+
+API 进程不消费后台任务。文档、音频或索引任务显示 `failed` 时，应先查看管理员接口返回的错误字段，修复原因后再重试；部署迁移、健康检查与 rollback 步骤见 [deploy/README.md](deploy/README.md)。
+
 最小验收：访问 /health；打开百科和图谱确认前端代理可用；配置 LLM 和模型后提交一个有明确出处的问题，检查引用与知识缺口提示。
 
 ## 3. 日常开发与验证

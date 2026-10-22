@@ -6,6 +6,7 @@ import {
   listAdminMedia,
   deleteMedia,
   updateMediaStatus,
+  getMediaErrorMessage,
   type MediaItem,
   type MediaStatus,
 } from '@/api/media'
@@ -18,11 +19,16 @@ const auth = useAuthStore()
 const crafts = ref<CraftItem[]>([])
 const mediaItems = ref<MediaItem[]>([])
 const uploading = ref(false)
+const uploadError = ref('')
 const selectedCraft = ref('')
 const filterType = ref('')
 const isAdmin = computed(() => auth.user?.role === 'admin')
 
-const form = ref({ craft_name: '', media_type: 'image', title: '' })
+const form = ref({ craft_id: '', media_type: 'image' as 'image' | 'audio', title: '' })
+const selectedUploadCraft = computed(() => crafts.value.find(craft => craft.id === form.value.craft_id))
+const acceptedFormats = computed(() => form.value.media_type === 'image'
+  ? '.jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp'
+  : '.mp3,.wav,.m4a,.flac,.ogg,audio/mpeg,audio/wav,audio/mp4,audio/flac,audio/ogg')
 
 onMounted(async () => {
   try { crafts.value = await getCrafts() } catch { /* */ }
@@ -41,13 +47,25 @@ async function handleUpload(e: Event) {
   if (!isAdmin.value) return
   const input = e.target as HTMLInputElement
   const file = input.files?.[0]
-  if (!file || !form.value.craft_name) return
+  const craft = selectedUploadCraft.value
+  if (!file || !craft) return
+  const maxBytes = form.value.media_type === 'image' ? 10 * 1024 * 1024 : 50 * 1024 * 1024
+  if (file.size > maxBytes) {
+    uploadError.value = form.value.media_type === 'image' ? '图片最大 10 MiB' : '音频最大 50 MiB'
+    ElMessage.error(uploadError.value)
+    input.value = ''
+    return
+  }
   uploading.value = true
+  uploadError.value = ''
   try {
-    await uploadMedia(file, form.value.craft_name, form.value.media_type, form.value.title)
+    await uploadMedia(file, craft, form.value.media_type, form.value.title)
     ElMessage.success('上传成功')
     await loadMedia()
-  } catch { ElMessage.error('上传失败') }
+  } catch (error) {
+    uploadError.value = getMediaErrorMessage(error)
+    ElMessage.error(uploadError.value)
+  }
   finally { uploading.value = false; input.value = '' }
 }
 
@@ -87,39 +105,43 @@ function formatSize(bytes: number) {
 
     <!-- Upload -->
     <div v-if="isAdmin" class="setting-section">
-      <h3>📤 上传文件</h3>
+      <h3>上传文件</h3>
       <div class="flex flex-wrap gap-3 items-end">
         <div>
-          <label class="text-xs text-[var(--text-tertiary)] block mb-1">技艺</label>
-          <select v-model="form.craft_name" class="text-sm border rounded-lg px-3 py-2 bg-white">
+          <label for="media-craft" class="text-sm text-[var(--text-secondary)] block mb-1">技艺</label>
+          <select id="media-craft" v-model="form.craft_id" class="text-base border rounded-lg px-3 min-h-11 bg-white">
             <option value="">选择技艺</option>
-            <option v-for="c in crafts" :key="c.id" :value="c.name">{{ c.name }}</option>
+            <option v-for="c in crafts" :key="c.id" :value="c.id">{{ c.name }}</option>
           </select>
         </div>
         <div>
-          <label class="text-xs text-[var(--text-tertiary)] block mb-1">类型</label>
-          <select v-model="form.media_type" class="text-sm border rounded-lg px-3 py-2 bg-white">
+          <label for="media-type" class="text-sm text-[var(--text-secondary)] block mb-1">类型</label>
+          <select id="media-type" v-model="form.media_type" class="text-base border rounded-lg px-3 min-h-11 bg-white">
             <option value="image">图片</option>
             <option value="audio">音频</option>
           </select>
         </div>
         <div>
-          <label class="text-xs text-[var(--text-tertiary)] block mb-1">标题</label>
-          <input v-model="form.title" placeholder="文件描述" class="text-sm border rounded-lg px-3 py-2 bg-white w-40" />
+          <label for="media-title" class="text-sm text-[var(--text-secondary)] block mb-1">标题</label>
+          <input id="media-title" v-model="form.title" placeholder="文件描述" class="text-base border rounded-lg px-3 min-h-11 bg-white w-48" />
         </div>
-        <label class="px-5 py-2 rounded-full text-sm font-semibold cursor-pointer transition-colors"
-               :class="form.craft_name ? 'bg-[var(--accent)] text-[#1c2016] hover:opacity-90' : 'bg-gray-200 text-gray-400 cursor-not-allowed'">
+        <label class="px-5 min-h-11 rounded-full text-sm font-semibold cursor-pointer transition-colors inline-flex items-center"
+               :class="form.craft_id ? 'bg-[var(--accent)] text-[#1c2016] hover:opacity-90' : 'bg-gray-200 text-gray-500 cursor-not-allowed'">
           {{ uploading ? '上传中...' : '选择文件' }}
-          <input type="file" :accept="form.media_type === 'image' ? 'image/*' : 'audio/*'"
-                 class="hidden" @change="handleUpload" :disabled="!form.craft_name || uploading" />
+          <input type="file" :accept="acceptedFormats"
+                 class="sr-only" @change="handleUpload" :disabled="!form.craft_id || uploading" />
         </label>
       </div>
+      <p class="mt-3 text-sm text-[var(--text-secondary)]">
+        {{ form.media_type === 'image' ? '图片最大 10 MiB，支持 JPG、PNG、WebP' : '音频最大 50 MiB，时长不超过 30 分钟，支持 MP3、WAV、M4A、FLAC、OGG' }}
+      </p>
+      <p v-if="uploadError" class="mt-2 text-sm text-red-700" role="alert" aria-live="polite">{{ uploadError }}</p>
     </div>
 
     <!-- Gallery -->
     <div class="setting-section">
       <div class="flex items-center justify-between mb-4">
-        <h3>🖼️ 媒体库 ({{ mediaItems.length }})</h3>
+        <h3>媒体库 ({{ mediaItems.length }})</h3>
         <div class="flex gap-2">
           <select v-model="selectedCraft" @change="loadMedia" class="text-xs border rounded-lg px-2 py-1.5 bg-white">
             <option value="">全部技艺</option>
@@ -143,7 +165,11 @@ function formatSize(bytes: number) {
             <img :src="item.url" :alt="item.title" class="w-full h-full object-cover" />
           </div>
           <!-- Audio placeholder -->
-          <div v-else class="h-32 bg-gray-100 flex items-center justify-center text-3xl">🎵</div>
+          <div v-else class="h-32 bg-gray-100 flex items-center justify-center" aria-label="音频文件">
+            <svg viewBox="0 0 24 24" class="w-8 h-8 text-[var(--text-secondary)]" aria-hidden="true">
+              <path fill="currentColor" d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6Z" />
+            </svg>
+          </div>
           <!-- Info -->
           <div class="p-2">
             <div class="text-xs font-medium truncate">{{ item.title || item.original_name }}</div>
@@ -157,7 +183,8 @@ function formatSize(bytes: number) {
           </div>
           <!-- Delete -->
           <button v-if="isAdmin" @click="handleDelete(item.id)"
-                  class="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/50 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity border-0 cursor-pointer">
+                  :aria-label="`删除 ${item.title || item.original_name}`"
+                  class="absolute top-1 right-1 w-11 h-11 rounded-full bg-black/70 text-white text-sm flex items-center justify-center opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity border-0 cursor-pointer">
             ✕
           </button>
         </div>

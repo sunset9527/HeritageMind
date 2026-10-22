@@ -160,6 +160,24 @@ def test_transcribe_exception_marks_failed_and_increments_attempts(db, storage, 
     assert "boom" in (row.error or "")
 
 
+def test_index_failure_keeps_transcribed_text_for_index_only_retry(
+    db, storage, transcribe_stub, monkeypatch
+):
+    class _FailingStore:
+        def index_transcript(self, *args, **kwargs):
+            raise RuntimeError("index boom")
+
+    monkeypatch.setattr(worker, "get_audio_store", lambda: _FailingStore())
+    mid = _mk_media(db)
+    _mk_sidecar(db, mid)
+    _write_audio(storage)
+
+    assert asyncio.run(worker.process_one_job(mid, db=db)) == "error"
+    row = at_svc.get_transcript(db, mid)
+    assert row.status == AudioTranscriptStatus.FAILED.value
+    assert row.full_text and "掐丝" in row.full_text
+
+
 def test_file_missing_marks_failed(db, storage, store_stub, transcribe_stub):
     mid = _mk_media(db)  # 不写文件
     _mk_sidecar(db, mid)

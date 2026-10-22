@@ -1,8 +1,14 @@
 """文档解析服务 — 支持 PDF / Word / Markdown / TXT（PDF 含扫描件 OCR 兜底）"""
 import io
 import logging
+import time
+import zipfile
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
+from xml.etree import ElementTree
+
+from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -13,6 +19,160 @@ ALLOWED_TYPES = {
     "application/pdf": "pdf",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
 }
+
+
+class DocumentProcessingError(RuntimeError):
+    def __init__(self, code: str, detail: str):
+        super().__init__(detail)
+        self.code = code
+        self.detail = detail
+
+
+@dataclass(frozen=True)
+class ParsedDocument:
+    text: str
+    char_count: int
+    page_count: int = 0
+    ocr_page_count: int = 0
+
+
+def _check_deadline(deadline: float) -> None:
+    if time.monotonic() >= deadline:
+        raise DocumentProcessingError("deadline_exceeded", "文档解析超过截止时间")
+
+
+def _bounded_text(text: str, max_chars: int) -> str:
+    normalized = text.strip()
+    if len(normalized) > max_chars:
+        raise DocumentProcessingError("character_limit_exceeded", "文档提取字符数超限")
+    return normalized
+
+
+def _parse_text_path(path: Path, max_chars: int, deadline: float) -> ParsedDocument:
+    decoder_parts: list[str] = []
+    count = 0
+    try:
+        with path.open("r", encoding="utf-8", errors="strict") as source:
+            while True:
+                _check_deadline(deadline)
+                chunk = source.read(64 * 1024)
+                if not chunk:
+                    break
+                if "\x00" in chunk:
+                    raise DocumentProcessingError("invalid_text", "文本包含 NUL 字节")
+                count += len(chunk)
+                if count > max_chars:
+                    raise DocumentProcessingError(
+                        "character_limit_exceeded", "文档提取字符数超限"
+                    )
+                decoder_parts.append(chunk)
+    except UnicodeDecodeError as exc:
+        raise DocumentProcessingError("invalid_text", "文本不是有效 UTF-8") from exc
+    text = _bounded_text("".join(decoder_parts), max_chars)
+    return ParsedDocument(text=text, char_count=len(text))
+
+
+def _parse_docx_path(path: Path, max_chars: int, deadline: float) -> ParsedDocument:
+    paragraphs: list[str] = []
+    current: list[str] = []
+    total = 0
+    try:
+        with zipfile.ZipFile(path) as archive, archive.open("word/document.xml") as source:
+            for _, element in ElementTree.iterparse(source, events=("end",)):
+                _check_deadline(deadline)
+                tag = element.tag.rsplit("}", 1)[-1]
+                if tag == "t" and element.text:
+                    current.append(element.text)
+                    total += len(element.text)
+                    if total > max_chars:
+                        raise DocumentProcessingError(
+                            "character_limit_exceeded", "文档提取字符数超限"
+                        )
+                elif tag == "p":
+                    paragraph = "".join(current).strip()
+                    if paragraph:
+                        paragraphs.append(paragraph)
+                    current.clear()
+                element.clear()
+    except (KeyError, zipfile.BadZipFile, ElementTree.ParseError) as exc:
+        raise DocumentProcessingError("invalid_docx", "DOCX 正文结构无效") from exc
+    text = _bounded_text("\n".join(paragraphs), max_chars)
+    return ParsedDocument(text=text, char_count=len(text))
+
+
+def _parse_pdf_path(
+    path: Path,
+    max_chars: int,
+    max_pdf_pages: int,
+    max_ocr_pages: int,
+    deadline: float,
+) -> ParsedDocument:
+    try:
+        import fitz
+    except ImportError as exc:
+        raise DocumentProcessingError("dependency_missing", "PDF 解析依赖未安装") from exc
+
+    document = fitz.open(str(path))
+    try:
+        page_count = len(document)
+        if page_count > max_pdf_pages:
+            raise DocumentProcessingError("pdf_page_limit_exceeded", "PDF 页数超限")
+        parts: list[str] = []
+        char_count = 0
+        ocr_count = 0
+        for page in document:
+            _check_deadline(deadline)
+            text = (page.get_text("text") or "").strip()
+            if len(text) < 20:
+                ocr_count += 1
+                if ocr_count > max_ocr_pages:
+                    raise DocumentProcessingError("ocr_page_limit_exceeded", "PDF OCR 页数超限")
+                width = int(page.rect.width / 72 * 200)
+                height = int(page.rect.height / 72 * 200)
+                if width * height > settings.image_max_pixels:
+                    raise DocumentProcessingError("render_pixel_limit_exceeded", "PDF 页面渲染像素超限")
+                _check_deadline(deadline)
+                from src.services.pdf_parser import _ocr_page
+
+                text = (_ocr_page(page) or "").strip()
+            if text:
+                char_count += len(text)
+                if char_count > max_chars:
+                    raise DocumentProcessingError(
+                        "character_limit_exceeded", "文档提取字符数超限"
+                    )
+                parts.append(text)
+        merged = "\n\n".join(parts)
+        return ParsedDocument(
+            text=merged,
+            char_count=len(merged),
+            page_count=page_count,
+            ocr_page_count=ocr_count,
+        )
+    finally:
+        document.close()
+
+
+def parse_document_path(
+    path: str | Path,
+    format_name: str,
+    *,
+    max_chars: int = settings.document_max_chars,
+    max_pdf_pages: int = settings.pdf_max_pages,
+    max_ocr_pages: int = settings.pdf_max_ocr_pages,
+    deadline: float,
+) -> ParsedDocument:
+    source = Path(path)
+    _check_deadline(deadline)
+    if format_name in {"txt", "md"}:
+        return _parse_text_path(source, max_chars, deadline)
+    if format_name == "docx":
+        return _parse_docx_path(source, max_chars, deadline)
+    if format_name == "pdf":
+        return _parse_pdf_path(
+            source, max_chars, max_pdf_pages, max_ocr_pages, deadline
+        )
+    raise DocumentProcessingError("unsupported_file_type", "不支持的文档格式")
 
 
 def parse_document(file_bytes: bytes, filename: str, mime_type: str) -> Optional[str]:

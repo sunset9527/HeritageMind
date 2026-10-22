@@ -2,7 +2,9 @@
 多源检索器 - 支持多种检索策略的检索器
 """
 
+import json
 import logging
+from pathlib import Path
 from typing import Dict, List, Optional, Any, Callable
 import numpy as np
 
@@ -49,9 +51,45 @@ class MultiSourceRetriever:
         # 内存中的文档存储
         self.documents: List[Dict[str, Any]] = []
         self.document_embeddings: Dict[str, List[float]] = {}
+        self._snapshot_version: Optional[str] = None
         
         # 初始化文档
         self._load_documents()
+        self.refresh_active_snapshot()
+
+    def refresh_active_snapshot(self) -> bool:
+        """若活动知识索引版本变化，则在查询边界原子替换内存视图。"""
+        from src.retrieval.index_snapshot import active_version
+
+        version = active_version(settings.index_versions_path, "knowledge_index")
+        if version is None or version == getattr(self, "_snapshot_version", None):
+            return False
+        path = (
+            Path(settings.index_versions_path)
+            / "knowledge_index"
+            / version
+            / "index.json"
+        )
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            documents = payload["documents"]
+            embeddings = payload["embeddings"]
+            if payload.get("schema_version") != 1 or not isinstance(documents, list):
+                raise ValueError("不支持的知识索引格式")
+            if not isinstance(embeddings, dict):
+                raise ValueError("知识索引 embeddings 格式错误")
+            from src.retrieval.embeddings import EmbeddingManager
+
+            manager = EmbeddingManager()
+            self.documents = documents
+            self.document_embeddings = embeddings
+            self.embedding_func = manager.embed_query
+            self._snapshot_version = version
+            logger.info("已热加载知识索引版本 %s（%s 篇）", version, len(documents))
+            return True
+        except Exception as exc:
+            logger.error("知识索引版本 %s 加载失败，继续使用旧版本: %s", version, exc)
+            return False
     
     def _load_documents(self):
         """加载文档到内存"""
@@ -86,6 +124,7 @@ class MultiSourceRetriever:
         Returns:
             检索结果列表
         """
+        self.refresh_active_snapshot()
         if top_k is None:
             top_k = self.config["top_k"]
         if similarity_threshold is None:

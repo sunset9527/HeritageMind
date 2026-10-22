@@ -36,6 +36,7 @@ class _StubModel:
 def _patch_model(monkeypatch, parts, tmp_path):
     audio = tmp_path / "a.wav"
     audio.write_bytes(b"RIFF....")
+    monkeypatch.setattr(transcription, "probe_audio_duration_seconds", lambda _: 3.5)
     monkeypatch.setattr(transcription, "get_whisper_model", lambda: _StubModel(parts))
     return audio
 

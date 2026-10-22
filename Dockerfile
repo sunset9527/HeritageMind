@@ -30,12 +30,18 @@ ENV PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/ \
 COPY requirements.production.txt .
 RUN pip install --no-cache-dir -r requirements.production.txt
 
+FROM dependencies AS worker-dependencies
+COPY requirements.worker.txt .
+RUN pip install --no-cache-dir -r requirements.worker.txt
+
 # ==================== API 服务 ====================
 FROM dependencies AS api
 
 COPY config.py .
 COPY src/ ./src/
 COPY api.py .
+COPY alembic.ini .
+COPY migrations/ ./migrations/
 COPY data/ ./data/
 
 RUN useradd --create-home --shell /bin/bash appuser && \
@@ -49,3 +55,18 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
 
 # 首次建库由应用启动生命周期执行；单 worker 避免空库时多个进程并发 DDL 竞争。
 CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
+
+# ==================== 上传/转写/索引独立 worker ====================
+FROM worker-dependencies AS worker
+
+COPY config.py .
+COPY src/ ./src/
+COPY alembic.ini .
+COPY migrations/ ./migrations/
+COPY data/ ./data/
+
+RUN useradd --create-home --shell /bin/bash appuser && \
+    chown -R appuser:appuser /app
+USER appuser
+
+CMD ["python", "-m", "src.workers.upload_worker"]

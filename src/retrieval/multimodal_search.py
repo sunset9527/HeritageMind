@@ -3,13 +3,36 @@
 图片检索基于标题 + 技艺名 + 描述文本的 BGE 向量匹配。
 完整 CLIP 视觉模型在 HuggingFace 可访问时自动启用。
 """
+import json
 import logging
+from pathlib import Path
 from typing import List, Dict, Any, Optional
 
 from src.services.media import STORAGE_ROOT, get_media_url
 from src.models.media import MediaDocument
 
 logger = logging.getLogger(__name__)
+
+
+def load_active_image_index(root: Path | str | None = None) -> List[Dict[str, Any]]:
+    """读取已原子发布的图片索引；损坏或尚未构建时安全降级。"""
+    from config import settings
+    from src.retrieval.index_snapshot import active_version
+
+    base = Path(root or settings.index_versions_path)
+    version = active_version(base, "image_index")
+    if version is None:
+        return []
+    try:
+        payload = json.loads(
+            (base / "image_index" / version / "index.json").read_text(encoding="utf-8")
+        )
+        if payload.get("schema_version") != 1 or not isinstance(payload.get("items"), list):
+            raise ValueError("不支持的图片索引格式")
+        return payload["items"]
+    except (OSError, ValueError, TypeError, json.JSONDecodeError) as exc:
+        logger.error("活动图片索引读取失败，降级实时检索: %s", exc)
+        return []
 
 
 def _get_embedding(text: str) -> Optional[List[float]]:
@@ -41,7 +64,30 @@ def search_images_by_text(db, query: str, top_k: int = 6) -> List[Dict[str, Any]
     if not docs:
         return []
 
-    # 构建每张图片的检索文本
+    active_items = load_active_image_index()
+    if active_items:
+        query_emb = _get_embedding(query)
+        doc_map = {item.id: item for item in docs}
+        if query_emb is not None:
+            results = []
+            for item in active_items:
+                doc = doc_map.get(item.get("media_id"))
+                vector = item.get("text_embedding")
+                if doc is None or not vector:
+                    continue
+                results.append(
+                    {
+                        "id": doc.id,
+                        "craft_name": doc.craft_name,
+                        "title": doc.title,
+                        "url": get_media_url(doc),
+                        "score": _cosine(query_emb, vector),
+                    }
+                )
+            results.sort(key=lambda result: result["score"], reverse=True)
+            return results[:top_k]
+
+    # 尚无可用快照时保留兼容降级路径。
     doc_texts = []
     for d in docs:
         text = f"{d.craft_name} {d.title} {d.original_name}"
@@ -95,19 +141,30 @@ def search_similar_images(db, image_bytes: bytes, top_k: int = 6) -> List[Dict[s
 
     if emb:
         from src.retrieval.image_embeddings import cosine_similarity
-        for d in docs:
-            path = STORAGE_ROOT / "image" / d.filename
-            if not path.exists():
-                continue
-            try:
-                from src.retrieval.image_embeddings import image_file_to_embedding
-                demb = image_file_to_embedding(path)
-                if demb:
+        active_items = load_active_image_index()
+        doc_map = {item.id: item for item in docs}
+        if active_items:
+            for item in active_items:
+                d = doc_map.get(item.get("media_id"))
+                demb = item.get("image_embedding")
+                if d is not None and demb:
                     results.append({"id": d.id, "craft_name": d.craft_name,
                                     "title": d.title, "url": get_media_url(d),
                                     "score": float(cosine_similarity(emb, demb))})
-            except Exception:
-                continue
+        else:
+            for d in docs:
+                path = STORAGE_ROOT / "image" / d.filename
+                if not path.exists():
+                    continue
+                try:
+                    from src.retrieval.image_embeddings import image_file_to_embedding
+                    demb = image_file_to_embedding(path)
+                    if demb:
+                        results.append({"id": d.id, "craft_name": d.craft_name,
+                                        "title": d.title, "url": get_media_url(d),
+                                        "score": float(cosine_similarity(emb, demb))})
+                except Exception:
+                    continue
         results.sort(key=lambda r: r["score"], reverse=True)
 
     if not results:

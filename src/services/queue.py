@@ -8,6 +8,7 @@
 """
 import json
 import logging
+from dataclasses import dataclass
 from typing import Any, Optional
 
 from config import settings
@@ -15,6 +16,70 @@ from config import settings
 logger = logging.getLogger(__name__)
 
 _redis: Optional[Any] = None  # 懒加载客户端；redis.asyncio.Redis 或测试注入桩
+_TASK_VERSION = 1
+_TASK_KINDS = frozenset(
+    {"document", "audio", "knowledge_index", "image_index", "audio_index"}
+)
+
+
+@dataclass(frozen=True)
+class TaskEnvelope:
+    version: int
+    kind: str
+    entity_id: int
+
+
+def _decode_task(payload: str) -> TaskEnvelope | None:
+    try:
+        data = json.loads(payload)
+        version = int(data["version"])
+        kind = str(data["kind"])
+        entity_id = int(data["entity_id"])
+    except (KeyError, TypeError, ValueError, json.JSONDecodeError):
+        logger.warning("丢弃格式无效的后台任务消息")
+        return None
+    if version != _TASK_VERSION or kind not in _TASK_KINDS or entity_id < 1:
+        logger.warning("丢弃不支持的后台任务消息 version=%s kind=%s", version, kind)
+        return None
+    return TaskEnvelope(version=version, kind=kind, entity_id=entity_id)
+
+
+async def _push_task(kind: str, entity_id: int, queue_key: str) -> bool:
+    if kind not in _TASK_KINDS or int(entity_id) < 1:
+        logger.warning("拒绝无效后台任务 kind=%s entity_id=%s", kind, entity_id)
+        return False
+    try:
+        payload = {
+            "version": _TASK_VERSION,
+            "kind": kind,
+            "entity_id": int(entity_id),
+        }
+        if kind == "audio":
+            payload["media_id"] = int(entity_id)  # 旧观测/日志兼容字段
+        await get_redis().rpush(queue_key, json.dumps(payload))
+        return True
+    except Exception as exc:
+        logger.warning("后台任务入队失败 kind=%s entity_id=%s: %s", kind, entity_id, exc)
+        return False
+
+
+async def _pop_task(queue_key: str, timeout: int) -> TaskEnvelope | None:
+    try:
+        item = await get_redis().blpop([queue_key], timeout=timeout)
+        if not item:
+            return None
+        return _decode_task(item[1])
+    except Exception as exc:
+        logger.warning("后台任务出队失败: %s", exc)
+        return None
+
+
+async def push_job(kind: str, entity_id: int) -> bool:
+    return await _push_task(kind, entity_id, settings.task_queue_key)
+
+
+async def pop_job(timeout: int = 1) -> TaskEnvelope | None:
+    return await _pop_task(settings.task_queue_key, timeout)
 
 
 def get_redis() -> Any:
@@ -45,25 +110,12 @@ async def close_redis() -> None:
 
 async def push_audio_job(media_id: int) -> bool:
     """入队一条转写任务。成功 True；Redis 不可达/异常记 warning 返回 False（调用方不阻断）。"""
-    try:
-        r = get_redis()
-        payload = json.dumps({"media_id": int(media_id)})
-        await r.rpush(settings.audio_queue_key, payload)
-        return True
-    except Exception as e:
-        logger.warning(f"音频转写入队失败 media_id={media_id}: {e}")
-        return False
+    return await _push_task("audio", media_id, settings.audio_queue_key)
 
 
 async def pop_audio_job(timeout: int = 1) -> Optional[int]:
     """BLPOP 取一条任务，返回 media_id；空队列超时/异常返回 None。"""
-    try:
-        r = get_redis()
-        item = await r.blpop([settings.audio_queue_key], timeout=timeout)
-        if not item:  # (key, value) 或 None（超时）
-            return None
-        data = json.loads(item[1])
-        return int(data.get("media_id"))
-    except Exception as e:
-        logger.warning(f"音频转写出队失败: {e}")
+    task = await _pop_task(settings.audio_queue_key, timeout)
+    if task is None or task.kind != "audio":
         return None
+    return task.entity_id

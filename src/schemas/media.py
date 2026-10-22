@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 class MediaResponse(BaseModel):
     id: int
+    craft_id: Optional[str] = None
     craft_name: str
     media_type: str
     filename: str

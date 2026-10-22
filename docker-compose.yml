@@ -19,6 +19,13 @@ services:
       retries: 5
       start_period: 30s
 
+  redis:
+    image: redis:7-alpine
+    container_name: heritagemind-redis
+    restart: unless-stopped
+    networks:
+      - heritagemind-network
+
   api:
     build:
       context: .
@@ -34,14 +41,19 @@ services:
       - ZHIPU_API_KEY=${ZHIPU_API_KEY:-}
       - ZHIPU_BASE_URL=${ZHIPU_BASE_URL:-https://open.bigmodel.cn/api/paas/v4/}
       - AUDIO_WORKER_ENABLED=${AUDIO_WORKER_ENABLED:-false}
+      - REDIS_URL=redis://redis:6379
       - LOG_LEVEL=INFO
     volumes:
       - chroma_data:/app/data/chroma_db
-      - craft_data:/app/data
-      - sqlite_data:/app/data
+      - runtime_uploads:/app/data/uploads
+      - media_data:/app/data/media
+      - index_versions:/app/data/index_versions
+      - audio_index:/app/data/audio_chroma
     depends_on:
       mysql:
         condition: service_healthy
+      redis:
+        condition: service_started
     networks:
       - heritagemind-network
     healthcheck:
@@ -50,6 +62,39 @@ services:
       timeout: 5s
       retries: 3
       start_period: 15s
+
+  worker:
+    build:
+      context: .
+      target: worker
+    container_name: heritagemind-worker
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=mysql+pymysql://root:heritagemind@mysql:3306/heritagemind
+      - REDIS_URL=redis://redis:6379
+      - EMBEDDING_MODE=${EMBEDDING_MODE:-api}
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-embedding-2}
+      - ZHIPU_API_KEY=${ZHIPU_API_KEY:-}
+      - WHISPER_MODEL_DIR=${WHISPER_MODEL_DIR:-/models/faster-whisper-small}
+      - AUDIO_WORKER_ENABLED=true
+      - LOG_LEVEL=INFO
+    volumes:
+      - runtime_uploads:/app/data/uploads
+      - media_data:/app/data/media
+      - index_versions:/app/data/index_versions
+      - audio_index:/app/data/audio_chroma
+      - chroma_data:/app/data/chroma_db
+      - type: bind
+        source: ${WHISPER_MODEL_PATH_HOST:-./models/faster-whisper-small}
+        target: /models/faster-whisper-small
+        read_only: true
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - heritagemind-network
 
   # === Vue 3 development frontend (default) ===
   frontend:
@@ -92,11 +137,15 @@ services:
 volumes:
   chroma_data:
     driver: local
-  craft_data:
+  runtime_uploads:
+    driver: local
+  media_data:
+    driver: local
+  index_versions:
+    driver: local
+  audio_index:
     driver: local
   mysql_data:
-    driver: local
-  sqlite_data:
     driver: local
 
 networks:

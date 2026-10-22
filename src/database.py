@@ -55,6 +55,7 @@ def init_db():
         User, ChatHistory, AnswerEvaluation, UserFeedback, AgentConfiguration,
         CraftEntry, InheritorProfile, SourceEvidence, GraphChangeCandidate, AuditLog,
         KnowledgeDocument, KnowledgeIngestRun,
+        DocumentUpload, MaintenanceJob, WorkerHeartbeat,
     )
     Base.metadata.create_all(bind=engine)
     logger.info("数据库表创建完成")

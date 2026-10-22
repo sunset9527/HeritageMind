@@ -43,6 +43,18 @@ class Settings(BaseSettings):
         default="./data/crafts",
         description="非遗技艺文档目录"
     )
+    media_storage_path: str = Field(
+        default="./data/media",
+        description="上传媒体文件目录；与内置知识语料目录分离",
+    )
+    document_upload_path: str = Field(
+        default="./data/uploads/documents",
+        description="管理员文档上传隔离区；不会被检索器直接读取",
+    )
+    index_versions_path: str = Field(
+        default="./data/index_versions",
+        description="版本化索引构建与活动版本清单目录",
+    )
     user_profiles_path: str = Field(
         default="./data/user_profiles.json",
         description="用户画像配置文件路径"
@@ -361,6 +373,27 @@ class Settings(BaseSettings):
         description="TRANSCRIBING 超过此时长视为陈旧，worker 启动 sweep 复位重入队"
     )
 
+    # ================= 上传与后台任务资源边界（阶段 1B） =================
+    upload_request_max_bytes: int = Field(default=52 * 1024 * 1024, ge=1)
+    image_upload_max_bytes: int = Field(default=10 * 1024 * 1024, ge=1)
+    similar_image_max_bytes: int = Field(default=10 * 1024 * 1024, ge=1)
+    audio_upload_max_bytes: int = Field(default=50 * 1024 * 1024, ge=1)
+    pdf_upload_max_bytes: int = Field(default=25 * 1024 * 1024, ge=1)
+    docx_upload_max_bytes: int = Field(default=15 * 1024 * 1024, ge=1)
+    text_upload_max_bytes: int = Field(default=2 * 1024 * 1024, ge=1)
+    image_max_dimension: int = Field(default=12_000, ge=1)
+    image_max_pixels: int = Field(default=25_000_000, ge=1)
+    pdf_max_pages: int = Field(default=100, ge=1)
+    pdf_max_ocr_pages: int = Field(default=25, ge=1)
+    document_max_chars: int = Field(default=500_000, ge=1)
+    document_task_timeout_seconds: int = Field(default=180, ge=1)
+    audio_max_duration_seconds: int = Field(default=30 * 60, ge=1)
+    audio_task_timeout_seconds: int = Field(default=20 * 60, ge=1)
+    upload_task_max_attempts: int = Field(default=3, ge=1)
+    index_max_documents: int = Field(default=1_000, ge=1)
+    index_max_total_chars: int = Field(default=5_000_000, ge=1)
+    index_task_timeout_seconds: int = Field(default=10 * 60, ge=1)
+
     # ================= Redis 缓存与任务队列（v1.4） =================
     redis_url: str = Field(
         default="redis://localhost:6379",
@@ -377,6 +410,10 @@ class Settings(BaseSettings):
     audio_queue_key: str = Field(
         default="heritagemind:audio:transcribe",
         description="音频转写任务队列 Redis key"
+    )
+    task_queue_key: str = Field(
+        default="heritagemind:upload:tasks",
+        description="文档、媒体与索引维护任务的统一 Redis 队列 key",
     )
 
     @field_validator("deepseek_api_key", mode="before")

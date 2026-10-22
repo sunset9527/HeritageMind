@@ -1,16 +1,17 @@
 server {
     listen 80;
     server_name ${DOMAIN};
-    client_max_body_size 50m;
+    client_max_body_size 52m;
     location / { return 301 https://$host$request_uri; }
 }
 
 server {
     listen 443 ssl http2;
     server_name ${DOMAIN};
-    ssl_certificate ${CERT_PATH}/fullchain.pem;
-    ssl_certificate_key ${CERT_PATH}/privkey.pem;
+    ssl_certificate ${SSL_CERTIFICATE};
+    ssl_certificate_key ${SSL_CERTIFICATE_KEY};
     root /usr/share/nginx/html;
+    client_max_body_size 52m;
     gzip on;
     gzip_types text/css application/javascript application/json image/svg+xml;
     add_header X-Content-Type-Options nosniff always;
@@ -25,5 +26,6 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_buffering off;
         proxy_read_timeout 300s;
+        proxy_send_timeout 300s;
     }
 }

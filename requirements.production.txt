@@ -17,6 +17,7 @@ uvicorn>=0.27.0
 pydantic>=2.5.0
 pydantic-settings
 python-multipart>=0.0.6
+Pillow>=10.0.0
 sqlalchemy>=2.0
 alembic>=1.13
 pymysql>=1.1.0

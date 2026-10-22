@@ -22,12 +22,15 @@ from src.services.audio_transcript import (
     get_transcript,
     mark_failed,
     mark_success,
+    save_transcription,
 )
 from src.services.media import STORAGE_ROOT, get_media
 from src.services.queue import get_redis, pop_audio_job
 from src.services.transcription import transcribe_audio_file
+from src.workers.isolated_runner import run_isolated
 
 logger = logging.getLogger(__name__)
+_DEFAULT_TRANSCRIBE = transcribe_audio_file
 
 
 def _index_transcript(media_id: int, craft_name: str, title: str, full_text: str) -> int:
@@ -63,12 +66,28 @@ async def process_one_job(media_id: int, db=None) -> str:
             language, duration_ms = row.language, row.duration_ms
             logger.info(f"media_id={media_id} full_text 已存在，跳过二次转写，仅重建向量索引")
         else:
-            result = await asyncio.to_thread(transcribe_audio_file, str(file_path))
+            if transcribe_audio_file is _DEFAULT_TRANSCRIBE:
+                result = await asyncio.to_thread(
+                    run_isolated,
+                    "src.services.transcription:transcribe_audio_file",
+                    args=(str(file_path),),
+                    timeout_seconds=settings.audio_task_timeout_seconds,
+                )
+            else:
+                # 显式注入的测试/本地替身保持可测；生产函数始终走可终止子进程。
+                result = await asyncio.to_thread(transcribe_audio_file, str(file_path))
             full_text = (result.text or "").strip()
             language, duration_ms = result.language, result.duration_ms
             if not full_text:
                 mark_failed(session, media_id, "转写结果为空文本（可能为静音/纯音乐）")
                 return "empty_transcript"
+            save_transcription(
+                session,
+                media_id,
+                language=language,
+                duration_ms=duration_ms,
+                full_text=full_text,
+            )
 
         chunk_count = await asyncio.to_thread(
             _index_transcript, media_id, row.craft_name, media.title, full_text

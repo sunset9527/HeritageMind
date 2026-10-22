@@ -147,14 +147,15 @@ class EmbeddingManager:
         if text in self._cache:
             return self._cache[text]
 
+        model = self.model  # 先初始化，同时确定 _embedding_backend
         if self._is_api_backend():
-            resp = self.model.embeddings.create(
+            resp = model.embeddings.create(
                 model=settings.embedding_model,
                 input=text,
             )
             emb = resp.data[0].embedding
         else:
-            emb = self.model.embed_query(text)
+            emb = model.embed_query(text)
 
         if len(self._cache) < 1000:
             self._cache[text] = emb
@@ -164,9 +165,10 @@ class EmbeddingManager:
         uncached = [(i, t) for i, t in enumerate(texts) if t not in self._cache]
 
         if uncached:
+            model = self.model  # 先初始化，同时确定 _embedding_backend
             if self._is_api_backend():
                 for _, t in uncached:
-                    resp = self.model.embeddings.create(
+                    resp = model.embeddings.create(
                         model=settings.embedding_model,
                         input=t,
                     )
@@ -175,7 +177,7 @@ class EmbeddingManager:
                         self._cache[t] = emb
             else:
                 uncached_texts = [t for _, t in uncached]
-                embeddings = self.model.embed_documents(uncached_texts)
+                embeddings = model.embed_documents(uncached_texts)
                 for (i, _), emb in zip(uncached, embeddings):
                     if len(self._cache) < 1000:
                         self._cache[texts[i]] = emb

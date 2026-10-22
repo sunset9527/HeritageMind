@@ -7,7 +7,9 @@
 - 转写文本按 chunk 持久于 chroma `documents`（metadata 带 media_id/craft_name/title/chunk_idx）；
   `full_text` 在 DB sidecar，重建用 split_transcript 精确重放。
 """
+import json
 import logging
+from pathlib import Path
 from typing import Dict, List, Optional
 
 from config import settings
@@ -209,15 +211,37 @@ class AudioVectorStore:
 
 # 进程级单例（worker / API 共用）
 _audio_store: Optional[AudioVectorStore] = None
+_audio_store_version: Optional[str] = None
+
+
+def _active_audio_collection() -> tuple[Optional[str], Optional[str]]:
+    from src.retrieval.index_snapshot import active_version
+
+    root = Path(settings.index_versions_path)
+    version = active_version(root, "audio_index")
+    if version is None:
+        return None, None
+    try:
+        payload = json.loads(
+            (root / "audio_index" / version / "index.json").read_text(encoding="utf-8")
+        )
+        collection = payload.get("collection")
+        return version, str(collection) if collection else None
+    except (OSError, ValueError, TypeError, json.JSONDecodeError):
+        logger.exception("活动音频索引清单读取失败，继续使用默认 collection")
+        return None, None
 
 
 def get_audio_store() -> AudioVectorStore:
-    global _audio_store
-    if _audio_store is None:
-        _audio_store = AudioVectorStore()
+    global _audio_store, _audio_store_version
+    version, collection = _active_audio_collection()
+    if _audio_store is None or version != _audio_store_version:
+        _audio_store = AudioVectorStore(collection_name=collection)
+        _audio_store_version = version
     return _audio_store
 
 
 def reset_audio_store() -> None:
-    global _audio_store
+    global _audio_store, _audio_store_version
     _audio_store = None
+    _audio_store_version = None

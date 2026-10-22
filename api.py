@@ -7,7 +7,7 @@ import logging
 from pathlib import Path
 from uuid import uuid4
 from typing import Optional, List, Dict, Any
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Depends, Header, status, Request
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Depends, Header, status, Request, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from fastapi.security import OAuth2PasswordRequestForm
@@ -68,7 +68,7 @@ from src.services.media import (
     get_published_media_by_storage_name,
     list_media,
     list_published_media,
-    upload_media,
+    persist_staged_media,
 )
 from src.schemas.media import MediaResponse, MediaListResponse, MediaUpdateStatus
 from src.models.media import MediaDocument, MediaType
@@ -81,22 +81,35 @@ from src.schemas.audio import (
     TranscriptStatusResponse,
 )
 from src.services.audio_transcript import ensure_audio_job, get_transcript
-from src.services.audio_worker import run_worker
 from src.services.cache import get_qa_cache
 from src.services.queue import close_redis
-from src.services.document_parser import parse_document
+from src.models.upload import DocumentUpload
+from src.models.upload import MaintenanceJobKind
+from src.services.maintenance_jobs import MaintenanceConflict, create_maintenance_job
+from src.schemas.upload import DocumentUploadListResponse, DocumentUploadResponse
+from src.services.document_upload import (
+    DocumentStateError,
+    delete_document,
+    get_document,
+    list_documents,
+    persist_staged_document,
+    retry_document,
+)
 from src.models.favorite import Favorite
 from src.models.platform import AuditLog, CraftEntry, GraphChangeCandidate, InheritorProfile, SourceEvidence
 from src.services.graph_curation import merge_approved_candidate
 from src.services.platform_content import approve_graph_candidate, make_slug, reject_graph_candidate
 from src.services.dashboard_summary import get_dashboard_summary
 from src.services.active_books_public import ActiveBooksProjection
+from src.services.craft_catalog import CraftCatalog, CraftCatalogError
+from src.services.upload_security import UploadPolicy, UploadValidationError, stage_upload
 from src.services.encyclopedia_images import load_image_manifest, resolve_encyclopedia_image
 from src.services.ai_search import AiSearchService
 from src.services.mcp_tools import search_web
 from src.retrieval.multimodal_search import search_images_by_text, search_similar_images, index_all_images
 from src.utils.llm import set_request_override, clear_request_override
 from src.app_metadata import API_DESCRIPTION, APP_VERSION
+from src.middleware.request_size import RequestBodyLimitMiddleware
 
 # 配置日志
 logging.basicConfig(
@@ -113,16 +126,10 @@ retriever: Optional[MultiSourceRetriever] = None
 visualizer: Optional[HeritageGraphVisualizer] = None
 active_books_projection: Optional[ActiveBooksProjection] = None
 
-# v1.4 音频转写 worker 生命周期句柄（lifespan 启动/停止）
-_worker_stop: Optional[asyncio.Event] = None
-_worker_task: Optional[asyncio.Task] = None
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """应用生命周期管理"""
     global workflow, knowledge_graph, document_loader, retriever, visualizer, active_books_projection
-    global _worker_stop, _worker_task
 
     logger.info("初始化应用...")
 
@@ -172,27 +179,12 @@ async def lifespan(app: FastAPI):
     # v1.4：初始化热门问答缓存后端（auto：探测 Redis，不可达进程内 LRU）
     await get_qa_cache().init_cache()
 
-    # v1.4：启动音频转写 worker（单 asyncio 任务；Redis 不可达时 run_worker 自检后静默退出）
-    if settings.audio_worker_enabled:
-        _worker_stop = asyncio.Event()
-        _worker_task = asyncio.create_task(run_worker(_worker_stop))
-        logger.info("音频转写 worker 任务已创建")
-
     logger.info("应用初始化完成")
 
     yield
 
     logger.info("应用关闭")
-    # 停 worker + 关 Redis/缓存后端
-    if _worker_task is not None:
-        _worker_stop.set()
-        try:
-            await asyncio.wait_for(_worker_task, timeout=5)
-        except Exception:
-            logger.warning("转写 worker 未在 5s 内退出，强制取消")
-            _worker_task.cancel()
-        _worker_task = None
-        _worker_stop = None
+    # 上传、转写与索引消费者运行在独立 worker；API 只关闭自身缓存/Redis 客户端。
     get_qa_cache().reset()
     await close_redis()
     logger.info("资源已释放")
@@ -218,6 +210,8 @@ app = FastAPI(
         {"name": "系统", "description": "健康检查、配置等"},
     ],
 )
+
+app.add_middleware(RequestBodyLimitMiddleware, max_bytes=settings.upload_request_max_bytes)
 
 # 添加CORS中间件
 app.add_middleware(
@@ -746,40 +740,7 @@ async def switch_profile(request: UserProfileRequest):
 @app.get("/crafts")
 async def list_crafts():
     """获取支持的技艺列表"""
-    if active_books_projection is not None:
-        return {
-            "crafts": [
-                {"id": entry["slug"], "name": entry["name"]}
-                for entry in active_books_projection.encyclopedia_entries()
-            ]
-        }
-    return {
-        "crafts": [
-            {"id": "jingtailan", "name": "景泰蓝"},
-            {"id": "suxiu", "name": "苏绣"},
-            {"id": "longquan_ci", "name": "龙泉青瓷"},
-            {"id": "yixing_zisha", "name": "宜兴紫砂"},
-            {"id": "wuhu_tiehua", "name": "芜湖铁画"},
-            {"id": "shujin", "name": "蜀锦"},
-            {"id": "jianzhi", "name": "剪纸"},
-            {"id": "jingdezhen_ciqi", "name": "景德镇瓷器"},
-            {"id": "nanjing_yunjin", "name": "南京云锦"},
-            {"id": "dongyang_mudiao", "name": "东阳木雕"},
-            {"id": "miaozu_laran", "name": "苗族蜡染"},
-            {"id": "muban_nianhua", "name": "木版年画"},
-            {"id": "kesi", "name": "缂丝"},
-            {"id": "zhubian", "name": "竹编"},
-            {"id": "yudiao", "name": "玉雕"},
-            {"id": "qiqi", "name": "漆器"},
-            {"id": "tangsancai", "name": "唐三彩"},
-            {"id": "junci", "name": "钧瓷"},
-            {"id": "ruci", "name": "汝瓷"},
-            {"id": "nirenzhang", "name": "泥人张"},
-            {"id": "piyingxi", "name": "皮影戏"},
-            {"id": "zhuangjin", "name": "壮锦"},
-            {"id": "jingju", "name": "京剧"},
-        ]
-    }
+    return {"crafts": CraftCatalog.from_projection(active_books_projection).as_api_items()}
 
 
 @app.get("/profiles")
@@ -958,24 +919,55 @@ async def _get_prompt_by_name_safe(db: Session, name: str):
 @app.post("/media/upload", response_model=MediaResponse)
 async def upload_media_file(
     file: UploadFile = File(...),
-    craft_name: str = Form(...),
+    craft_id: Optional[str] = Form(None),
+    craft_name: Optional[str] = Form(None),
     media_type: str = Form("image"),
     title: str = Form(""),
-    _: User = Depends(require_admin),
+    current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    """上传图片或音频文件"""
-    if file.content_type is None:
-        raise HTTPException(status_code=400, detail="无法识别文件类型")
-    doc = upload_media(db=db, file=file.file, original_name=file.filename or "unknown",
-                       mime_type=file.content_type, craft_name=craft_name,
-                       media_type=media_type, title=title)
+    """上传经签名、大小和图片结构校验的媒体草稿。"""
+    try:
+        resolved_id, resolved_name = CraftCatalog.from_projection(
+            active_books_projection
+        ).resolve(craft_id=craft_id, craft_name=craft_name)
+        if media_type == MediaType.IMAGE.value:
+            policy = UploadPolicy(
+                formats=frozenset({"jpeg", "png", "webp"}),
+                max_bytes=settings.image_upload_max_bytes,
+            )
+        elif media_type == MediaType.AUDIO.value:
+            policy = UploadPolicy(
+                formats=frozenset({"mp3", "wav", "m4a", "flac", "ogg"}),
+                max_bytes=settings.audio_upload_max_bytes,
+            )
+        else:
+            raise UploadValidationError(
+                "unsupported_media_type", "media_type 仅支持 image 或 audio", 415
+            )
+        target_directory = Path(settings.media_storage_path) / media_type
+        staged = await stage_upload(file, target_directory, policy)
+    except CraftCatalogError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except UploadValidationError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
+
+    doc = persist_staged_media(
+        db,
+        staged=staged,
+        storage_root=Path(settings.media_storage_path),
+        craft_id=resolved_id,
+        craft_name=resolved_name,
+        media_type=media_type,
+        title=title,
+        uploaded_by_user_id=current_user.id,
+    )
     resp = MediaResponse.model_validate(doc)
     resp.url = get_media_url(doc)
     # v1.4：audio 上传自动入队转写（不阻断上传；入队失败仅 warning，worker sweep 兜底）
     if media_type == MediaType.AUDIO.value and settings.audio_transcribe_enabled:
         try:
-            tr = await ensure_audio_job(db, doc.id, craft_name)
+            tr = await ensure_audio_job(db, doc.id, resolved_name)
             resp.transcript_status = tr.status
             resp.transcript_updated_at = tr.updated_at
         except Exception as e:
@@ -1045,18 +1037,24 @@ async def update_media_status(
     db.commit()
     return {"id": media_id, "status": body.status}
 
-@app.post("/knowledge/rebuild-embeddings")
+async def _create_index_job(kind: str, db: Session) -> dict:
+    try:
+        job = create_maintenance_job(db, kind)
+    except MaintenanceConflict as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    from src.services.queue import push_job
+
+    if not await push_job(kind, job.id):
+        logger.warning("maintenance_job=%s 入队失败；worker sweep 将恢复", job.id)
+    return {"job_id": job.id, "kind": job.kind, "status": job.status}
+
+
+@app.post("/knowledge/rebuild-embeddings", status_code=202)
 async def rebuild_embeddings(
     _: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    from src.retrieval.embeddings import EmbeddingManager, reset_embedding_model
-    reset_embedding_model()
-    global retriever
-    r = MultiSourceRetriever(document_loader=document_loader)
-    r.build_index()
-    retriever = r
-    return {"message": "向量索引已重建", "documents": len(r.documents)}
+    return await _create_index_job(MaintenanceJobKind.KNOWLEDGE_INDEX.value, db)
 async def delete_media_file(media_id: int, db: Session = Depends(get_db)):
     ok = delete_media(db, media_id)
     if not ok: raise HTTPException(status_code=404, detail="文件不存在")
@@ -1091,22 +1089,36 @@ async def search_image_by_text(q: str, top_k: int = 6, db: Session = Depends(get
 
 
 @app.post("/search/similar")
-async def search_similar_image(file: UploadFile = File(...), top_k: int = 6,
+async def search_similar_image(file: UploadFile = File(...), top_k: int = Query(6, ge=1, le=20),
                                db: Session = Depends(get_db)):
-    """以图搜图：上传图片搜索相似图片"""
-    content = await file.read()
-    results = search_similar_images(db, content, top_k)
-    return {"results": results, "total": len(results)}
+    """以图搜图：先做 10 MiB 上限、签名和完整图片校验。"""
+    staged = None
+    try:
+        staged = await stage_upload(
+            file,
+            Path(settings.media_storage_path) / ".similar-search",
+            UploadPolicy(
+                formats=frozenset({"jpeg", "png", "webp"}),
+                max_bytes=settings.similar_image_max_bytes,
+            ),
+        )
+        content = staged.temp_path.read_bytes()  # 已由上方策略限制为最多 10 MiB
+        results = search_similar_images(db, content, top_k)
+        return {"results": results, "total": len(results)}
+    except UploadValidationError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
+    finally:
+        if staged is not None:
+            staged.temp_path.unlink(missing_ok=True)
 
 
-@app.post("/search/index-images")
+@app.post("/search/index-images", status_code=202)
 async def rebuild_image_index(
     _: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    """重建图片向量索引"""
-    count = index_all_images(db)
-    return {"indexed": count, "message": f"已索引 {count} 张图片"}
+    """创建版本化图片索引维护任务。"""
+    return await _create_index_job(MaintenanceJobKind.IMAGE_INDEX.value, db)
 
 
 # ============================================================================
@@ -1227,23 +1239,13 @@ async def search_audio(
     return AudioSearchResponse(query=q, top_k=top_k, total=len(results), results=results)
 
 
-@app.post("/search/audio/index")
+@app.post("/search/audio/index", status_code=202)
 async def rebuild_audio_index(
     _: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    """重建音频转写向量索引：遍历 status=INDEXED 的 sidecar，用其 full_text 全量重放。"""
-    rows = db.scalars(
-        select(AudioTranscript).where(AudioTranscript.status == AudioTranscriptStatus.INDEXED.value)
-    ).all()
-    store = get_audio_store()
-    total_chunks = 0
-    for tr in rows:
-        doc = get_media(db, tr.media_id)
-        title = doc.title if doc else ""
-        chunks = store.index_transcript(tr.media_id, tr.craft_name, title, tr.full_text or "")
-        total_chunks += chunks
-    return {"indexed": len(rows), "chunks": total_chunks, "message": f"已重建 {len(rows)} 条音频转写索引"}
+    """创建版本化音频索引维护任务。"""
+    return await _create_index_job(MaintenanceJobKind.AUDIO_INDEX.value, db)
 
 
 # ============================================================================
@@ -1320,44 +1322,133 @@ def _craft_category(name: str) -> str:
 
 
 def _get_craft_list():
-    return [
-        {"id": "jingtailan", "name": "景泰蓝"}, {"id": "suxiu", "name": "苏绣"},
-        {"id": "longquan_ci", "name": "龙泉青瓷"}, {"id": "yixing_zisha", "name": "宜兴紫砂"},
-        {"id": "wuhu_tiehua", "name": "芜湖铁画"}, {"id": "shujin", "name": "蜀锦"},
-        {"id": "jianzhi", "name": "剪纸"}, {"id": "jingdezhen_ciqi", "name": "景德镇瓷器"},
-        {"id": "nanjing_yunjin", "name": "南京云锦"}, {"id": "dongyang_mudiao", "name": "东阳木雕"},
-        {"id": "miaozu_laran", "name": "苗族蜡染"}, {"id": "muban_nianhua", "name": "木版年画"},
-        {"id": "kesi", "name": "缂丝"}, {"id": "zhubian", "name": "竹编"},
-        {"id": "yudiao", "name": "玉雕"}, {"id": "qiqi", "name": "漆器"},
-        {"id": "tangsancai", "name": "唐三彩"}, {"id": "junci", "name": "钧瓷"},
-        {"id": "ruci", "name": "汝瓷"}, {"id": "nirenzhang", "name": "泥人张"},
-        {"id": "piyingxi", "name": "皮影戏"}, {"id": "zhuangjin", "name": "壮锦"},
-        {"id": "jingju", "name": "京剧"},
-    ]
+    return CraftCatalog.from_projection(active_books_projection).as_api_items()
 
 
-@app.post("/documents/upload")
-async def upload_document(file: UploadFile = File(...), craft_name: str = Form(...),
-                          _: User = Depends(require_admin),
-                          db: Session = Depends(get_db)):
-    """上传文档（PDF/Word/Markdown/TXT），自动解析文本"""
-    if not file.filename or not file.content_type:
-        raise HTTPException(status_code=400, detail="无效文件")
-    content = await file.read()
-    text = parse_document(content, file.filename, file.content_type)
-    if not text:
-        raise HTTPException(status_code=400, detail="无法解析此文件格式")
-    # 保存为 txt 到知识库
-    import os
-    docs_dir = Path(settings.crafts_doc_path)
-    docs_dir.mkdir(parents=True, exist_ok=True)
-    safe_name = craft_name + "_upload.txt"
-    file_path = docs_dir / safe_name
-    with open(file_path, "w", encoding="utf-8") as f:
-        f.write(f"{craft_name}\n\n{text}")
-    logger.info(f"文档已解析保存: {safe_name} ({len(text)} 字)")
-    return {"filename": safe_name, "craft_name": craft_name, "length": len(text),
-            "message": "文档已解析并加入知识库，重启后端后生效"}
+@app.post("/documents/upload", response_model=DocumentUploadResponse, status_code=202)
+async def upload_document(
+    file: UploadFile = File(...),
+    craft_id: Optional[str] = Form(None),
+    craft_name: Optional[str] = Form(None),
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """保存文档草稿并通知独立 worker；API 请求线程不解析正文。"""
+    staged = None
+    try:
+        resolved_id, resolved_name = CraftCatalog.from_projection(
+            active_books_projection
+        ).resolve(craft_id=craft_id, craft_name=craft_name)
+        root = Path(settings.document_upload_path)
+        staged = await stage_upload(
+            file,
+            root,
+            UploadPolicy(
+                formats=frozenset({"pdf", "docx", "md", "txt"}),
+                max_bytes=max(
+                    settings.pdf_upload_max_bytes,
+                    settings.docx_upload_max_bytes,
+                    settings.text_upload_max_bytes,
+                ),
+            ),
+        )
+        format_limit = {
+            "pdf": settings.pdf_upload_max_bytes,
+            "docx": settings.docx_upload_max_bytes,
+            "md": settings.text_upload_max_bytes,
+            "txt": settings.text_upload_max_bytes,
+        }[staged.format]
+        if staged.size_bytes > format_limit:
+            staged.temp_path.unlink(missing_ok=True)
+            raise UploadValidationError("file_too_large", "文件超过该格式允许大小", 413)
+        row = persist_staged_document(
+            db,
+            staged=staged,
+            storage_root=root,
+            craft_id=resolved_id,
+            craft_name=resolved_name,
+            uploaded_by_user_id=current_user.id,
+        )
+    except CraftCatalogError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except UploadValidationError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
+
+    from src.services.queue import push_job
+
+    if not await push_job("document", row.id):
+        logger.warning("document_id=%s 入队失败；worker sweep 将恢复 pending 任务", row.id)
+    return DocumentUploadResponse.model_validate(row)
+
+
+@app.get("/admin/documents", response_model=DocumentUploadListResponse)
+async def list_admin_documents(
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    rows, total = list_documents(db, limit=limit, offset=offset)
+    from src.services.task_state import worker_health
+
+    return DocumentUploadListResponse(
+        items=rows,
+        total=total,
+        worker_status=worker_health(db),
+    )
+
+
+@app.get("/admin/documents/{document_id}", response_model=DocumentUploadResponse)
+async def get_admin_document(
+    document_id: int,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    row = get_document(db, document_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="文档不存在")
+    return DocumentUploadResponse.model_validate(row)
+
+
+@app.post("/admin/documents/{document_id}/retry", response_model=DocumentUploadResponse, status_code=202)
+async def retry_admin_document(
+    document_id: int,
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    try:
+        row = retry_document(
+            db,
+            document_id,
+            max_attempts=settings.upload_task_max_attempts,
+            actor_user_id=current_user.id,
+        )
+    except DocumentStateError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
+    from src.services.queue import push_job
+
+    await push_job("document", row.id)
+    return DocumentUploadResponse.model_validate(row)
+
+
+@app.delete("/admin/documents/{document_id}")
+async def delete_admin_document(
+    document_id: int,
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    try:
+        deleted = delete_document(
+            db,
+            document_id,
+            storage_root=settings.document_upload_path,
+            actor_user_id=current_user.id,
+        )
+    except DocumentStateError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
+    if not deleted:
+        raise HTTPException(status_code=404, detail="文档不存在")
+    return {"success": True}
 
 
 # ============================================================================
