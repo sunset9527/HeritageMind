@@ -57,7 +57,7 @@ def _has_known_default_database_password(value: str) -> bool:
 
 def collect_startup_issues(settings: Settings) -> List[StartupValidationIssue]:
     """收集生产环境门禁问题，开发和测试配置保持可用。"""
-    if settings.app_env != "production":
+    if settings.app_env != "prod":
         return []
 
     issues: List[StartupValidationIssue] = []

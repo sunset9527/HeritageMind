@@ -9,7 +9,7 @@ from config import Settings
 def test_security_defaults_are_explicit_and_safe_for_future_middleware():
     settings = Settings(_env_file=None)
 
-    assert settings.app_env == "development"
+    assert settings.app_env == "dev"
     assert settings.cors_allowed_origins == []
     assert settings.cors_allow_credentials is False
     assert settings.anonymous_query_enabled is False
@@ -49,9 +49,16 @@ def test_list_settings_accept_json_arrays():
     assert settings.allowed_model_base_url_hosts == ["models.example.com"]
 
 
+@pytest.mark.parametrize("app_env", ["dev", "test", "prod"])
+def test_environment_contract_accepts_only_short_environment_names(app_env):
+    assert Settings(_env_file=None, app_env=app_env).app_env == app_env
+
+
 @pytest.mark.parametrize(
     ("field", "value"),
     [
+        ("app_env", "development"),
+        ("app_env", "production"),
         ("app_env", "staging"),
         ("anonymous_query_window_seconds", 0),
         ("authenticated_query_quota", 0),

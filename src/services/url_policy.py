@@ -53,7 +53,7 @@ def validate_model_base_url(
     host = _normalise_host(parsed.hostname)
     is_localhost = host == "localhost" or host.endswith(".localhost")
     if (
-        app_env == "development"
+        app_env == "dev"
         and allow_localhost_http
         and is_localhost
         and parsed.scheme == "http"
@@ -67,7 +67,7 @@ def validate_model_base_url(
     if port not in {None, *_PUBLIC_HTTPS_PORTS}:
         raise BaseUrlPolicyError("模型 Base URL 端口不在允许范围内")
 
-    if app_env == "production":
+    if app_env == "prod":
         permitted_hosts = {_normalise_host(item) for item in allowed_hosts}
         if host not in permitted_hosts:
             raise BaseUrlPolicyError("模型 Base URL 主机不在允许列表")

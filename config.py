@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     )
 
     # ================= 生产安全与可靠性边界（阶段 1C/1D） =================
-    app_env: Literal["development", "test", "production"] = Field(default="development")
+    app_env: Literal["dev", "test", "prod"] = Field(default="dev")
     cors_allowed_origins: List[str] = Field(default_factory=list)
     cors_allow_credentials: bool = Field(default=False)
     anonymous_query_enabled: bool = Field(default=False)

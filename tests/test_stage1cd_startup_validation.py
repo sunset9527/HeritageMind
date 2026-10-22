@@ -9,7 +9,7 @@ from src.services.url_policy import BaseUrlPolicyError, validate_model_base_url
 
 def production_settings(**overrides):
     values = {
-        "app_env": "production",
+        "app_env": "prod",
         "jwt_secret_key": "nQd1F9yJ7xT3mL8pR2vK6cW4sZ9aB5eH",
         "database_url": "mysql+pymysql://app_user:strong-db-password@db.example.com:3306/heritagemind",
         "deepseek_api_key": "live-model-key-9f31c7a2",
@@ -46,10 +46,9 @@ def test_production_rejects_known_default_database_password_without_echoing_url(
     assert "123456" not in str(raised.value)
 
 
-def test_production_rejects_enabled_server_answers_with_empty_or_placeholder_model_key():
-    assert "server_model_key_unsafe" in issue_codes(
-        production_settings(deepseek_api_key="YOUR_API_KEY")
-    )
+@pytest.mark.parametrize("model_key", ["", "YOUR_API_KEY"])
+def test_production_rejects_enabled_server_answers_with_empty_or_placeholder_model_key(model_key):
+    assert "server_model_key_unsafe" in issue_codes(production_settings(deepseek_api_key=model_key))
 
 
 def test_production_rejects_wildcard_cors_and_credentials_without_origins():
@@ -101,7 +100,7 @@ def test_model_base_url_policy_rejects_dangerous_destinations(url):
     with pytest.raises(BaseUrlPolicyError):
         validate_model_base_url(
             url,
-            app_env="production",
+            app_env="prod",
             allowed_hosts=["api.deepseek.com"],
         )
 
@@ -110,13 +109,13 @@ def test_development_allows_local_http_only_with_explicit_switch():
     with pytest.raises(BaseUrlPolicyError):
         validate_model_base_url(
             "http://localhost:8000/v1",
-            app_env="development",
+            app_env="dev",
             allowed_hosts=[],
         )
 
     assert validate_model_base_url(
         "http://localhost:8000/v1",
-        app_env="development",
+        app_env="dev",
         allowed_hosts=[],
         allow_localhost_http=True,
     ) == "http://localhost:8000/v1"
