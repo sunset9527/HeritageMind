@@ -13,6 +13,7 @@ def production_settings(**overrides):
         "jwt_secret_key": "nQd1F9yJ7xT3mL8pR2vK6cW4sZ9aB5eH",
         "database_url": "mysql+pymysql://app_user:strong-db-password@db.example.com:3306/heritagemind",
         "deepseek_api_key": "live-model-key-9f31c7a2",
+        "rate_limit_hmac_key": "5Wv9xQa7Lm3Kp8Rs2Nd6Ht4Yc1Ze0BjF",
         "cors_allowed_origins": ["https://app.example.com"],
         "allowed_model_base_url_hosts": ["api.deepseek.com", "open.bigmodel.cn"],
     }
@@ -32,6 +33,11 @@ def issue_codes(settings):
 )
 def test_production_rejects_missing_example_or_short_jwt_secret(secret):
     assert "jwt_secret_unsafe" in issue_codes(production_settings(jwt_secret_key=secret))
+
+
+@pytest.mark.parametrize("secret", ["", "short-secret", "heritagemind-dev-rate-limit-hmac-change-in-production"])
+def test_production_rejects_unsafe_rate_limit_hmac_key(secret):
+    assert "rate_limit_hmac_key_unsafe" in issue_codes(production_settings(rate_limit_hmac_key=secret))
 
 
 def test_production_rejects_known_default_database_password_without_echoing_url():

@@ -113,7 +113,7 @@ from src.middleware.request_size import RequestBodyLimitMiddleware
 from src.middleware.request_context import RequestContextMiddleware
 from src.middleware.security_headers import SecurityHeadersMiddleware
 from src.services.startup_validation import validate_startup_settings
-from src.deps_rate_limit import enforce_rate_limit, rate_limit
+from src.deps_rate_limit import enforce_account_and_ip_rate_limits, rate_limit
 from src.services.rate_limit import RateLimitCategory
 
 # 配置日志
@@ -1515,9 +1515,9 @@ async def register(request: UserRegisterRequest, db: Session = Depends(get_db)):
     - **email**: 邮箱
     - **password**: 密码（最少6位）
     """
-    await enforce_rate_limit(
+    await enforce_account_and_ip_rate_limits(
         RateLimitCategory.REGISTRATION,
-        account_identifier=request.email or request.username,
+        request.email or request.username,
     )
     user, error = create_user(db, request.username, request.email, request.password)
     if error:
@@ -1548,7 +1548,7 @@ async def login(
     使用表单格式提交 username 和 password，
     返回 JWT access_token。
     """
-    await enforce_rate_limit(RateLimitCategory.LOGIN, account_identifier=form_data.username)
+    await enforce_account_and_ip_rate_limits(RateLimitCategory.LOGIN, form_data.username)
     user, error = authenticate_user(db, form_data.username, form_data.password)
     if error:
         raise HTTPException(

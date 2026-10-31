@@ -6,13 +6,14 @@ API Key 或问题正文均不会进入 key、返回值或日志。
 
 from __future__ import annotations
 
-import hashlib
+import hmac
 import logging
 import math
 import time
 from collections import OrderedDict
 from dataclasses import dataclass
 from enum import StrEnum
+from threading import Lock
 from typing import Any, Callable, Mapping, Optional
 
 from config import settings
@@ -56,12 +57,18 @@ class _MemoryBucket:
 
 # EVAL makes increment + initial expiry a single Redis operation across workers.
 _FIXED_WINDOW_LUA = """
-local current = redis.call('INCR', KEYS[1])
-if current == 1 then
-  redis.call('EXPIRE', KEYS[1], ARGV[1])
+local highest = 0
+local retry_ttl = 0
+for _, key in ipairs(KEYS) do
+  local current = redis.call('INCR', key)
+  if current == 1 then
+    redis.call('EXPIRE', key, ARGV[1])
+  end
+  local ttl = redis.call('TTL', key)
+  if current > highest then highest = current end
+  if ttl > retry_ttl then retry_ttl = ttl end
 end
-local ttl = redis.call('TTL', KEYS[1])
-return {current, ttl}
+return {highest, retry_ttl}
 """
 
 
@@ -96,6 +103,8 @@ class RateLimiter:
         memory_max_keys: Optional[int] = None,
         key_prefix: str = "heritagemind:rate:v1",
         app_env: Optional[str] = None,
+        hmac_key: Optional[str] = None,
+        hmac_previous_keys: Optional[list[str]] = None,
     ):
         self._redis_client = redis_client
         self._redis_provider = redis_provider
@@ -104,7 +113,19 @@ class RateLimiter:
         self._memory_max_keys = memory_max_keys or settings.rate_limit_memory_max_keys
         self._key_prefix = key_prefix
         self._app_env = app_env or settings.app_env
+        current_hmac_key = hmac_key if hmac_key is not None else settings.rate_limit_hmac_key
+        previous_hmac_keys = (
+            hmac_previous_keys
+            if hmac_previous_keys is not None
+            else settings.rate_limit_hmac_previous_keys
+        )
+        self._hmac_keys = tuple(dict.fromkeys(
+            key for key in (current_hmac_key, *previous_hmac_keys) if key
+        ))
+        if not self._hmac_keys:
+            raise ValueError("rate limit HMAC key must not be empty")
         self._memory: OrderedDict[str, _MemoryBucket] = OrderedDict()
+        self._memory_lock = Lock()
 
     @property
     def memory_key_count(self) -> int:
@@ -126,9 +147,10 @@ class RateLimiter:
         client_ip = identity.client_ip if identity is not None else "unknown"
         return f"ip:{client_ip}"
 
-    def key_for(
+    def _key_for_secret(
         self,
         category: RateLimitCategory,
+        secret: str,
         *,
         user_id: Any = None,
         account_identifier: Optional[str] = None,
@@ -137,8 +159,46 @@ class RateLimiter:
         material = self._identity_material(
             user_id=user_id, account_identifier=account_identifier, identity=identity
         )
-        digest = hashlib.sha256(material.encode("utf-8")).hexdigest()[:24]
+        digest = hmac.new(secret.encode("utf-8"), material.encode("utf-8"), "sha256").hexdigest()[:24]
         return f"{self._key_prefix}:{RateLimitCategory(category).value}:{digest}"
+
+    def key_for(
+        self,
+        category: RateLimitCategory,
+        *,
+        user_id: Any = None,
+        account_identifier: Optional[str] = None,
+        identity: Optional[ClientIdentity] = None,
+    ) -> str:
+        """Return the current HMAC-keyed storage key (never an unhashed subject)."""
+        return self._key_for_secret(
+            category,
+            self._hmac_keys[0],
+            user_id=user_id,
+            account_identifier=account_identifier,
+            identity=identity,
+        )
+
+    def _keys_for(
+        self,
+        category: RateLimitCategory,
+        *,
+        user_id: Any = None,
+        account_identifier: Optional[str] = None,
+        identity: Optional[ClientIdentity] = None,
+    ) -> tuple[str, ...]:
+        # During secret rotation, incrementing old and current keys in one Lua
+        # transaction preserves the existing window until old keys are removed.
+        return tuple(
+            self._key_for_secret(
+                category,
+                secret,
+                user_id=user_id,
+                account_identifier=account_identifier,
+                identity=identity,
+            )
+            for secret in self._hmac_keys
+        )
 
     def _redis(self) -> Any:
         return self._redis_client if self._redis_client is not None else self._redis_provider()
@@ -153,9 +213,14 @@ class RateLimiter:
     ) -> RateLimitDecision:
         category = RateLimitCategory(category)
         policy = self._policy(category)
-        key = self.key_for(category, user_id=user_id, account_identifier=account_identifier, identity=identity)
+        keys = self._keys_for(
+            category,
+            user_id=user_id,
+            account_identifier=account_identifier,
+            identity=identity,
+        )
         try:
-            raw = await self._redis().eval(_FIXED_WINDOW_LUA, 1, key, policy.window_seconds)
+            raw = await self._redis().eval(_FIXED_WINDOW_LUA, len(keys), *keys, policy.window_seconds)
             count, ttl = int(raw[0]), int(raw[1])
             return self._decision(count, ttl, policy, source="redis")
         except Exception as exc:
@@ -165,7 +230,7 @@ class RateLimiter:
                 # A per-worker fallback cannot preserve a distributed quota. Production
                 # must fail closed rather than silently granting requests on each worker.
                 return RateLimitDecision(False, 0, 0, 1, source="unavailable", available=False)
-            return self._check_memory(key, policy)
+            return self._check_memory(keys, policy)
 
     @staticmethod
     def _decision(count: int, ttl: int, policy: RateLimitPolicy, *, source: str) -> RateLimitDecision:
@@ -189,12 +254,14 @@ class RateLimiter:
         category_text = key.rsplit(":", 2)[-2]
         return self._policy(RateLimitCategory(category_text)).window_seconds
 
-    def _check_memory(self, key: str, policy: RateLimitPolicy) -> RateLimitDecision:
-        now = self._clock()
-        self._evict_expired(now)
-        bucket = self._memory.get(key)
-        if bucket is None:
-            if len(self._memory) >= self._memory_max_keys:
+    def _check_memory(self, keys: tuple[str, ...], policy: RateLimitPolicy) -> RateLimitDecision:
+        # No await inside this critical section: sweep, capacity admission and
+        # increments must be indivisible across threads using one process.
+        with self._memory_lock:
+            now = self._clock()
+            self._evict_expired(now)
+            missing = [key for key in keys if key not in self._memory]
+            if len(self._memory) + len(missing) > self._memory_max_keys:
                 # Never evict an active identity: that would reset its quota and make
                 # overload bypassable by cycling identities. Expired buckets were
                 # already swept above; only a new identity is rejected here.
@@ -205,13 +272,19 @@ class RateLimiter:
                     1,
                     source="memory_capacity",
                 )
-            bucket = _MemoryBucket(count=0, started_at=now)
-            self._memory[key] = bucket
-        bucket.count += 1
-        self._memory.move_to_end(key)
-        ttl = max(1, math.ceil(policy.window_seconds - (now - bucket.started_at)))
-        # This quota is only meaningful inside one process; production never uses it.
-        return self._decision(bucket.count, ttl, policy, source="memory")
+            counts = []
+            ttls = []
+            for key in keys:
+                bucket = self._memory.get(key)
+                if bucket is None:
+                    bucket = _MemoryBucket(count=0, started_at=now)
+                    self._memory[key] = bucket
+                bucket.count += 1
+                self._memory.move_to_end(key)
+                counts.append(bucket.count)
+                ttls.append(max(1, math.ceil(policy.window_seconds - (now - bucket.started_at))))
+            # This quota is only meaningful inside one process; production never uses it.
+            return self._decision(max(counts), max(ttls), policy, source="memory")
 
 
 _rate_limiter: Optional[RateLimiter] = None

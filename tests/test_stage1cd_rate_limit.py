@@ -1,13 +1,15 @@
 """阶段 1C/1D：Redis 限流与进程内保守降级。"""
 
 import asyncio
+import threading
 from types import SimpleNamespace
 
 import httpx
 import pytest
 from fastapi import Depends, FastAPI
 
-from src.deps_rate_limit import rate_limit
+from src.deps import get_current_user, require_admin
+from src.deps_rate_limit import enforce_account_and_ip_rate_limits, rate_limit
 from src.middleware.request_context import ClientIdentity, RequestContextMiddleware
 from src.services.rate_limit import (
     RateLimitCategory,
@@ -189,26 +191,89 @@ def test_settings_define_every_business_category_and_keep_anonymous_policy_when_
     assert policies[RateLimitCategory.INDEX_REBUILD] == RateLimitPolicy(6, 3600)
 
 
-def test_all_public_read_routes_use_read_only_rate_limit():
+@pytest.mark.parametrize("category", [RateLimitCategory.LOGIN, RateLimitCategory.REGISTRATION])
+def test_credential_account_and_trusted_client_ip_buckets_both_reject(monkeypatch, category):
+    async def scenario():
+        limiter = RateLimiter(redis_client=FakeRedis(), policies=_policies(limit=1))
+        monkeypatch.setattr("src.deps_rate_limit.get_rate_limiter", lambda: limiter)
+        app = FastAPI()
+        app.add_middleware(RequestContextMiddleware, settings=SimpleNamespace(
+            trust_proxy_headers=True, trusted_proxy_ips=["203.0.113.9"]
+        ))
+
+        @app.get("/login/{account}")
+        async def login(account: str):
+            await enforce_account_and_ip_rate_limits(category, account)
+            return {"ok": True}
+
+        async def request(client_ip, account, forwarded_ip):
+            transport = httpx.ASGITransport(app=app, client=(client_ip, 1))
+            async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+                return await client.get(
+                    f"/login/{account}",
+                    headers={"X-Forwarded-For": f"{forwarded_ip}, {client_ip}"},
+                )
+
+        # Same trusted client IP cycling accounts is limited by its IP bucket.
+        assert (await request("203.0.113.9", "alice", "198.51.100.10")).status_code == 200
+        assert (await request("203.0.113.9", "bob", "198.51.100.10")).status_code == 429
+
+        # New limiter: a single account is still limited when the trusted client IP changes.
+        limiter = RateLimiter(redis_client=FakeRedis(), policies=_policies(limit=1))
+        assert (await request("203.0.113.9", "carol", "198.51.100.11")).status_code == 200
+        assert (await request("203.0.113.9", "carol", "198.51.100.12")).status_code == 429
+
+        # The proxy's peer IP is shared, but distinct validated XFF clients remain isolated.
+        limiter = RateLimiter(redis_client=FakeRedis(), policies=_policies(limit=1))
+        assert (await request("203.0.113.9", "dave", "198.51.100.13")).status_code == 200
+        assert (await request("203.0.113.9", "erin", "198.51.100.14")).status_code == 200
+
+    asyncio.run(scenario())
+
+
+def test_memory_fallback_has_a_lock_for_sweep_capacity_and_increment():
+    limiter = RateLimiter(redis_client=FakeRedis(), policies=_policies())
+
+    assert isinstance(limiter._memory_lock, type(threading.Lock()))
+
+
+def test_rate_limit_key_uses_stable_rotatable_hmac_without_subject_text():
+    first = RateLimiter(redis_client=FakeRedis(), policies=_policies(), hmac_key="current-secret")
+    second = RateLimiter(redis_client=FakeRedis(), policies=_policies(), hmac_key="next-secret")
+    rotating = RateLimiter(
+        redis_client=FakeRedis(),
+        policies=_policies(),
+        hmac_key="next-secret",
+        hmac_previous_keys=["current-secret"],
+    )
+
+    one = first.key_for(RateLimitCategory.LOGIN, account_identifier="Alice@Example.com")
+    two = first.key_for(RateLimitCategory.LOGIN, account_identifier="alice@example.com")
+    changed = second.key_for(RateLimitCategory.LOGIN, account_identifier="alice@example.com")
+    rotation_keys = rotating._keys_for(RateLimitCategory.LOGIN, account_identifier="alice@example.com")
+
+    assert one == two
+    assert changed != one
+    assert changed == rotation_keys[0] and one in rotation_keys
+    assert "Alice" not in one and "example.com" not in one
+
+
+def test_all_public_business_get_routes_use_read_only_rate_limit():
     import api
 
-    public_paths = {
-        "/", "/graph/stats", "/graph/visualize", "/graph/subgraph/{craft_name}",
-        "/gap-report", "/crafts", "/profiles", "/config", "/dashboard/summary",
-        "/documents/summary", "/media/list", "/media/{media_id}",
-        "/media/file/{media_type}/{filename}", "/search/image", "/search/audio",
-        "/knowledge/categories", "/encyclopedia", "/local-books/images/{craft_id}",
-        "/encyclopedia/{slug}", "/inheritors", "/inheritors/{slug}",
-    }
-    routes = {
-        route.path: route
-        for route in api.app.routes
-        if getattr(route, "path", None) in public_paths and "GET" in getattr(route, "methods", set())
-    }
+    exempt_paths = {"/health", "/openapi.json", "/docs", "/docs/oauth2-redirect", "/redoc"}
+    authenticated_dependencies = {get_current_user, require_admin}
+    routes = []
+    for route in api.app.routes:
+        if "GET" not in getattr(route, "methods", set()) or route.path in exempt_paths:
+            continue
+        dependant = getattr(route, "dependant", None)
+        calls = [dependency.call for dependency in dependant.dependencies] if dependant else []
+        if not any(call in authenticated_dependencies for call in calls):
+            routes.append((route.path, calls))
 
-    assert set(routes) == public_paths
-    for path, route in routes.items():
-        calls = [dependency.call for dependency in route.dependant.dependencies]
+    assert routes
+    for path, calls in routes:
         assert any(
             getattr(call, "rate_limit_category", None) == RateLimitCategory.READ_ONLY
             for call in calls
@@ -218,7 +283,7 @@ def test_all_public_read_routes_use_read_only_rate_limit():
 def test_health_and_openapi_are_not_business_rate_limited():
     import api
 
-    for path in ("/health", "/openapi.json", "/docs", "/redoc"):
+    for path in ("/health", "/openapi.json", "/docs", "/docs/oauth2-redirect", "/redoc"):
         route = next(
             route for route in api.app.routes
             if getattr(route, "path", None) == path and "GET" in getattr(route, "methods", set())

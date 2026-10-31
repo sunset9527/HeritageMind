@@ -47,6 +47,15 @@ def _unsafe_jwt_secret(value: str) -> bool:
     )
 
 
+def _unsafe_rate_limit_hmac_key(value: str) -> bool:
+    candidate = value.strip().lower()
+    return (
+        len(value.strip()) < 32
+        or candidate == "heritagemind-dev-rate-limit-hmac-change-in-production"
+        or _is_placeholder(value)
+    )
+
+
 def _has_known_default_database_password(value: str) -> bool:
     try:
         parsed = urlsplit(value)
@@ -67,6 +76,12 @@ def collect_startup_issues(settings: Settings) -> List[StartupValidationIssue]:
 
     if _unsafe_jwt_secret(settings.jwt_secret_key):
         add("jwt_secret_unsafe", "jwt_secret_key", "JWT 密钥缺失、示例或长度不足")
+    if _unsafe_rate_limit_hmac_key(settings.rate_limit_hmac_key):
+        add(
+            "rate_limit_hmac_key_unsafe",
+            "rate_limit_hmac_key",
+            "限流摘要密钥缺失、示例或长度不足",
+        )
     if _has_known_default_database_password(settings.database_url):
         add("database_default_password", "database_url", "数据库使用了已知默认密码")
     if settings.server_answer_enabled and _is_placeholder(settings.deepseek_api_key):

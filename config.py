@@ -47,6 +47,10 @@ class Settings(BaseSettings):
     readonly_quota: int = Field(default=300, gt=0)
     readonly_window_seconds: int = Field(default=60, gt=0)
     rate_limit_memory_max_keys: int = Field(default=10000, gt=0)
+    rate_limit_hmac_key: str = Field(
+        default="heritagemind-dev-rate-limit-hmac-change-in-production"
+    )
+    rate_limit_hmac_previous_keys: List[str] = Field(default_factory=list)
     trusted_proxy_ips: List[str] = Field(default_factory=list)
     trust_proxy_headers: bool = Field(default=False)
     request_concurrency_limit: int = Field(default=32, gt=0)
@@ -468,6 +472,7 @@ class Settings(BaseSettings):
     @field_validator(
         "cors_allowed_origins",
         "trusted_proxy_ips",
+        "rate_limit_hmac_previous_keys",
         "allowed_model_base_url_hosts",
         mode="before",
     )
