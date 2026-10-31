@@ -6,7 +6,7 @@
 
 ## Current Phase
 
-Implementation pending
+Phase 3: Implementation — concurrency permits under independent specification review
 
 ## Phases
 
@@ -29,7 +29,9 @@ Implementation pending
 - [ ] 严格按 TDD 实现配置门禁、安全中间件、限流、认证、脱敏、健康检查和韧性组件
 - [ ] 更新前端 API Key 生命周期与错误解析
 - [ ] 更新 Worker 心跳、迁移和部署配置
-- **Status:** pending
+- **Status:** in_progress
+
+已验证子包：配置/启动门禁、请求安全中间件、Redis 业务限流及其生产 fail-closed 与 HMAC 轮换加固。高成本操作并发许可已实现并提交，正等待独立规格复审；阶段 3 其余范围尚未实施。
 
 ### Phase 4: Testing & Verification
 

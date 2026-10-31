@@ -31,6 +31,15 @@
 | Base URL 使用 HTTPS/主机白名单 | 防止用户自定义模型地址成为 SSRF 通道 |
 | 008 Alembic 迁移扩展心跳 | 持久化 Worker 总体状态和脱敏依赖摘要 |
 
+## Implementation Findings
+
+- `Settings` 的生产环境契约已固定为 `dev/test/prod`（默认 `dev`），不能接受旧的长名称，以免生产门禁被错误环境名绕过。
+- Base URL 校验是纯本地 URL/IP 解析，不做 DNS 或网络请求；生产仅允许 HTTPS、公共端口、白名单主机，开发本机 HTTP 须显式开启。
+- 当前门禁已接入 API 与上传 Worker；请求上下文会绑定可信代理链尾，白名单 CORS 与安全头已覆盖 413 和错误响应。
+- Redis 业务限流在生产环境不能安全访问共享 Redis 时必须 fail-closed，不能使用每进程内存额度伪装成分布式防护；登录/注册同时按账号和可信客户端 IP 限制。
+- 限流 key 使用当前及旧 HMAC Key 生成，生产启动逐项拒绝空、默认或过短轮换 Key；轮换测试必须实际验证同一 Lua 调用的多 key 语义。
+- 高成本操作并发许可已实现并正在独立规格审查；在其审查和后续全量验证完成前，阶段 1 仍为进行中。
+
 ## Issues Encountered
 
 | Issue | Resolution |
