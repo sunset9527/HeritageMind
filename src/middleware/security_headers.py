@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from typing import Any, Awaitable, Callable
 
 
@@ -14,7 +13,10 @@ _BASE_HEADERS = (
     (
         b"content-security-policy",
         b"default-src 'self'; base-uri 'self'; frame-ancestors 'none'; "
-        b"object-src 'none'; form-action 'self'",
+        b"object-src 'none'; form-action 'self'; "
+        b"script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+        b"style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+        b"img-src 'self' data: https://fastapi.tiangolo.com",
     ),
 )
 _HSTS_HEADER = (b"strict-transport-security", b"max-age=31536000; includeSubDomains")
@@ -48,12 +50,9 @@ class SecurityHeadersMiddleware:
             return
 
         header_names = {name for name, _ in self._headers()}
-        response_started = False
 
         async def secure_send(message: dict) -> None:
-            nonlocal response_started
             if message.get("type") == "http.response.start":
-                response_started = True
                 headers = [
                     (name, value)
                     for name, value in message.get("headers", [])
@@ -63,20 +62,4 @@ class SecurityHeadersMiddleware:
                 message = {**message, "headers": headers}
             await send(message)
 
-        try:
-            await self.app(scope, receive, secure_send)
-        except Exception:
-            # ServerErrorMiddleware 位于 user middleware 之外。这里在响应尚未
-            # 开始时生成同样不泄露内部信息的 500，保证安全头与请求 ID 不会丢失。
-            if response_started:
-                raise
-            body = json.dumps({"detail": "Internal Server Error"}).encode("utf-8")
-            await secure_send({
-                "type": "http.response.start",
-                "status": 500,
-                "headers": [
-                    (b"content-type", b"application/json; charset=utf-8"),
-                    (b"content-length", str(len(body)).encode("ascii")),
-                ],
-            })
-            await send({"type": "http.response.body", "body": body})
+        await self.app(scope, receive, secure_send)

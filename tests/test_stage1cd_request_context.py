@@ -155,7 +155,6 @@ def test_request_context_and_security_headers_cover_body_limit_and_http_errors()
     app = _app()
     oversized = asyncio.run(_request(app, "POST", "/context", content=b"1234"))
     error = asyncio.run(_request(app, "GET", "/error"))
-    unhandled = asyncio.run(_request(app, "GET", "/boom", raise_app_exceptions=False))
 
     assert oversized.status_code == 413
     assert oversized.headers["x-request-id"]
@@ -163,12 +162,11 @@ def test_request_context_and_security_headers_cover_body_limit_and_http_errors()
     assert error.status_code == 418
     assert error.headers["x-request-id"]
     assert error.headers["x-content-type-options"] == "nosniff"
-    assert unhandled.status_code == 500
-    assert unhandled.headers["x-request-id"]
-    assert unhandled.headers["x-content-type-options"] == "nosniff"
 
+    with pytest.raises(RuntimeError, match="unexpected"):
+        asyncio.run(_request(app, "GET", "/boom"))
 
-def test_api_stack_keeps_body_limit_as_first_body_reader_and_covers_its_413(monkeypatch):
+def test_api_stack_puts_cors_outside_body_limit_and_covers_origin_413(monkeypatch):
     """验证真实 api.py 的 LIFO 接线，而非只验证小型测试应用。"""
     import api
 
@@ -176,8 +174,8 @@ def test_api_stack_keeps_body_limit_as_first_body_reader_and_covers_its_413(monk
     assert classes[:4] == [
         "RequestContextMiddleware",
         "SecurityHeadersMiddleware",
-        "RequestBodyLimitMiddleware",
         "CORSMiddleware",
+        "RequestBodyLimitMiddleware",
     ]
 
     body_limit = next(
@@ -185,19 +183,45 @@ def test_api_stack_keeps_body_limit_as_first_body_reader_and_covers_its_413(monk
         for middleware in api.app.user_middleware
         if middleware.cls.__name__ == "RequestBodyLimitMiddleware"
     )
+    cors = next(
+        middleware
+        for middleware in api.app.user_middleware
+        if middleware.cls.__name__ == "CORSMiddleware"
+    )
     old_limit = body_limit.kwargs["max_bytes"]
+    old_origins = cors.kwargs["allow_origins"]
+    old_credentials = cors.kwargs["allow_credentials"]
     old_stack = api.app.middleware_stack
     try:
         monkeypatch.setitem(body_limit.kwargs, "max_bytes", 3)
+        monkeypatch.setitem(cors.kwargs, "allow_origins", ["https://app.example.com"])
+        monkeypatch.setitem(cors.kwargs, "allow_credentials", True)
         api.app.middleware_stack = None
-        response = asyncio.run(_request(api.app, "POST", "/health", content=b"1234"))
+        response = asyncio.run(_request(
+            api.app,
+            "POST",
+            "/health",
+            content=b"1234",
+            headers={"Origin": "https://app.example.com"},
+        ))
+        oversized_options = asyncio.run(_request(
+            api.app,
+            "OPTIONS",
+            "/health",
+            content=b"1234",
+        ))
     finally:
         body_limit.kwargs["max_bytes"] = old_limit
+        cors.kwargs["allow_origins"] = old_origins
+        cors.kwargs["allow_credentials"] = old_credentials
         api.app.middleware_stack = old_stack
 
     assert response.status_code == 413
+    assert response.headers["access-control-allow-origin"] == "https://app.example.com"
+    assert response.headers["access-control-allow-credentials"] == "true"
     assert response.headers["x-request-id"]
     assert response.headers["x-content-type-options"] == "nosniff"
+    assert oversized_options.status_code == 413
 
 
 def test_api_lifespan_rejects_invalid_production_settings_before_expensive_initialization(monkeypatch):

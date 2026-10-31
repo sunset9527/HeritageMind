@@ -111,3 +111,17 @@ def test_security_headers_are_present_and_hsts_requires_all_production_switches(
     assert "strict-transport-security" not in dev.headers
     assert hsts.headers["strict-transport-security"] == "max-age=31536000; includeSubDomains"
     assert "strict-transport-security" not in not_hsts.headers
+
+
+def test_csp_allows_only_the_assets_required_by_fastapi_docs_and_redoc():
+    app = _app(_settings())
+    docs = asyncio.run(_request(app, "GET", "/docs"))
+    redoc = asyncio.run(_request(app, "GET", "/redoc"))
+
+    policy = docs.headers["content-security-policy"]
+    assert "cdn.jsdelivr.net" in docs.text
+    assert "cdn.jsdelivr.net" in redoc.text
+    assert "fastapi.tiangolo.com" in docs.text
+    assert "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net" in policy
+    assert "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net" in policy
+    assert "img-src 'self' data: https://fastapi.tiangolo.com" in policy

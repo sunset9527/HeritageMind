@@ -216,9 +216,10 @@ app = FastAPI(
     ],
 )
 
-# 中间件按 Starlette LIFO 构建：上下文 → 安全头 → 请求体上限 → CORS → 路由。
-# 前两个外层包装器不读取 request body；RequestBodyLimitMiddleware 是最早消费
-# body 的组件，且 413、错误与预检响应仍可获得请求 ID 和安全头。
+# 中间件按 Starlette LIFO 构建：上下文 → 安全头 → CORS → 请求体上限 → 路由。
+# 前三层不读取普通请求的 body；RequestBodyLimitMiddleware 仍是首个 body
+# 消费组件。CORS 位于其外，才能为 413 响应回写合法 Origin 的 ACAO。
+app.add_middleware(RequestBodyLimitMiddleware, max_bytes=settings.upload_request_max_bytes)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_allowed_origins,
@@ -226,7 +227,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.add_middleware(RequestBodyLimitMiddleware, max_bytes=settings.upload_request_max_bytes)
 app.add_middleware(SecurityHeadersMiddleware, settings=settings)
 app.add_middleware(RequestContextMiddleware, settings=settings)
 
