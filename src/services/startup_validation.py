@@ -82,6 +82,13 @@ def collect_startup_issues(settings: Settings) -> List[StartupValidationIssue]:
             "rate_limit_hmac_key",
             "限流摘要密钥缺失、示例或长度不足",
         )
+    for previous_key in settings.rate_limit_hmac_previous_keys:
+        if _unsafe_rate_limit_hmac_key(previous_key):
+            add(
+                "rate_limit_hmac_previous_key_unsafe",
+                "rate_limit_hmac_previous_keys",
+                "限流轮换密钥缺失、示例或长度不足",
+            )
     if _has_known_default_database_password(settings.database_url):
         add("database_default_password", "database_url", "数据库使用了已知默认密码")
     if settings.server_answer_enabled and _is_placeholder(settings.deepseek_api_key):

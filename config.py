@@ -472,7 +472,6 @@ class Settings(BaseSettings):
     @field_validator(
         "cors_allowed_origins",
         "trusted_proxy_ips",
-        "rate_limit_hmac_previous_keys",
         "allowed_model_base_url_hosts",
         mode="before",
     )
@@ -500,6 +499,31 @@ class Settings(BaseSettings):
                 raise ValueError("列表配置不能包含空条目")
             items.append(item.strip())
         return items
+
+    @field_validator("rate_limit_hmac_previous_keys", mode="before")
+    @classmethod
+    def parse_rate_limit_hmac_previous_keys(cls, value):
+        """Parse rotation keys without hiding unsafe entries from startup validation."""
+        if value is None:
+            return []
+        if isinstance(value, str):
+            text = value.strip()
+            if not text:
+                return []
+            if text.startswith("["):
+                try:
+                    value = json.loads(text)
+                except json.JSONDecodeError as exc:
+                    raise ValueError("轮换密钥必须是 JSON 数组或逗号分隔字符串") from exc
+            else:
+                value = text.split(",")
+        if not isinstance(value, (list, tuple)):
+            raise ValueError("轮换密钥必须是 JSON 数组或逗号分隔字符串")
+        if any(not isinstance(item, str) for item in value):
+            raise ValueError("轮换密钥必须是字符串")
+        # Keep blank entries so production startup can emit a stable, non-secret
+        # structured issue instead of silently dropping an operator mistake.
+        return [item.strip() for item in value]
 
     @field_validator("trusted_proxy_ips")
     @classmethod

@@ -28,12 +28,15 @@ class FakeRedis:
         self.calls = []
         self.failed = False
 
-    async def eval(self, script, key_count, key, window):
-        self.calls.append((script, key_count, key, window))
+    async def eval(self, script, key_count, *args):
+        keys = tuple(args[:key_count])
+        window = args[key_count]
+        self.calls.append((script, key_count, keys, window))
         if self.failed:
             raise TimeoutError("redis unavailable")
-        self.counts[key] = self.counts.get(key, 0) + 1
-        return [self.counts[key], self.ttl]
+        for key in keys:
+            self.counts[key] = self.counts.get(key, 0) + 1
+        return [max(self.counts[key] for key in keys), self.ttl]
 
 
 def _policies(limit=2, window=60):
@@ -55,7 +58,8 @@ def test_redis_fixed_window_first_boundary_limit_and_retry_ttl():
         assert first.allowed and first.count == 1 and first.remaining == 1
         assert second.allowed and second.count == 2 and second.remaining == 0
         assert not blocked.allowed and blocked.retry_after == 47
-        script, key_count, key, window = redis.calls[0]
+        script, key_count, keys, window = redis.calls[0]
+        key = keys[0]
         assert "INCR" in script and "EXPIRE" in script and "TTL" in script
         assert key_count == 1 and window == 60
         assert "Alice" not in key and "example.com" not in key
@@ -238,24 +242,62 @@ def test_memory_fallback_has_a_lock_for_sweep_capacity_and_increment():
 
 
 def test_rate_limit_key_uses_stable_rotatable_hmac_without_subject_text():
-    first = RateLimiter(redis_client=FakeRedis(), policies=_policies(), hmac_key="current-secret")
-    second = RateLimiter(redis_client=FakeRedis(), policies=_policies(), hmac_key="next-secret")
-    rotating = RateLimiter(
-        redis_client=FakeRedis(),
-        policies=_policies(),
-        hmac_key="next-secret",
-        hmac_previous_keys=["current-secret"],
-    )
+    async def scenario():
+        redis = FakeRedis()
+        first = RateLimiter(redis_client=FakeRedis(), policies=_policies(), hmac_key="current-secret")
+        second = RateLimiter(redis_client=FakeRedis(), policies=_policies(), hmac_key="next-secret")
+        rotating = RateLimiter(
+            redis_client=redis,
+            policies=_policies(limit=2),
+            hmac_key="next-secret",
+            hmac_previous_keys=["current-secret"],
+        )
 
-    one = first.key_for(RateLimitCategory.LOGIN, account_identifier="Alice@Example.com")
-    two = first.key_for(RateLimitCategory.LOGIN, account_identifier="alice@example.com")
-    changed = second.key_for(RateLimitCategory.LOGIN, account_identifier="alice@example.com")
-    rotation_keys = rotating._keys_for(RateLimitCategory.LOGIN, account_identifier="alice@example.com")
+        one = first.key_for(RateLimitCategory.LOGIN, account_identifier="Alice@Example.com")
+        two = first.key_for(RateLimitCategory.LOGIN, account_identifier="alice@example.com")
+        changed = second.key_for(RateLimitCategory.LOGIN, account_identifier="alice@example.com")
+        rotation_keys = rotating._keys_for(RateLimitCategory.LOGIN, account_identifier="alice@example.com")
+        first_window = await rotating.check(RateLimitCategory.LOGIN, account_identifier="alice@example.com")
+        second_window = await rotating.check(RateLimitCategory.LOGIN, account_identifier="alice@example.com")
+        exceeded = await rotating.check(RateLimitCategory.LOGIN, account_identifier="alice@example.com")
 
-    assert one == two
-    assert changed != one
-    assert changed == rotation_keys[0] and one in rotation_keys
-    assert "Alice" not in one and "example.com" not in one
+        script, key_count, sent_keys, window = redis.calls[0]
+        assert one == two
+        assert changed != one
+        assert changed == rotation_keys[0] and one in rotation_keys
+        assert "Alice" not in one and "example.com" not in one
+        assert key_count == 2 and sent_keys == rotation_keys and window == 60
+        assert "INCR" in script and "EXPIRE" in script and "TTL" in script
+        assert first_window.allowed and second_window.allowed and not exceeded.allowed
+        assert {redis.counts[key] for key in rotation_keys} == {3}
+
+    asyncio.run(scenario())
+
+
+def test_memory_lock_prevents_concurrent_fallback_counter_loss():
+    limiter = RateLimiter(redis_client=FakeRedis(), policies=_policies(limit=1000))
+    policy = RateLimitPolicy(1000, 60)
+    keys = limiter._keys_for(RateLimitCategory.LOGIN, account_identifier="threaded@example.com")
+    workers = 16
+    barrier = threading.Barrier(workers)
+    errors = []
+
+    def increment():
+        try:
+            barrier.wait()
+            limiter._check_memory(keys, policy)
+        except BaseException as exc:  # pragma: no cover - assertion below reports it
+            errors.append(exc)
+
+    threads = [threading.Thread(target=increment) for _ in range(workers)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    assert not errors
+    assert limiter.memory_key_count == 1
+    assert limiter._memory[keys[0]].count == workers
 
 
 def test_all_public_business_get_routes_use_read_only_rate_limit():

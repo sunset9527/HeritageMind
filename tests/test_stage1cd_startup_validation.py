@@ -40,6 +40,20 @@ def test_production_rejects_unsafe_rate_limit_hmac_key(secret):
     assert "rate_limit_hmac_key_unsafe" in issue_codes(production_settings(rate_limit_hmac_key=secret))
 
 
+@pytest.mark.parametrize(
+    "previous_keys",
+    [
+        [""],
+        ["short-secret"],
+        ["heritagemind-dev-rate-limit-hmac-change-in-production"],
+    ],
+)
+def test_production_rejects_unsafe_previous_rate_limit_hmac_keys(previous_keys):
+    assert "rate_limit_hmac_previous_key_unsafe" in issue_codes(
+        production_settings(rate_limit_hmac_previous_keys=previous_keys)
+    )
+
+
 def test_production_rejects_known_default_database_password_without_echoing_url():
     settings = production_settings(
         database_url="mysql+pymysql://root:123456@localhost:3306/heritagemind"
