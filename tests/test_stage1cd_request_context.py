@@ -104,7 +104,7 @@ def test_untrusted_peer_cannot_spoof_client_ip_through_xff():
     assert response.json()["client_ip"] == "198.51.100.7"
 
 
-def test_only_configured_direct_proxy_can_supply_valid_leftmost_xff_ip():
+def test_trusted_proxy_with_peer_bound_xff_chain_uses_leftmost_client_ip():
     app = _app(_settings(trust_proxy_headers=True, trusted_proxy_ips=["203.0.113.9"]))
 
     async def request_from_trusted_proxy():
@@ -116,6 +116,26 @@ def test_only_configured_direct_proxy_can_supply_valid_leftmost_xff_ip():
 
     assert response.json()["client_ip"] == "198.51.100.42"
     assert response.json()["peer_ip"] == "203.0.113.9"
+
+
+def test_trusted_proxy_xff_chain_must_end_with_direct_peer_and_rejects_multiple_headers():
+    app = _app(_settings(trust_proxy_headers=True, trusted_proxy_ips=["203.0.113.9"]))
+
+    async def request_from_trusted_proxy(headers):
+        transport = httpx.ASGITransport(app=app, client=("203.0.113.9", 4321))
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            return await client.get("/context", headers=headers)
+
+    mismatched_tail = asyncio.run(request_from_trusted_proxy({
+        "X-Forwarded-For": "198.51.100.66, 192.0.2.8",
+    }))
+    multiple_headers = asyncio.run(request_from_trusted_proxy([
+        ("X-Forwarded-For", "198.51.100.66, 203.0.113.9"),
+        ("X-Forwarded-For", "198.51.100.67, 203.0.113.9"),
+    ]))
+
+    assert mismatched_tail.json()["client_ip"] == "203.0.113.9"
+    assert multiple_headers.json()["client_ip"] == "203.0.113.9"
 
 
 def test_invalid_xff_from_trusted_proxy_falls_back_to_peer():

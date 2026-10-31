@@ -75,6 +75,8 @@ def _valid_xff_client_ip(scope: dict[str, Any], peer_ip: str, settings: Any) -> 
     try:
         for candidate in candidates:
             ip_address(candidate)
+        if ip_address(candidates[-1]) != ip_address(peer_ip):
+            return peer_ip
     except ValueError:
         return peer_ip
     return candidates[0]
