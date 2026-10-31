@@ -110,6 +110,9 @@ from src.retrieval.multimodal_search import search_images_by_text, search_simila
 from src.utils.llm import set_request_override, clear_request_override
 from src.app_metadata import API_DESCRIPTION, APP_VERSION
 from src.middleware.request_size import RequestBodyLimitMiddleware
+from src.middleware.request_context import RequestContextMiddleware
+from src.middleware.security_headers import SecurityHeadersMiddleware
+from src.services.startup_validation import validate_startup_settings
 
 # 配置日志
 logging.basicConfig(
@@ -131,6 +134,8 @@ async def lifespan(app: FastAPI):
     """应用生命周期管理"""
     global workflow, knowledge_graph, document_loader, retriever, visualizer, active_books_projection
 
+    # 生产配置错误必须在数据库、模型与检索器等昂贵初始化前阻断启动。
+    validate_startup_settings(settings)
     logger.info("初始化应用...")
 
     # 检查 API Key 配置
@@ -139,7 +144,7 @@ async def lifespan(app: FastAPI):
         logger.warning("⚠️  未配置有效的 DeepSeek API Key！")
         logger.warning("   请编辑 .env 文件，将 DEEPSEEK_API_KEY 设为真实值")
         logger.warning("   或在设置页面填写你自己的 API Key")
-        logger.warning("   当前 Key: " + (settings.deepseek_api_key[:12] + "..." if settings.deepseek_api_key else "(空)"))
+        logger.warning("   请勿在日志中输出 API Key；已省略当前值")
         logger.warning("=" * 60)
 
     # 初始化数据库表
@@ -211,16 +216,19 @@ app = FastAPI(
     ],
 )
 
-app.add_middleware(RequestBodyLimitMiddleware, max_bytes=settings.upload_request_max_bytes)
-
-# 添加CORS中间件
+# 中间件按 Starlette LIFO 构建：上下文 → 安全头 → 请求体上限 → CORS → 路由。
+# 前两个外层包装器不读取 request body；RequestBodyLimitMiddleware 是最早消费
+# body 的组件，且 413、错误与预检响应仍可获得请求 ID 和安全头。
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=settings.cors_allowed_origins,
+    allow_credentials=settings.cors_allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(RequestBodyLimitMiddleware, max_bytes=settings.upload_request_max_bytes)
+app.add_middleware(SecurityHeadersMiddleware, settings=settings)
+app.add_middleware(RequestContextMiddleware, settings=settings)
 
 
 # ============================================================================

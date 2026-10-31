@@ -15,6 +15,7 @@ from src.services.audio_transcript import enqueue_pending_jobs
 from src.services.audio_worker import process_one_job as process_audio_job
 from src.services.queue import get_redis, pop_audio_job, pop_job
 from src.services.task_state import sweep_document_jobs, update_worker_heartbeat
+from src.services.startup_validation import validate_startup_settings
 
 
 logger = logging.getLogger(__name__)
@@ -86,6 +87,7 @@ async def run_worker(stop_event: asyncio.Event) -> None:
 
 def main() -> None:
     logging.basicConfig(level=getattr(logging, settings.log_level))
+    validate_startup_settings(settings)
 
     async def start() -> None:
         await run_worker(asyncio.Event())
