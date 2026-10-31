@@ -4,6 +4,7 @@ import asyncio
 from types import SimpleNamespace
 
 import httpx
+import pytest
 from fastapi import Depends, FastAPI
 
 from src.deps_rate_limit import rate_limit
@@ -126,32 +127,45 @@ def test_memory_fallback_rejects_new_key_at_capacity_without_resetting_active_id
     asyncio.run(scenario())
 
 
-def test_production_redis_failure_returns_stable_503_with_request_id(monkeypatch):
+@pytest.mark.parametrize(
+    ("failure_kind", "secret"),
+    [
+        ("provider", "connect-secret"),
+        ("timeout", "timeout-secret"),
+        ("exception", "script-secret"),
+    ],
+)
+def test_production_redis_failures_return_503_from_real_public_api_route(
+    monkeypatch, failure_kind, secret
+):
     async def scenario():
-        redis = FakeRedis()
-        redis.failed = True
+        class EvalFailureRedis:
+            async def eval(self, *args):
+                if failure_kind == "timeout":
+                    raise TimeoutError(secret)
+                raise RuntimeError(secret)
+
+        def provider():
+            if failure_kind == "provider":
+                raise ConnectionError(secret)
+            return EvalFailureRedis()
+
         limiter = RateLimiter(
-            redis_client=redis,
+            redis_provider=provider,
             policies=_policies(limit=1),
             app_env="prod",
         )
         monkeypatch.setattr("src.deps_rate_limit.get_rate_limiter", lambda: limiter)
-        app = FastAPI()
-        app.add_middleware(RequestContextMiddleware, settings=SimpleNamespace(
-            trust_proxy_headers=False, trusted_proxy_ips=[]
-        ))
+        import api
 
-        @app.get("/protected")
-        async def protected(_: None = Depends(rate_limit(RateLimitCategory.READ_ONLY))):
-            return {"ok": True}
-
-        transport = httpx.ASGITransport(app=app, client=("198.51.100.7", 1))
+        transport = httpx.ASGITransport(app=api.app, client=("198.51.100.7", 1))
         async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
-            response = await client.get("/protected", headers={"X-Request-ID": "redis-down"})
+            response = await client.get("/crafts", headers={"X-Request-ID": "redis-down"})
 
         assert response.status_code == 503
         assert response.json()["detail"]["code"] == "rate_limit_unavailable"
         assert "redis" not in response.text.lower()
+        assert secret not in response.text
         assert response.headers["x-request-id"] == "redis-down"
 
     asyncio.run(scenario())
