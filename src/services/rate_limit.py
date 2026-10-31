@@ -1,4 +1,4 @@
-"""业务限流：Redis 原子固定窗口，故障时收紧到有界进程内窗口。
+"""业务限流：Redis 原子固定窗口；生产 Redis 故障时拒绝受保护请求。
 
 Redis key 始终只包含类别和 SHA-256 截断摘要。原始用户 ID、账号、IP、JWT、
 API Key 或问题正文均不会进入 key、返回值或日志。
@@ -45,6 +45,7 @@ class RateLimitDecision:
     remaining: int
     retry_after: int
     source: str
+    available: bool = True
 
 
 @dataclass
@@ -79,7 +80,7 @@ def policies_from_settings(source: Any = settings) -> dict[RateLimitCategory, Ra
 
 
 class RateLimiter:
-    """A storage-independent limiter with Redis-first operation and bounded local fallback.
+    """Redis-first limiter; dev/test may use a bounded local fallback.
 
     ``redis_client`` is deliberately injectable. Production gets its lazy client through
     :func:`get_rate_limiter`; tests need no Redis server or wall-clock sleeps.
@@ -94,6 +95,7 @@ class RateLimiter:
         clock: Callable[[], float] = time.monotonic,
         memory_max_keys: Optional[int] = None,
         key_prefix: str = "heritagemind:rate:v1",
+        app_env: Optional[str] = None,
     ):
         self._redis_client = redis_client
         self._redis_provider = redis_provider
@@ -101,6 +103,7 @@ class RateLimiter:
         self._clock = clock
         self._memory_max_keys = memory_max_keys or settings.rate_limit_memory_max_keys
         self._key_prefix = key_prefix
+        self._app_env = app_env or settings.app_env
         self._memory: OrderedDict[str, _MemoryBucket] = OrderedDict()
 
     @property
@@ -158,6 +161,10 @@ class RateLimiter:
         except Exception as exc:
             # Do not leak a Redis endpoint/error through the HTTP response or key logs.
             logger.warning("rate_limit_redis_failed category=%s error=%s", category.value, type(exc).__name__)
+            if self._app_env == "prod":
+                # A per-worker fallback cannot preserve a distributed quota. Production
+                # must fail closed rather than silently granting requests on each worker.
+                return RateLimitDecision(False, 0, 0, 1, source="unavailable", available=False)
             return self._check_memory(key, policy)
 
     @staticmethod
@@ -187,14 +194,23 @@ class RateLimiter:
         self._evict_expired(now)
         bucket = self._memory.get(key)
         if bucket is None:
-            while len(self._memory) >= self._memory_max_keys:
-                self._memory.popitem(last=False)
+            if len(self._memory) >= self._memory_max_keys:
+                # Never evict an active identity: that would reset its quota and make
+                # overload bypassable by cycling identities. Expired buckets were
+                # already swept above; only a new identity is rejected here.
+                return RateLimitDecision(
+                    False,
+                    policy.limit + 1,
+                    0,
+                    1,
+                    source="memory_capacity",
+                )
             bucket = _MemoryBucket(count=0, started_at=now)
             self._memory[key] = bucket
         bucket.count += 1
         self._memory.move_to_end(key)
         ttl = max(1, math.ceil(policy.window_seconds - (now - bucket.started_at)))
-        # The fallback uses the exact same or lower quota; it can never be more permissive.
+        # This quota is only meaningful inside one process; production never uses it.
         return self._decision(bucket.count, ttl, policy, source="memory")
 
 

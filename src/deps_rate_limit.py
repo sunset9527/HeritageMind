@@ -24,6 +24,12 @@ async def enforce_rate_limit(
         account_identifier=account_identifier,
         identity=get_client_identity(),
     )
+    if not decision.available:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={"code": "rate_limit_unavailable", "message": "服务繁忙，请稍后再试"},
+            headers={"Retry-After": str(decision.retry_after)},
+        )
     if not decision.allowed:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -42,4 +48,6 @@ def rate_limit(
         selected = authenticated_category if current_user is not None and authenticated_category else category
         await enforce_rate_limit(selected, current_user=current_user)
 
+    # Expose policy metadata for route-contract tests; this is not client input.
+    dependency.rate_limit_category = category
     return dependency

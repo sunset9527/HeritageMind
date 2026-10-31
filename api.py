@@ -293,7 +293,7 @@ class GraphStatsResponse(BaseModel):
 # ============================================================================
 
 @app.get("/")
-async def root():
+async def root(_: None = Depends(rate_limit(RateLimitCategory.READ_ONLY))):
     """根路径"""
     return {
         "name": "非遗知识问答系统API",
@@ -632,7 +632,10 @@ async def query_stream(
 # ============================================================================
 
 @app.get("/graph/stats", response_model=GraphStatsResponse)
-async def get_graph_stats(db: Session = Depends(get_db)):
+async def get_graph_stats(
+    _: None = Depends(rate_limit(RateLimitCategory.READ_ONLY)),
+    db: Session = Depends(get_db),
+):
     """获取知识图谱统计信息"""
     try:
         if active_books_projection is None:
@@ -650,6 +653,7 @@ async def get_graph_stats(db: Session = Depends(get_db)):
 async def visualize_graph(
     filter_type: Optional[str] = None,
     layout: str = "force",
+    _: None = Depends(rate_limit(RateLimitCategory.READ_ONLY)),
     db: Session = Depends(get_db),
 ):
     """
@@ -680,7 +684,11 @@ async def visualize_graph(
 
 
 @app.get("/graph/subgraph/{craft_name}")
-async def get_subgraph(craft_name: str, depth: int = 1):
+async def get_subgraph(
+    craft_name: str,
+    depth: int = 1,
+    _: None = Depends(rate_limit(RateLimitCategory.READ_ONLY)),
+):
     """
     获取技艺的子图
     
@@ -700,7 +708,10 @@ async def get_subgraph(craft_name: str, depth: int = 1):
 # ============================================================================
 
 @app.get("/gap-report")
-async def get_gap_report(question: str):
+async def get_gap_report(
+    question: str,
+    _: None = Depends(rate_limit(RateLimitCategory.READ_ONLY)),
+):
     """获取问题对应的知识缺口报告"""
     try:
         gap_detector = KnowledgeGapDetector()
@@ -762,7 +773,7 @@ async def list_crafts(_: None = Depends(rate_limit(RateLimitCategory.READ_ONLY))
 
 
 @app.get("/profiles")
-async def list_profiles():
+async def list_profiles(_: None = Depends(rate_limit(RateLimitCategory.READ_ONLY))):
     """获取用户画像列表"""
     return {
         "profiles": [
@@ -800,7 +811,7 @@ class ServerConfigResponse(BaseModel):
 
 
 @app.get("/config")
-async def get_server_config():
+async def get_server_config(_: None = Depends(rate_limit(RateLimitCategory.READ_ONLY))):
     """
     获取服务器默认 LLM 配置。
 
@@ -830,7 +841,10 @@ async def get_server_config():
 # ============================================================================
 
 @app.get("/dashboard/summary")
-async def get_dashboard_summary_endpoint(db: Session = Depends(get_db)):
+async def get_dashboard_summary_endpoint(
+    _: None = Depends(rate_limit(RateLimitCategory.READ_ONLY)),
+    db: Session = Depends(get_db),
+):
     """获取当前公开知识库的首页统计。"""
     if active_books_projection is not None:
         return active_books_projection.dashboard_summary()
@@ -842,7 +856,7 @@ async def get_dashboard_summary_endpoint(db: Session = Depends(get_db)):
 # ============================================================================
 
 @app.get("/documents/summary")
-async def get_document_summary():
+async def get_document_summary(_: None = Depends(rate_limit(RateLimitCategory.READ_ONLY))):
     """获取文档库摘要"""
     try:
         summary = document_loader.get_document_summary()
@@ -996,7 +1010,9 @@ async def upload_media_file(
 
 @app.get("/media/list", response_model=MediaListResponse)
 async def list_media_files(craft_name: Optional[str] = None, media_type: Optional[str] = None,
-                           limit: int = 50, offset: int = 0, db: Session = Depends(get_db)):
+                           limit: int = 50, offset: int = 0,
+                           _: None = Depends(rate_limit(RateLimitCategory.READ_ONLY)),
+                           db: Session = Depends(get_db)):
     """列出已发布的媒体文件。"""
     items, total = list_published_media(db, craft_name, media_type, limit, offset)
     result = []
@@ -1025,7 +1041,11 @@ async def list_admin_media_files(
 
 
 @app.get("/media/{media_id}", response_model=MediaResponse)
-async def get_media_file(media_id: int, db: Session = Depends(get_db)):
+async def get_media_file(
+    media_id: int,
+    _: None = Depends(rate_limit(RateLimitCategory.READ_ONLY)),
+    db: Session = Depends(get_db),
+):
     doc = get_published_media(db, media_id)
     if not doc: raise HTTPException(status_code=404, detail="文件不存在")
     resp = MediaResponse.model_validate(doc); resp.url = get_media_url(doc); return resp
@@ -1085,6 +1105,7 @@ async def delete_media_file(media_id: int, db: Session = Depends(get_db)):
 async def serve_media_file(
     media_type: str,
     filename: str,
+    _: None = Depends(rate_limit(RateLimitCategory.READ_ONLY)),
     db: Session = Depends(get_db),
 ):
     doc = get_published_media_by_storage_name(db, media_type, filename)
@@ -1102,7 +1123,12 @@ async def serve_media_file(
 # ============================================================================
 
 @app.get("/search/image")
-async def search_image_by_text(q: str, top_k: int = 6, db: Session = Depends(get_db)):
+async def search_image_by_text(
+    q: str,
+    top_k: int = 6,
+    _: None = Depends(rate_limit(RateLimitCategory.READ_ONLY)),
+    db: Session = Depends(get_db),
+):
     """文搜图：用文字描述搜索已上传的图片"""
     results = search_images_by_text(db, q, top_k)
     return {"query": q, "results": results, "total": len(results)}
@@ -1217,6 +1243,7 @@ async def search_audio(
     q: str,
     top_k: int = 10,
     craft_name: Optional[str] = None,
+    _: None = Depends(rate_limit(RateLimitCategory.READ_ONLY)),
     db: Session = Depends(get_db),
 ):
     """文搜音频：按文字命中已转写音频（转写文本向量检索，逐 media 取最佳 chunk）。
@@ -1319,7 +1346,7 @@ KNOWLEDGE_CATEGORIES = ["陶瓷", "织绣", "雕刻", "金属工艺", "纸艺版
 
 
 @app.get("/knowledge/categories")
-async def list_categories():
+async def list_categories(_: None = Depends(rate_limit(RateLimitCategory.READ_ONLY))):
     """知识库分类列表"""
     cats = []
     for cat in KNOWLEDGE_CATEGORIES:
@@ -1829,7 +1856,10 @@ def _serialize_inheritor(row: InheritorProfile, db: Session) -> Dict[str, Any]:
 
 
 @app.get("/encyclopedia")
-async def list_encyclopedia(db: Session = Depends(get_db)):
+async def list_encyclopedia(
+    _: None = Depends(rate_limit(RateLimitCategory.READ_ONLY)),
+    db: Session = Depends(get_db),
+):
     """List the public encyclopedia for the active corpus when available."""
     if active_books_projection is not None:
         return {"items": active_books_projection.encyclopedia_entries()}
@@ -1839,7 +1869,10 @@ async def list_encyclopedia(db: Session = Depends(get_db)):
 
 
 @app.get("/local-books/images/{craft_id}")
-async def get_active_books_image(craft_id: str):
+async def get_active_books_image(
+    craft_id: str,
+    _: None = Depends(rate_limit(RateLimitCategory.READ_ONLY)),
+):
     """Serve only the image explicitly manifested for an active-books project."""
     if active_books_projection is None:
         raise HTTPException(status_code=404, detail="当前没有活动图书图片资产")
@@ -1870,7 +1903,11 @@ async def ai_search(
 
 
 @app.get("/encyclopedia/{slug}")
-async def get_encyclopedia_entry(slug: str, db: Session = Depends(get_db)):
+async def get_encyclopedia_entry(
+    slug: str,
+    _: None = Depends(rate_limit(RateLimitCategory.READ_ONLY)),
+    db: Session = Depends(get_db),
+):
     if active_books_projection is not None:
         entry = active_books_projection.encyclopedia_entry(slug)
         if entry is None:
@@ -1887,7 +1924,10 @@ async def get_encyclopedia_entry(slug: str, db: Session = Depends(get_db)):
 
 
 @app.get("/inheritors")
-async def list_inheritors(db: Session = Depends(get_db)):
+async def list_inheritors(
+    _: None = Depends(rate_limit(RateLimitCategory.READ_ONLY)),
+    db: Session = Depends(get_db),
+):
     if active_books_projection is not None:
         return {"items": active_books_projection.inheritors()}
     rows = db.query(InheritorProfile).filter(InheritorProfile.status == "published").order_by(InheritorProfile.name).all()
@@ -1895,7 +1935,11 @@ async def list_inheritors(db: Session = Depends(get_db)):
 
 
 @app.get("/inheritors/{slug}")
-async def get_inheritor(slug: str, db: Session = Depends(get_db)):
+async def get_inheritor(
+    slug: str,
+    _: None = Depends(rate_limit(RateLimitCategory.READ_ONLY)),
+    db: Session = Depends(get_db),
+):
     if active_books_projection is not None:
         inheritor = active_books_projection.inheritor(slug)
         if inheritor is None:
