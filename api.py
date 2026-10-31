@@ -114,6 +114,8 @@ from src.middleware.request_context import RequestContextMiddleware
 from src.middleware.security_headers import SecurityHeadersMiddleware
 from src.services.startup_validation import validate_startup_settings
 from src.deps_rate_limit import enforce_account_and_ip_rate_limits, rate_limit
+from src.deps_concurrency import high_cost_limit
+from src.services.concurrency import HighCostCapability
 from src.services.rate_limit import RateLimitCategory
 
 # 配置日志
@@ -323,6 +325,7 @@ async def query(
         RateLimitCategory.ANONYMOUS_QUERY,
         authenticated_category=RateLimitCategory.AUTHENTICATED_QUERY,
     )),
+    __: None = Depends(high_cost_limit(HighCostCapability.SERVER_LLM)),
     db: Session = Depends(get_db),
 ):
     """
@@ -466,6 +469,7 @@ async def query_stream(
         RateLimitCategory.ANONYMOUS_QUERY,
         authenticated_category=RateLimitCategory.AUTHENTICATED_QUERY,
     )),
+    __: None = Depends(high_cost_limit(HighCostCapability.SERVER_LLM)),
     db: Session = Depends(get_db),
 ):
     """SSE 流式问答 — 每个步骤实时推送进度"""
@@ -957,6 +961,7 @@ async def upload_media_file(
     title: str = Form(""),
     current_user: User = Depends(require_admin),
     _: None = Depends(rate_limit(RateLimitCategory.UPLOAD)),
+    __: None = Depends(high_cost_limit(HighCostCapability.UPLOAD)),
     db: Session = Depends(get_db),
 ):
     """上传经签名、大小和图片结构校验的媒体草稿。"""
@@ -1092,6 +1097,7 @@ async def _create_index_job(kind: str, db: Session) -> dict:
 async def rebuild_embeddings(
     _: User = Depends(require_admin),
     rate_limit_check: None = Depends(rate_limit(RateLimitCategory.INDEX_REBUILD)),
+    __: None = Depends(high_cost_limit(HighCostCapability.INDEX_REBUILD)),
     db: Session = Depends(get_db),
 ):
     return await _create_index_job(MaintenanceJobKind.KNOWLEDGE_INDEX.value, db)
@@ -1127,6 +1133,7 @@ async def search_image_by_text(
     q: str,
     top_k: int = 6,
     _: None = Depends(rate_limit(RateLimitCategory.READ_ONLY)),
+    __: None = Depends(high_cost_limit(HighCostCapability.RETRIEVAL)),
     db: Session = Depends(get_db),
 ):
     """文搜图：用文字描述搜索已上传的图片"""
@@ -1137,6 +1144,7 @@ async def search_image_by_text(
 @app.post("/search/similar")
 async def search_similar_image(file: UploadFile = File(...), top_k: int = Query(6, ge=1, le=20),
                                _: None = Depends(rate_limit(RateLimitCategory.UPLOAD)),
+                               __: None = Depends(high_cost_limit(HighCostCapability.RETRIEVAL)),
                                db: Session = Depends(get_db)):
     """以图搜图：先做 10 MiB 上限、签名和完整图片校验。"""
     staged = None
@@ -1163,6 +1171,7 @@ async def search_similar_image(file: UploadFile = File(...), top_k: int = Query(
 async def rebuild_image_index(
     _: User = Depends(require_admin),
     rate_limit_check: None = Depends(rate_limit(RateLimitCategory.INDEX_REBUILD)),
+    __: None = Depends(high_cost_limit(HighCostCapability.INDEX_REBUILD)),
     db: Session = Depends(get_db),
 ):
     """创建版本化图片索引维护任务。"""
@@ -1244,6 +1253,7 @@ async def search_audio(
     top_k: int = 10,
     craft_name: Optional[str] = None,
     _: None = Depends(rate_limit(RateLimitCategory.READ_ONLY)),
+    __: None = Depends(high_cost_limit(HighCostCapability.RETRIEVAL)),
     db: Session = Depends(get_db),
 ):
     """文搜音频：按文字命中已转写音频（转写文本向量检索，逐 media 取最佳 chunk）。
@@ -1292,6 +1302,7 @@ async def search_audio(
 async def rebuild_audio_index(
     _: User = Depends(require_admin),
     rate_limit_check: None = Depends(rate_limit(RateLimitCategory.INDEX_REBUILD)),
+    __: None = Depends(high_cost_limit(HighCostCapability.INDEX_REBUILD)),
     db: Session = Depends(get_db),
 ):
     """创建版本化音频索引维护任务。"""
@@ -1382,6 +1393,7 @@ async def upload_document(
     craft_name: Optional[str] = Form(None),
     current_user: User = Depends(require_admin),
     _: None = Depends(rate_limit(RateLimitCategory.UPLOAD)),
+    __: None = Depends(high_cost_limit(HighCostCapability.UPLOAD)),
     db: Session = Depends(get_db),
 ):
     """保存文档草稿并通知独立 worker；API 请求线程不解析正文。"""
@@ -1888,6 +1900,7 @@ async def ai_search(
     request: GraphQueryRequest,
     current_user: Optional[User] = Depends(get_optional_user),
     _: None = Depends(rate_limit(RateLimitCategory.AI_SEARCH)),
+    __: None = Depends(high_cost_limit(HighCostCapability.RETRIEVAL)),
     db: Session = Depends(get_db),
 ):
     """Aggregate local evidence first; optional Web search is explicitly degradable."""

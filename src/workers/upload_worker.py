@@ -16,6 +16,7 @@ from src.services.audio_worker import process_one_job as process_audio_job
 from src.services.queue import get_redis, pop_audio_job, pop_job
 from src.services.task_state import sweep_document_jobs, update_worker_heartbeat
 from src.services.startup_validation import validate_startup_settings
+from src.services.concurrency import ConcurrencyBusyError, HighCostCapability, get_concurrency_limiter
 
 
 logger = logging.getLogger(__name__)
@@ -25,17 +26,28 @@ def _worker_id() -> str:
     return os.environ.get("WORKER_ID") or f"{socket.gethostname()}-{os.getpid()}"
 
 
-async def _dispatch(kind: str, entity_id: int) -> None:
-    if kind == "audio":
-        await process_audio_job(entity_id)
-    elif kind == "document":
-        from src.workers.processors import process_document_job
+async def _dispatch(kind: str, entity_id: int) -> str:
+    capability = (
+        HighCostCapability.AUDIO_TRANSCRIPTION
+        if kind == "audio"
+        else HighCostCapability.DOCUMENT_PROCESSING
+        if kind == "document"
+        else HighCostCapability.INDEX_REBUILD
+    )
+    try:
+        async with get_concurrency_limiter().permit(capability):
+            if kind == "audio":
+                return await process_audio_job(entity_id)
+            if kind == "document":
+                from src.workers.processors import process_document_job
 
-        await process_document_job(entity_id)
-    else:
-        from src.services.maintenance_jobs import process_maintenance_job
+                return await process_document_job(entity_id)
+            from src.services.maintenance_jobs import process_maintenance_job
 
-        await process_maintenance_job(entity_id)
+            return await process_maintenance_job(entity_id)
+    except ConcurrencyBusyError:
+        logger.warning("后台任务等待并发许可超时 kind=%s entity_id=%s", kind, entity_id)
+        return "busy"
 
 
 async def run_worker(stop_event: asyncio.Event) -> None:
