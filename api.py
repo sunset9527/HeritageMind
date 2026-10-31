@@ -113,6 +113,8 @@ from src.middleware.request_size import RequestBodyLimitMiddleware
 from src.middleware.request_context import RequestContextMiddleware
 from src.middleware.security_headers import SecurityHeadersMiddleware
 from src.services.startup_validation import validate_startup_settings
+from src.deps_rate_limit import enforce_rate_limit, rate_limit
+from src.services.rate_limit import RateLimitCategory
 
 # 配置日志
 logging.basicConfig(
@@ -317,6 +319,10 @@ async def query(
     x_api_base: Optional[str] = Header(None, alias="X-API-Base"),
     x_model: Optional[str] = Header(None, alias="X-Model"),
     current_user: Optional[User] = Depends(get_optional_user),
+    _: None = Depends(rate_limit(
+        RateLimitCategory.ANONYMOUS_QUERY,
+        authenticated_category=RateLimitCategory.AUTHENTICATED_QUERY,
+    )),
     db: Session = Depends(get_db),
 ):
     """
@@ -456,6 +462,10 @@ async def query_stream(
     x_api_base: Optional[str] = Header(None, alias="X-API-Base"),
     x_model: Optional[str] = Header(None, alias="X-Model"),
     current_user: Optional[User] = Depends(get_optional_user),
+    _: None = Depends(rate_limit(
+        RateLimitCategory.ANONYMOUS_QUERY,
+        authenticated_category=RateLimitCategory.AUTHENTICATED_QUERY,
+    )),
     db: Session = Depends(get_db),
 ):
     """SSE 流式问答 — 每个步骤实时推送进度"""
@@ -746,7 +756,7 @@ async def switch_profile(request: UserProfileRequest):
 # ============================================================================
 
 @app.get("/crafts")
-async def list_crafts():
+async def list_crafts(_: None = Depends(rate_limit(RateLimitCategory.READ_ONLY))):
     """获取支持的技艺列表"""
     return {"crafts": CraftCatalog.from_projection(active_books_projection).as_api_items()}
 
@@ -932,6 +942,7 @@ async def upload_media_file(
     media_type: str = Form("image"),
     title: str = Form(""),
     current_user: User = Depends(require_admin),
+    _: None = Depends(rate_limit(RateLimitCategory.UPLOAD)),
     db: Session = Depends(get_db),
 ):
     """上传经签名、大小和图片结构校验的媒体草稿。"""
@@ -1060,6 +1071,7 @@ async def _create_index_job(kind: str, db: Session) -> dict:
 @app.post("/knowledge/rebuild-embeddings", status_code=202)
 async def rebuild_embeddings(
     _: User = Depends(require_admin),
+    rate_limit_check: None = Depends(rate_limit(RateLimitCategory.INDEX_REBUILD)),
     db: Session = Depends(get_db),
 ):
     return await _create_index_job(MaintenanceJobKind.KNOWLEDGE_INDEX.value, db)
@@ -1098,6 +1110,7 @@ async def search_image_by_text(q: str, top_k: int = 6, db: Session = Depends(get
 
 @app.post("/search/similar")
 async def search_similar_image(file: UploadFile = File(...), top_k: int = Query(6, ge=1, le=20),
+                               _: None = Depends(rate_limit(RateLimitCategory.UPLOAD)),
                                db: Session = Depends(get_db)):
     """以图搜图：先做 10 MiB 上限、签名和完整图片校验。"""
     staged = None
@@ -1123,6 +1136,7 @@ async def search_similar_image(file: UploadFile = File(...), top_k: int = Query(
 @app.post("/search/index-images", status_code=202)
 async def rebuild_image_index(
     _: User = Depends(require_admin),
+    rate_limit_check: None = Depends(rate_limit(RateLimitCategory.INDEX_REBUILD)),
     db: Session = Depends(get_db),
 ):
     """创建版本化图片索引维护任务。"""
@@ -1250,6 +1264,7 @@ async def search_audio(
 @app.post("/search/audio/index", status_code=202)
 async def rebuild_audio_index(
     _: User = Depends(require_admin),
+    rate_limit_check: None = Depends(rate_limit(RateLimitCategory.INDEX_REBUILD)),
     db: Session = Depends(get_db),
 ):
     """创建版本化音频索引维护任务。"""
@@ -1339,6 +1354,7 @@ async def upload_document(
     craft_id: Optional[str] = Form(None),
     craft_name: Optional[str] = Form(None),
     current_user: User = Depends(require_admin),
+    _: None = Depends(rate_limit(RateLimitCategory.UPLOAD)),
     db: Session = Depends(get_db),
 ):
     """保存文档草稿并通知独立 worker；API 请求线程不解析正文。"""
@@ -1472,6 +1488,10 @@ async def register(request: UserRegisterRequest, db: Session = Depends(get_db)):
     - **email**: 邮箱
     - **password**: 密码（最少6位）
     """
+    await enforce_rate_limit(
+        RateLimitCategory.REGISTRATION,
+        account_identifier=request.email or request.username,
+    )
     user, error = create_user(db, request.username, request.email, request.password)
     if error:
         raise HTTPException(status_code=400, detail=error)
@@ -1501,6 +1521,7 @@ async def login(
     使用表单格式提交 username 和 password，
     返回 JWT access_token。
     """
+    await enforce_rate_limit(RateLimitCategory.LOGIN, account_identifier=form_data.username)
     user, error = authenticate_user(db, form_data.username, form_data.password)
     if error:
         raise HTTPException(
@@ -1830,7 +1851,12 @@ async def get_active_books_image(craft_id: str):
 
 
 @app.post("/search/ai")
-async def ai_search(request: GraphQueryRequest, db: Session = Depends(get_db)):
+async def ai_search(
+    request: GraphQueryRequest,
+    current_user: Optional[User] = Depends(get_optional_user),
+    _: None = Depends(rate_limit(RateLimitCategory.AI_SEARCH)),
+    db: Session = Depends(get_db),
+):
     """Aggregate local evidence first; optional Web search is explicitly degradable."""
     if retriever is None or knowledge_graph is None:
         raise HTTPException(status_code=503, detail="检索服务尚未初始化")
