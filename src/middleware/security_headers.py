@@ -19,6 +19,18 @@ _BASE_HEADERS = (
         b"img-src 'self' data: https://fastapi.tiangolo.com",
     ),
 )
+_DOCUMENT_HEADERS = _BASE_HEADERS[:-1] + (
+    (
+        b"content-security-policy",
+        b"default-src 'self'; base-uri 'self'; frame-ancestors 'none'; "
+        b"object-src 'none'; form-action 'self'; "
+        b"script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+        b"style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; "
+        b"font-src 'self' https://fonts.gstatic.com; "
+        b"img-src 'self' data: https://fastapi.tiangolo.com",
+    ),
+)
+_DOCUMENT_PATHS = frozenset({"/docs", "/redoc"})
 _HSTS_HEADER = (b"strict-transport-security", b"max-age=31536000; includeSubDomains")
 
 
@@ -29,8 +41,8 @@ class SecurityHeadersMiddleware:
         self.app = app
         self.settings = settings
 
-    def _headers(self) -> tuple[tuple[bytes, bytes], ...]:
-        headers = _BASE_HEADERS
+    def _headers(self, path: str) -> tuple[tuple[bytes, bytes], ...]:
+        headers = _DOCUMENT_HEADERS if path in _DOCUMENT_PATHS else _BASE_HEADERS
         if (
             getattr(self.settings, "app_env", None) == "prod"
             and getattr(self.settings, "hsts_enabled", False)
@@ -49,7 +61,8 @@ class SecurityHeadersMiddleware:
             await self.app(scope, receive, send)
             return
 
-        header_names = {name for name, _ in self._headers()}
+        headers_to_apply = self._headers(scope.get("path", ""))
+        header_names = {name for name, _ in headers_to_apply}
 
         async def secure_send(message: dict) -> None:
             if message.get("type") == "http.response.start":
@@ -58,7 +71,7 @@ class SecurityHeadersMiddleware:
                     for name, value in message.get("headers", [])
                     if name.lower() not in header_names
                 ]
-                headers.extend(self._headers())
+                headers.extend(headers_to_apply)
                 message = {**message, "headers": headers}
             await send(message)
 

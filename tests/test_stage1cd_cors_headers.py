@@ -117,11 +117,19 @@ def test_csp_allows_only_the_assets_required_by_fastapi_docs_and_redoc():
     app = _app(_settings())
     docs = asyncio.run(_request(app, "GET", "/docs"))
     redoc = asyncio.run(_request(app, "GET", "/redoc"))
+    api = asyncio.run(_request(app, "GET", "/ok"))
 
-    policy = docs.headers["content-security-policy"]
+    docs_policy = docs.headers["content-security-policy"]
+    redoc_policy = redoc.headers["content-security-policy"]
+    api_policy = api.headers["content-security-policy"]
     assert "cdn.jsdelivr.net" in docs.text
     assert "cdn.jsdelivr.net" in redoc.text
     assert "fastapi.tiangolo.com" in docs.text
-    assert "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net" in policy
-    assert "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net" in policy
-    assert "img-src 'self' data: https://fastapi.tiangolo.com" in policy
+    assert "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net" in docs_policy
+    assert "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net" in docs_policy
+    assert "img-src 'self' data: https://fastapi.tiangolo.com" in docs_policy
+    for policy in (docs_policy, redoc_policy):
+        assert "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com" in policy
+        assert "font-src 'self' https://fonts.gstatic.com" in policy
+    assert "fonts.googleapis.com" not in api_policy
+    assert "fonts.gstatic.com" not in api_policy
