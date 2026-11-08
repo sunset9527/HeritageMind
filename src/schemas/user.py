@@ -11,7 +11,7 @@ class UserRegisterRequest(BaseModel):
     """用户注册请求"""
     username: str = Field(..., min_length=2, max_length=50, description="用户名")
     email: str = Field(..., max_length=100, description="邮箱")
-    password: str = Field(..., min_length=6, max_length=100, description="密码（最少6位）")
+    password: str = Field(..., min_length=10, max_length=128, description="密码（最少10位，最多128位）")
 
 
 class UserLoginRequest(BaseModel):

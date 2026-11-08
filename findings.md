@@ -10,10 +10,10 @@
 ## Research Findings
 
 - 当前 `api.py` 使用 `allow_origins=["*"]`。
-- 当前 `/health` 固定返回成功，不能反映数据库、Redis、检索器或模型状态。
-- 多个 HTTP/SSE 分支直接返回 `str(e)`，存在内部错误和路径泄露风险。
-- 用户自带 API Key 当前保存在 `localStorage.hm_user_api_key`。
-- 当前开发 Compose 含示例 JWT Secret，生产 Compose 依赖外部变量但缺少应用启动门禁。
+- 初始 `/health` 固定返回成功，不能反映数据库、Redis、检索器或模型状态；现已分为 live/ready/dependencies，生产 ready 使用短 Redis PING。
+- 初始 HTTP/SSE 与工作流存在异常原文泄露风险；现已统一公开 envelope、SSE error event、前端兼容解析和日志脱敏。
+- 用户自带 API Key 初始保存在 `localStorage.hm_user_api_key`；现已迁移到 `sessionStorage`。
+- 开发 Compose 保留本地示例值；生产 Compose 现对 MySQL、JWT、服务器模型 Key 使用必填插值门禁。
 - Redis 已用于缓存和后台任务，可复用为跨进程限流存储。
 - 阶段 1B 已有请求体限制、独立 Worker、硬超时、任务状态机和 WorkerHeartbeat，可在其上扩展而不重做。
 - 当前基线提交为 `7132d36`；后端基线 `480 passed, 1 skipped`，前端基线 `40 passed`。
@@ -30,6 +30,7 @@
 | API Key 使用 sessionStorage | 满足关闭页面清除和刷新会话可用之间的平衡 |
 | Base URL 使用 HTTPS/主机白名单 | 防止用户自定义模型地址成为 SSRF 通道 |
 | 008 Alembic 迁移扩展心跳 | 持久化 Worker 总体状态和脱敏依赖摘要 |
+| 生产 Redis 为 API readiness 必需项 | 后台任务、跨进程限流依赖共享 Redis；开发环境仅报告 degraded |
 
 ## Implementation Findings
 
@@ -39,6 +40,8 @@
 - Redis 业务限流在生产环境不能安全访问共享 Redis 时必须 fail-closed，不能使用每进程内存额度伪装成分布式防护；登录/注册同时按账号和可信客户端 IP 限制。
 - 限流 key 使用当前及旧 HMAC Key 生成，生产启动逐项拒绝空、默认或过短轮换 Key；轮换测试必须实际验证同一 Lua 调用的多 key 语义。
 - 高成本操作并发许可已实现并正在独立规格审查；在其审查和后续全量验证完成前，阶段 1 仍为进行中。
+- Starlette `TestClient` 在当前 Windows/Python 3.13 环境创建 AnyIO 的 Proactor event loop 时，会在 Windows `socketpair` 回退实现中阻塞；既有 HTTP 测试也可复现。不能把本机该类 HTTP 测试的超时归因于认证路由，Docker/Linux 集成验收仍是必要门槛。
+- 用户 PowerShell 可正常运行 asyncio 定时器与 ASGI 定向测试；Codex 自动化终端对部分带定时器的 asyncio 测试会卡住，因此这些运行时验证由用户终端执行并保留真实输出。
 
 ## Issues Encountered
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select, update
@@ -92,7 +93,30 @@ async def sweep_document_jobs(
     return pushed
 
 
-def update_worker_heartbeat(db, worker_id: str, version: str) -> WorkerHeartbeat:
+def _safe_dependency_summary(dependencies: dict | None) -> str:
+    safe: dict[str, dict[str, str | None]] = {}
+    for name, value in (dependencies or {}).items():
+        if not isinstance(value, dict):
+            continue
+        status = value.get("status")
+        reason_code = value.get("reason_code")
+        if isinstance(status, str):
+            safe[str(name)] = {
+                "status": status[:20],
+                "reason_code": reason_code[:80] if isinstance(reason_code, str) else None,
+            }
+    return json.dumps(safe, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+
+
+def update_worker_heartbeat(
+    db,
+    worker_id: str,
+    version: str,
+    *,
+    status: str = "unknown",
+    dependencies: dict | None = None,
+    last_error_code: str | None = None,
+) -> WorkerHeartbeat:
     now = utcnow_naive()
     row = db.get(WorkerHeartbeat, worker_id)
     if row is None:
@@ -101,11 +125,17 @@ def update_worker_heartbeat(db, worker_id: str, version: str) -> WorkerHeartbeat
             version=version,
             started_at=now,
             last_seen_at=now,
+            status=status,
+            dependencies_json=_safe_dependency_summary(dependencies),
+            last_error_code=last_error_code[:80] if last_error_code else None,
         )
         db.add(row)
     else:
         row.version = version
         row.last_seen_at = now
+        row.status = status
+        row.dependencies_json = _safe_dependency_summary(dependencies)
+        row.last_error_code = last_error_code[:80] if last_error_code else None
     db.commit()
     return row
 

@@ -7,7 +7,7 @@ import { ElMessage } from 'element-plus'
 const settings = useSettingsStore()
 const chat = useChatStore()
 
-// 本地编辑状态（修改后才同步到 store + localStorage）
+// 本地编辑状态（修改后才同步到 store；API Key 仅保存到 sessionStorage）
 const form = reactive({
   provider: settings.selectedProvider,
   model: settings.selectedModel,
@@ -32,6 +32,12 @@ function saveSettings() {
   chat.includeNarrative = form.narrative
   settings.save()
   ElMessage.success('设置已保存')
+}
+
+function clearApiKey() {
+  form.apiKey = ''
+  settings.clearApiKey()
+  ElMessage.success('API Key 已清除')
 }
 </script>
 
@@ -92,11 +98,15 @@ function saveSettings() {
     <!-- API Key -->
     <div class="setting-section">
       <h3>🔑 API Key <span class="text-[13px] text-[var(--text-tertiary)] font-normal">（必填）</span></h3>
-      <p class="text-sm text-[var(--text-secondary)] mb-3">Key 仅存储在浏览器中，不会上传到服务器。</p>
+      <p class="text-sm text-[var(--text-secondary)] mb-3">Key 仅保存在当前浏览器会话中，不会写入本地长期存储或上传到服务器。关闭浏览器后需重新输入。</p>
       <input v-model="form.apiKey" type="password" placeholder="sk-..."
         class="w-full text-sm text-[var(--text)] border border-[var(--border)] rounded-lg px-3 py-2 bg-[var(--surface)] focus:outline-none focus:border-[var(--accent)] font-mono" />
       <p v-if="form.apiKey" class="text-[13px] text-green-500 mt-2">✅ 已填写（{{ form.apiKey.slice(0, 10) }}...）</p>
       <p v-else class="text-[13px] text-amber-400 mt-2">⚠️ 未填写 — 暂时无法提问</p>
+      <button v-if="form.apiKey" type="button" @click="clearApiKey"
+        class="mt-3 px-3 py-1.5 rounded-lg text-sm border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--accent)]">
+        清除 API Key
+      </button>
     </div>
 
     <!-- Preferences -->

@@ -25,6 +25,7 @@ from src.services.audio_transcript import (
     save_transcription,
 )
 from src.services.media import STORAGE_ROOT, get_media
+from src.services.error_sanitizer import redact_sensitive_text
 from src.services.queue import get_redis, pop_audio_job
 from src.services.transcription import transcribe_audio_file
 from src.workers.isolated_runner import run_isolated
@@ -105,10 +106,10 @@ async def process_one_job(media_id: int, db=None) -> str:
     except Exception as e:
         session.rollback()
         try:
-            mark_failed(session, media_id, str(e))
+            mark_failed(session, media_id, redact_sensitive_text(e, max_length=1000))
         except Exception:
             session.rollback()
-        logger.error(f"media_id={media_id} 转写任务失败: {e}")
+        logger.error("media_id=%s 转写任务失败: %s", media_id, redact_sensitive_text(e))
         return "error"
     finally:
         if owns_session:

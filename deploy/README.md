@@ -15,9 +15,14 @@
 3. 将 `DOMAIN` 与 `CERT_PATH` 替换进 `nginx/heritagemind.conf.template`；
 4. 先以 HTTP 方式启动并用 Certbot 对真实域名申请证书；
 5. 写入证书路径后启用 HTTPS 模板，运行 `nginx -t`，再 reload；
-6. 验证 `/health`、`/api/health`、SSE 问答、上传和证书自动续期；保留上一个配置以便回滚。
+6. 验证 `/health/live`、`/api/health/live`、`/health/ready`、SSE 问答、上传和证书自动续期；保留上一个配置以便回滚。`live` 仅代表 API 进程存活，发布验收必须以 `ready` 为准。
 
 不要将 `.env`、私钥或真实证书提交到 Git。
+
+生产 Compose 不为关键 Secret 提供默认值。启动前必须在 `.env` 或部署环境显式设置
+`MYSQL_PASSWORD`、`MYSQL_ROOT_PASSWORD`、`JWT_SECRET_KEY`、`DEEPSEEK_API_KEY` 与
+`RATE_LIMIT_HMAC_KEY`；任意一项缺失时
+`docker compose -f docker-compose.production.yml config` 会拒绝解析，而不是以空密码或示例密钥启动。
 
 ## 数据迁移与独立 worker
 
@@ -34,9 +39,9 @@ Windows 本地开发需另开一个 PowerShell 窗口运行消费者（API 不�
 python -m src.workers.upload_worker
 ```
 
-用 `/health` 检查 API；用 `docker compose ps` 和 `docker compose logs worker` 检查 worker。后台记录进入 `failed` 时，先查看 `error_code/error_message`，修复依赖或文件问题后再通过管理员重试接口入队，禁止直接改库凑状态。
+容器编排使用 `/health/live` 防止依赖抖动重启 API；发布脚本与人工验收使用 `/health/ready`。管理员可访问 `/health/dependencies` 查看仅包含状态和原因码的依赖摘要；用 `docker compose ps` 和 `docker compose logs worker` 检查 worker。后台记录进入 `failed` 时，先查看 `error_code/error_message`，修复依赖或文件问题后再通过管理员重试接口入队，禁止直接改库凑状态。
 
-发布失败时执行 rollback：停止新容器、恢复上一镜像与上一份活动索引清单；只有确认 007 迁移前媒体表来源后才执行 `python -m alembic downgrade 006`。上传卷先备份再回滚，禁止删除共享卷。
+发布失败时执行 rollback：停止新容器、恢复上一镜像与上一份活动索引清单；只有确认 007 迁移前媒体表来源后才执行 `python -m alembic downgrade 006`。若仅回退本次 Worker 心跳字段，可执行 `python -m alembic downgrade 007`。上传卷先备份再回滚，禁止删除共享卷。
 
 ## 管理员初始化（首次部署后执行一次）
 

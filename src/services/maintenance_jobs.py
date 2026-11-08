@@ -14,6 +14,7 @@ from src.models.upload import (
     ProcessingStatus,
 )
 from src.services.task_state import utcnow_naive
+from src.services.error_sanitizer import redact_sensitive_text
 
 
 class MaintenanceConflict(ValueError):
@@ -246,7 +247,7 @@ async def process_maintenance_job(job_id: int, db=None) -> str:
         if row is not None:
             row.status = ProcessingStatus.FAILED.value
             row.error_code = "index_build_failed"
-            row.error_message = str(exc)[:1000]
+            row.error_message = redact_sensitive_text(exc, max_length=1000)
             row.finished_at = utcnow_naive()
             session.commit()
         return "failed"

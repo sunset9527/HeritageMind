@@ -105,3 +105,6 @@ class WorkerHeartbeat(Base):
     version = Column(String(64), nullable=False)
     started_at = Column(DateTime(timezone=True), nullable=False, default=_utcnow)
     last_seen_at = Column(DateTime(timezone=True), nullable=False, default=_utcnow)
+    status = Column(String(20), nullable=False, default="unknown")
+    dependencies_json = Column(Text, nullable=False, default="{}")
+    last_error_code = Column(String(80), nullable=True)

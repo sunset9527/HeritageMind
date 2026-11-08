@@ -1,0 +1,19 @@
+# Dependencies and generated frontend artifacts
+node_modules/
+dist/
+.vite/
+coverage/
+
+# Test caches can carry host-specific permissions and never belong in an image.
+.pytest_cache/
+
+# Source-control and local editor files
+.git/
+.gitignore
+.vscode/
+.idea/
+
+# Local environment and logs
+.env
+.env.*
+*.log

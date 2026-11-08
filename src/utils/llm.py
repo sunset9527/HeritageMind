@@ -9,11 +9,15 @@ LLM工厂 - 统一创建ChatOpenAI实例，集成Langfuse追踪
 """
 
 import logging
+from contextvars import ContextVar
 from typing import Optional, List, Any, Dict
 from langchain_openai import ChatOpenAI
 
-# 请求级 LLM 配置覆盖（api_key / base_url / model）
-_request_override: Optional[Dict[str, Optional[str]]] = None
+# 请求级 LLM 配置覆盖（api_key / base_url / model）。ContextVar 会随
+# asyncio.to_thread 复制到工作线程，避免并发请求互相串用用户的模型配置。
+_request_override: ContextVar[Optional[Dict[str, Optional[str]]]] = ContextVar(
+    "llm_request_override", default=None
+)
 
 from config import settings, get_llm_config
 
@@ -25,23 +29,21 @@ _langfuse_handler: Optional[Any] = None
 
 def set_request_override(api_key: Optional[str] = None, base_url: Optional[str] = None, model: Optional[str] = None):
     """设置当前请求的 LLM 配置覆盖"""
-    global _request_override
-    _request_override = {
+    _request_override.set({
         "api_key": api_key,
         "base_url": base_url,
         "model": model,
-    }
+    })
 
 
 def clear_request_override():
     """清除当前请求的 LLM 配置覆盖"""
-    global _request_override
-    _request_override = None
+    _request_override.set(None)
 
 
 def _get_request_override() -> Optional[Dict[str, Optional[str]]]:
     """获取当前请求的 LLM 配置覆盖"""
-    return _request_override
+    return _request_override.get()
 
 
 def _get_langfuse_handler() -> Optional[Any]:

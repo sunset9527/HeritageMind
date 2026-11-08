@@ -27,6 +27,12 @@ docker-compose.yml
 
 # 测试
 .pytest_cache/
+.pytest-tmp*/
+frontend/.pytest_cache/
+
+# 前端依赖由前端镜像独立安装，API/worker 构建上下文不需要携带它们。
+frontend/node_modules/
+frontend/dist/
 
 # 环境变量
 .env

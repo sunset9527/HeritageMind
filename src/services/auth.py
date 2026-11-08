@@ -12,11 +12,13 @@ from sqlalchemy.orm import Session
 
 from config import settings
 from src.models.user import User
+from src.services.error_sanitizer import redact_sensitive_text
+from src.services.password_policy import PasswordPolicyError, validate_password
 
 logger = logging.getLogger(__name__)
 
 # bcrypt密码上下文
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["bcrypt_sha256", "bcrypt"], deprecated="auto")
 
 
 def hash_password(password: str) -> str:
@@ -104,6 +106,11 @@ def create_user(db: Session, username: str, email: str, password: str) -> Tuple[
     Returns:
         Tuple[User或None, 错误信息或None]
     """
+    try:
+        validate_password(password, username=username, email=email, is_admin=False)
+    except PasswordPolicyError as exc:
+        return None, exc.public_message
+
     # 检查用户名是否已存在
     if get_user_by_username(db, username):
         return None, "用户名已存在"
@@ -126,8 +133,8 @@ def create_user(db: Session, username: str, email: str, password: str) -> Tuple[
         return user, None
     except Exception as e:
         db.rollback()
-        logger.error(f"创建用户失败: {e}")
-        return None, f"注册失败: {str(e)}"
+        logger.error("创建用户失败: %s", redact_sensitive_text(e))
+        return None, "注册失败，请稍后重试"
 
 
 def authenticate_user(db: Session, username: str, password: str) -> Tuple[Optional[User], Optional[str]]:

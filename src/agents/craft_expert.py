@@ -121,9 +121,9 @@ class CraftExpertAgent:
             logger.error(f"技艺知识Agent处理失败: {e}")
             return {
                 "success": False,
-                "answer": f"处理您的问题时出现错误：{str(e)}",
+                "answer": "处理您的问题时出现技术问题，请稍后重试。",
                 "source": "craft_expert",
-                "error": str(e)
+                "error": "agent_execution_failed"
             }
     
     def _retrieve_documents(self, question: str) -> List[Dict[str, Any]]:
@@ -212,7 +212,7 @@ class CraftExpertAgent:
             return answer
         except Exception as e:
             logger.error(f"LLM生成失败: {e}")
-            return f"抱歉，生成回答时遇到技术问题：{str(e)}"
+            return "抱歉，生成回答时遇到技术问题，请稍后重试。"
     
     def get_craft_info(self, craft_name: str) -> Optional[Dict[str, Any]]:
     # ⚠️ TODO(2026-08-15): 当前未接线，仅供后续功能扩展
@@ -274,4 +274,4 @@ class CraftExpertAgent:
             return response.content if hasattr(response, 'content') else str(response)
         except Exception as e:
             logger.error(f"技术解释生成失败: {e}")
-            return f"抱歉，无法生成技术解释：{str(e)}"
+            return "抱歉，暂时无法生成技术解释，请稍后重试。"

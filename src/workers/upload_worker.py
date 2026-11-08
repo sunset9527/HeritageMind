@@ -17,6 +17,7 @@ from src.services.queue import get_redis, pop_audio_job, pop_job
 from src.services.task_state import sweep_document_jobs, update_worker_heartbeat
 from src.services.startup_validation import validate_startup_settings
 from src.services.concurrency import ConcurrencyBusyError, HighCostCapability, get_concurrency_limiter
+from src.services.error_sanitizer import install_sensitive_logging_filter
 
 
 logger = logging.getLogger(__name__)
@@ -51,8 +52,23 @@ async def _dispatch(kind: str, entity_id: int) -> str:
 
 
 async def run_worker(stop_event: asyncio.Event) -> None:
-    await get_redis().ping()
     worker_id = _worker_id()
+    try:
+        await get_redis().ping()
+    except Exception:
+        db = SessionLocal()
+        try:
+            update_worker_heartbeat(
+                db,
+                worker_id,
+                APP_VERSION,
+                status="unavailable",
+                dependencies={"redis": {"status": "unavailable", "reason_code": "connection_failed"}},
+                last_error_code="connection_failed",
+            )
+        finally:
+            db.close()
+        raise
     db = SessionLocal()
     try:
         await enqueue_pending_jobs(db)
@@ -68,7 +84,16 @@ async def run_worker(stop_event: asyncio.Event) -> None:
             stale_minutes=max(1, settings.index_task_timeout_seconds // 60),
             max_attempts=settings.upload_task_max_attempts,
         )
-        update_worker_heartbeat(db, worker_id, APP_VERSION)
+        update_worker_heartbeat(
+            db,
+            worker_id,
+            APP_VERSION,
+            status="healthy",
+            dependencies={
+                "mysql": {"status": "healthy", "reason_code": None},
+                "redis": {"status": "healthy", "reason_code": None},
+            },
+        )
     finally:
         db.close()
 
@@ -91,7 +116,16 @@ async def run_worker(stop_event: asyncio.Event) -> None:
         if time.monotonic() - last_heartbeat >= 15:
             db = SessionLocal()
             try:
-                update_worker_heartbeat(db, worker_id, APP_VERSION)
+                update_worker_heartbeat(
+                    db,
+                    worker_id,
+                    APP_VERSION,
+                    status="healthy",
+                    dependencies={
+                        "mysql": {"status": "healthy", "reason_code": None},
+                        "redis": {"status": "healthy", "reason_code": None},
+                    },
+                )
             finally:
                 db.close()
             last_heartbeat = time.monotonic()
@@ -99,6 +133,7 @@ async def run_worker(stop_event: asyncio.Event) -> None:
 
 def main() -> None:
     logging.basicConfig(level=getattr(logging, settings.log_level))
+    install_sensitive_logging_filter()
     validate_startup_settings(settings)
 
     async def start() -> None:

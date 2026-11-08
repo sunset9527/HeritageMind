@@ -11,6 +11,7 @@ from fastapi import Depends, FastAPI
 from src.deps import get_current_user, require_admin
 from src.deps_rate_limit import enforce_account_and_ip_rate_limits, rate_limit
 from src.middleware.request_context import ClientIdentity, RequestContextMiddleware
+from src.services.error_protocol import install_error_handlers
 from src.services.rate_limit import (
     RateLimitCategory,
     RateLimitPolicy,
@@ -169,8 +170,10 @@ def test_production_redis_failures_return_503_from_real_public_api_route(
             response = await client.get("/crafts", headers={"X-Request-ID": "redis-down"})
 
         assert response.status_code == 503
-        assert response.json()["detail"]["code"] == "rate_limit_unavailable"
-        assert "redis" not in response.text.lower()
+        payload = response.json()
+        assert payload["error"]["code"] == "rate_limit_unavailable"
+        assert payload["error"]["message"] == "服务繁忙，请稍后再试"
+        assert payload["error"]["request_id"] == "redis-down"
         assert secret not in response.text
         assert response.headers["x-request-id"] == "redis-down"
 
@@ -303,7 +306,10 @@ def test_memory_lock_prevents_concurrent_fallback_counter_loss():
 def test_all_public_business_get_routes_use_read_only_rate_limit():
     import api
 
-    exempt_paths = {"/health", "/openapi.json", "/docs", "/docs/oauth2-redirect", "/redoc"}
+    exempt_paths = {
+        "/health", "/health/live", "/health/ready", "/health/dependencies",
+        "/openapi.json", "/docs", "/docs/oauth2-redirect", "/redoc",
+    }
     authenticated_dependencies = {get_current_user, require_admin}
     routes = []
     for route in api.app.routes:
@@ -325,7 +331,10 @@ def test_all_public_business_get_routes_use_read_only_rate_limit():
 def test_health_and_openapi_are_not_business_rate_limited():
     import api
 
-    for path in ("/health", "/openapi.json", "/docs", "/docs/oauth2-redirect", "/redoc"):
+    for path in (
+        "/health", "/health/live", "/health/ready", "/health/dependencies",
+        "/openapi.json", "/docs", "/docs/oauth2-redirect", "/redoc",
+    ):
         route = next(
             route for route in api.app.routes
             if getattr(route, "path", None) == path and "GET" in getattr(route, "methods", set())
@@ -340,6 +349,7 @@ def test_dependency_returns_stable_429_retry_after_and_request_id(monkeypatch):
         limiter = RateLimiter(redis_client=FakeRedis(), policies=_policies(limit=1))
         monkeypatch.setattr("src.deps_rate_limit.get_rate_limiter", lambda: limiter)
         app = FastAPI()
+        install_error_handlers(app)
         app.add_middleware(RequestContextMiddleware, settings=SimpleNamespace(
             trust_proxy_headers=False, trusted_proxy_ips=[]
         ))
@@ -353,7 +363,7 @@ def test_dependency_returns_stable_429_retry_after_and_request_id(monkeypatch):
             assert (await client.get("/limited", headers={"X-Request-ID": "rl-test"})).status_code == 200
             blocked = await client.get("/limited", headers={"X-Request-ID": "rl-test"})
             assert blocked.status_code == 429
-            assert blocked.json()["detail"]["code"] == "rate_limit_exceeded"
+            assert blocked.json()["error"]["code"] == "rate_limit_exceeded"
             assert blocked.headers["retry-after"] == "60"
             assert blocked.headers["x-request-id"] == "rl-test"
 

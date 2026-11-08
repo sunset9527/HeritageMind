@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import * as authApi from '@/api/auth'
+import { formatApiError, parseApiError } from '@/api/errors'
 import type { UserResponse } from '@/types'
 
 export const useAuthStore = defineStore('auth', () => {
@@ -24,7 +25,7 @@ export const useAuthStore = defineStore('auth', () => {
       }
       return resp
     } catch (e: any) {
-      const msg = e.response?.data?.detail || e.message || '登录失败'
+      const msg = formatApiError(parseApiError(e.response?.data, e.message || '登录失败'))
       error.value = msg
       throw new Error(msg)
     } finally {
@@ -45,7 +46,7 @@ export const useAuthStore = defineStore('auth', () => {
       }
       return resp
     } catch (e: any) {
-      const msg = e.response?.data?.detail || e.message || '注册失败'
+      const msg = formatApiError(parseApiError(e.response?.data, e.message || '注册失败'))
       error.value = msg
       throw new Error(msg)
     } finally {
@@ -58,6 +59,7 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null
     localStorage.removeItem('heritagemind_token')
     localStorage.removeItem('heritagemind_user')
+    sessionStorage.removeItem('hm_user_api_key')
   }
 
   async function restoreSession() {

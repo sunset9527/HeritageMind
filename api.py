@@ -4,16 +4,17 @@ FastAPI后端服务 - 非遗知识问答系统API
 
 import asyncio
 import logging
+from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
 from typing import Optional, List, Dict, Any
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Depends, Header, status, Request, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, Field
 from contextlib import asynccontextmanager
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from config import settings
@@ -26,7 +27,7 @@ from src.retrieval.document_loader import HeritageDocumentLoader
 from src.retrieval.retriever import MultiSourceRetriever
 from src.knowledge.gap_detector import KnowledgeGapDetector
 from src.graph.visualizer import HeritageGraphVisualizer
-from src.database import init_db
+from src.database import SessionLocal, init_db
 from src.deps import get_db, get_current_user, get_optional_user, require_admin
 from src.models.user import User
 from src.schemas.user import (
@@ -82,7 +83,7 @@ from src.schemas.audio import (
 )
 from src.services.audio_transcript import ensure_audio_job, get_transcript
 from src.services.cache import get_qa_cache
-from src.services.queue import close_redis
+from src.services.queue import close_redis, get_redis
 from src.models.upload import DocumentUpload
 from src.models.upload import MaintenanceJobKind
 from src.services.maintenance_jobs import MaintenanceConflict, create_maintenance_job
@@ -117,12 +118,20 @@ from src.deps_rate_limit import enforce_account_and_ip_rate_limits, rate_limit
 from src.deps_concurrency import high_cost_limit
 from src.services.concurrency import HighCostCapability
 from src.services.rate_limit import RateLimitCategory
+from src.services.error_sanitizer import redact_sensitive_text, install_sensitive_logging_filter
+from src.services.error_protocol import install_error_handlers, sse_error_event
+from src.services.dependency_health import (
+    DependencyStatus,
+    dependency_health,
+    required_api_dependencies,
+)
 
 # 配置日志
 logging.basicConfig(
     level=getattr(logging, settings.log_level),
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
+install_sensitive_logging_filter()
 logger = logging.getLogger(__name__)
 
 # 全局实例
@@ -219,6 +228,7 @@ app = FastAPI(
         {"name": "系统", "description": "健康检查、配置等"},
     ],
 )
+install_error_handlers(app)
 
 # 中间件按 Starlette LIFO 构建：上下文 → 安全头 → CORS → 请求体上限 → 路由。
 # 前三层不读取普通请求的 body；RequestBodyLimitMiddleware 仍是首个 body
@@ -304,10 +314,77 @@ async def root(_: None = Depends(rate_limit(RateLimitCategory.READ_ONLY))):
     }
 
 
+def _health_payload(readiness) -> dict[str, Any]:
+    return {
+        "status": readiness.status.value,
+        "version": APP_VERSION,
+        "checked_at": datetime.now(timezone.utc).isoformat(),
+        "dependencies": {
+            name: {
+                "status": entry.status.value,
+                "reason_code": entry.reason_code,
+                "last_checked_at": entry.last_checked_at.isoformat(),
+                "consecutive_failures": entry.consecutive_failures,
+            }
+            for name, entry in readiness.dependencies.items()
+        },
+    }
+
+
+async def _refresh_api_dependency_health():
+    db = SessionLocal()
+    try:
+        db.execute(text("SELECT 1"))
+        dependency_health.mark("mysql", DependencyStatus.HEALTHY)
+    except Exception as exc:
+        logger.warning("健康检查 MySQL 不可用: %s", redact_sensitive_text(exc))
+        dependency_health.mark("mysql", DependencyStatus.UNAVAILABLE, reason_code="connection_failed")
+    finally:
+        db.close()
+
+    if retriever is None:
+        dependency_health.mark("retriever", DependencyStatus.UNAVAILABLE, reason_code="not_initialized")
+    else:
+        dependency_health.mark("retriever", DependencyStatus.HEALTHY)
+
+    try:
+        await asyncio.wait_for(get_redis().ping(), timeout=1)
+        dependency_health.mark("redis", DependencyStatus.HEALTHY)
+    except Exception as exc:
+        logger.warning("健康检查 Redis 不可用: %s", redact_sensitive_text(exc))
+        dependency_health.mark("redis", DependencyStatus.UNAVAILABLE, reason_code="connection_failed")
+
+    return dependency_health.readiness(required=required_api_dependencies(settings.app_env))
+
+
+@app.get("/health/live")
+async def health_live():
+    """Liveness only proves the HTTP process is running; it does no external I/O."""
+    return {
+        "status": DependencyStatus.HEALTHY.value,
+        "version": APP_VERSION,
+        "checked_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+@app.get("/health/ready")
+async def health_readiness():
+    """Probe MySQL, retriever, and Redis; Redis is required in production."""
+    readiness = await _refresh_api_dependency_health()
+    return JSONResponse(_health_payload(readiness), status_code=readiness.http_status)
+
+
+@app.get("/health/dependencies")
+async def health_dependencies(_: User = Depends(require_admin)):
+    """Admin-only safe dependency status; raw exception details are never returned."""
+    readiness = await _refresh_api_dependency_health()
+    return JSONResponse(_health_payload(readiness), status_code=readiness.http_status)
+
+
 @app.get("/health")
 async def health_check():
-    """健康检查"""
-    return {"status": "healthy"}
+    """Compatibility endpoint retaining the readiness semantics."""
+    return await health_readiness()
 
 
 # ============================================================================
@@ -382,7 +459,8 @@ async def query(
 
         agent_registry = load_configured_registry(db, get_default_agent_registry())
 
-        response = workflow.query(
+        response = await asyncio.to_thread(
+            workflow.query,
             question=request.question,
             user_profile=request.user_profile,
             include_narrative=request.include_narrative,
@@ -449,8 +527,8 @@ async def query(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"问答处理失败: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("问答处理失败: %s", redact_sensitive_text(e))
+        raise HTTPException(status_code=500, detail="服务暂时无法处理该请求，请稍后重试") from e
 
     finally:
         # v1.4 顺带修复：请求级 API 覆盖是进程内共享状态，成功/失败都必须清除，防止泄漏到后续请求
@@ -461,6 +539,7 @@ async def query(
 @app.post("/query/stream")
 async def query_stream(
     request: QueryRequest,
+    http_request: Request,
     x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
     x_api_base: Optional[str] = Header(None, alias="X-API-Base"),
     x_model: Optional[str] = Header(None, alias="X-Model"),
@@ -475,6 +554,7 @@ async def query_stream(
     """SSE 流式问答 — 每个步骤实时推送进度"""
     import json as _json
 
+    stream_request_id = getattr(http_request.state, "request_id", None)
     chat_session = None
     conversation_context = ""
     memory_preferences = {}
@@ -505,7 +585,7 @@ async def query_stream(
             if override_set:
                 set_request_override(api_key=x_api_key.strip(), base_url=x_api_base, model=x_model)
             elif not settings.deepseek_api_key or 'your-' in settings.deepseek_api_key:
-                yield f"data: {_json.dumps({'step': 'error', 'msg': '未配置API Key，请在设置页填写'}, ensure_ascii=False)}\n\n"
+                yield f"data: {_json.dumps(sse_error_event('configuration_error', '未配置有效的 API Key，请在设置页填写', request_id=stream_request_id), ensure_ascii=False)}\n\n"
                 return
 
             yield f"data: {_json.dumps({'step': 'start', 'msg': '开始分析问题...'}, ensure_ascii=False)}\n\n"
@@ -621,7 +701,8 @@ async def query_stream(
             yield "data: [DONE]\n\n"
 
         except Exception as e:
-            yield f"data: {_json.dumps({'event': 'error', 'step': 'error', 'msg': str(e)}, ensure_ascii=False)}\n\n"
+            logger.error("流式问答处理失败: %s", redact_sensitive_text(e))
+            yield f"data: {_json.dumps(sse_error_event('internal_error', '服务暂时无法处理该请求，请稍后重试', request_id=stream_request_id), ensure_ascii=False)}\n\n"
 
         finally:
             # v1.4 顺带修复：流式请求（含异常 / 客户端中断提前关闭生成器）结束后清除请求级 API 覆盖
@@ -649,8 +730,8 @@ async def get_graph_stats(
         stats = knowledge_graph.get_statistics()
         return GraphStatsResponse(**stats)
     except Exception as e:
-        logger.error(f"获取图谱统计失败: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("获取图谱统计失败: %s", redact_sensitive_text(e))
+        raise HTTPException(status_code=500, detail="服务暂时无法处理该请求，请稍后重试") from e
 
 
 @app.get("/graph/visualize")
@@ -683,8 +764,8 @@ async def visualize_graph(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"图谱可视化失败: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("图谱可视化失败: %s", redact_sensitive_text(e))
+        raise HTTPException(status_code=500, detail="服务暂时无法处理该请求，请稍后重试") from e
 
 
 @app.get("/graph/subgraph/{craft_name}")
@@ -703,8 +784,8 @@ async def get_subgraph(
         subgraph = knowledge_graph.get_subgraph(craft_name, depth)
         return subgraph
     except Exception as e:
-        logger.error(f"获取子图失败: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("获取子图失败: %s", redact_sensitive_text(e))
+        raise HTTPException(status_code=500, detail="服务暂时无法处理该请求，请稍后重试") from e
 
 
 # ============================================================================
@@ -740,8 +821,8 @@ async def get_gap_report(
         }
         
     except Exception as e:
-        logger.error(f"获取缺口报告失败: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("获取缺口报告失败: %s", redact_sensitive_text(e))
+        raise HTTPException(status_code=500, detail="服务暂时无法处理该请求，请稍后重试") from e
 
 
 # ============================================================================
@@ -866,8 +947,8 @@ async def get_document_summary(_: None = Depends(rate_limit(RateLimitCategory.RE
         summary = document_loader.get_document_summary()
         return summary
     except Exception as e:
-        logger.error(f"获取文档摘要失败: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error("获取文档摘要失败: %s", redact_sensitive_text(e))
+        raise HTTPException(status_code=500, detail="服务暂时无法处理该请求，请稍后重试") from e
 
 
 # ============================================================================
@@ -1525,7 +1606,7 @@ async def register(request: UserRegisterRequest, db: Session = Depends(get_db)):
 
     - **username**: 用户名（2-50字符）
     - **email**: 邮箱
-    - **password**: 密码（最少6位）
+    - **password**: 密码（最少10位）
     """
     await enforce_account_and_ip_rate_limits(
         RateLimitCategory.REGISTRATION,

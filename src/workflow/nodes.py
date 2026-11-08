@@ -136,7 +136,7 @@ def analyze_question_node(state: WorkflowState) -> WorkflowState:
         
     except Exception as e:
         logger.error(f"问题分析失败: {e}")
-        state["errors"].append(f"问题分析错误: {str(e)}")
+        state["errors"].append("question_analysis_failed")
         # 使用默认配置
         state["required_experts"] = ["craft_expert"]
     
@@ -166,7 +166,7 @@ def plan_question_node(state: WorkflowState) -> WorkflowState:
         logger.info(f"Planner: plan={'生成' if plan else '跳过'}")
     except Exception as e:
         logger.warning(f"Planner 节点异常，跳过 plan: {e}")
-        state["errors"].append(f"Planner 错误: {str(e)}")
+        state["errors"].append("Planner_failed")
         state["plan"] = None
     return state
 
@@ -307,9 +307,9 @@ def dispatch_to_experts_node(state: WorkflowState) -> WorkflowState:
                     logger.error(f"专家 {expert_name} 处理失败: {e}")
                     responses[expert_name] = AgentResponse(
                         agent_name=expert_name,
-                        content=f"处理失败: {str(e)}",
+                        content="处理失败，请稍后重试。",
                         success=False,
-                        metadata={"error": str(e)}
+                        metadata={"error_code": "agent_execution_failed"}
                     )
                     emit_workflow_event(state, "node_fallback", step=f"agent:{expert_name}", msg=f"{expert_name} 调用失败")
         
@@ -322,7 +322,7 @@ def dispatch_to_experts_node(state: WorkflowState) -> WorkflowState:
         
     except Exception as e:
         logger.error(f"专家分派失败: {e}")
-        state["errors"].append(f"专家分派错误: {str(e)}")
+        state["errors"].append("agent_dispatch_failed")
         emit_workflow_event(state, "node_fallback", step="dispatch_to_experts", msg="专家分派失败")
     
     return state
@@ -500,7 +500,7 @@ def fuse_knowledge_node(state: WorkflowState) -> WorkflowState:
         
     except Exception as e:
         logger.error(f"知识融合失败: {e}")
-        state["errors"].append(f"知识融合错误: {str(e)}")
+        state["errors"].append("knowledge_fusion_failed")
         # 降级处理：简单拼接
         responses = state.get("expert_responses", {})
         parts = [resp.get("content", "") for resp in responses.values() if resp.get("content")]
@@ -557,7 +557,7 @@ def detect_gaps_node(state: WorkflowState) -> WorkflowState:
         
     except Exception as e:
         logger.error(f"缺口检测失败: {e}")
-        state["errors"].append(f"缺口检测错误: {str(e)}")
+        state["errors"].append("gap_detection_failed")
     
     return state
 
@@ -608,7 +608,7 @@ def query_graph_node(state: WorkflowState) -> WorkflowState:
         elapsed_ms = round((time.perf_counter() - started_at) * 1000)
         route["fallback_reason"] = "本地知识图谱不可用"
         state["route"] = route
-        state["errors"].append(f"图谱查询错误: {str(e)}")
+        state["errors"].append("graph_query_failed")
         state["workflow_trace"].append({
             "node": "query_graph",
             "status": "fallback",
@@ -685,7 +685,7 @@ def generate_response_node(state: WorkflowState) -> WorkflowState:
         
     except Exception as e:
         logger.error(f"响应生成失败: {e}")
-        state["errors"].append(f"响应生成错误: {str(e)}")
+        state["errors"].append("response_generation_failed")
         # 降级处理
         state["final_response"] = state.get("fused_content", "处理过程中出现错误。")
     

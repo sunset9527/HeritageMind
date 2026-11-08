@@ -113,7 +113,7 @@ class GranularityController:
                 "success": False,
                 "content": base_content,  # 返回原始内容作为降级
                 "user_profile": user_profile,
-                "error": str(e)
+                "error_code": "content_adaptation_failed"
             }
     
     def _generate_adapted_content(

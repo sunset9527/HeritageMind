@@ -29,9 +29,13 @@ export const useSettingsStore = defineStore('settings', () => {
   const serverConfig = ref<ServerConfig | null>(null)
   const serverConfigLoaded = ref(false)
 
+  // API keys must not survive the browser session.  Remove the old persistent
+  // key before reading settings so an upgrade never silently migrates it.
+  localStorage.removeItem('hm_user_api_key')
+
   const selectedProvider = ref(localStorage.getItem('hm_provider') || 'DeepSeek')
   const selectedModel = ref(localStorage.getItem('hm_selected_model') || 'deepseek-chat')
-  const userApiKey = ref(localStorage.getItem('hm_user_api_key') || '')
+  const userApiKey = ref(sessionStorage.getItem('hm_user_api_key') || '')
   const userBaseUrl = ref(localStorage.getItem('hm_user_base_url') || PROVIDER_PRESETS['DeepSeek'].baseUrl)
   const defaultProfile = ref(localStorage.getItem('hm_default_profile') || 'curious')
   const defaultNarrative = ref(localStorage.getItem('hm_default_narrative') === 'true')
@@ -123,7 +127,11 @@ export const useSettingsStore = defineStore('settings', () => {
   function save() {
     localStorage.setItem('hm_provider', selectedProvider.value)
     localStorage.setItem('hm_selected_model', selectedModel.value)
-    localStorage.setItem('hm_user_api_key', userApiKey.value)
+    if (userApiKey.value) {
+      sessionStorage.setItem('hm_user_api_key', userApiKey.value)
+    } else {
+      sessionStorage.removeItem('hm_user_api_key')
+    }
     localStorage.setItem('hm_user_base_url', userBaseUrl.value)
     localStorage.setItem('hm_default_profile', defaultProfile.value)
     localStorage.setItem('hm_default_narrative', String(defaultNarrative.value))

@@ -1,4 +1,5 @@
 import client from './client'
+import { formatApiError, parseApiError } from './errors'
 import type { QueryRequest, QueryResponse, WorkflowSseEvent } from '@/types'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api'
@@ -23,7 +24,7 @@ export function streamQuery(
     headers: {
       'Content-Type': 'application/json',
       'Authorization': token ? `Bearer ${token}` : '',
-      'X-API-Key': localStorage.getItem('hm_user_api_key') || '',
+      'X-API-Key': sessionStorage.getItem('hm_user_api_key') || '',
       'X-Model': localStorage.getItem('hm_selected_model') || '',
       'X-API-Base': localStorage.getItem('hm_user_base_url') || '',
     },
@@ -31,8 +32,8 @@ export function streamQuery(
     signal: controller.signal,
   }).then(async (resp) => {
     if (!resp.ok) {
-      const err = await resp.json().catch(() => ({ detail: resp.statusText }))
-      onError(err.detail || '请求失败')
+      const body = await resp.json().catch(() => undefined)
+      onError(formatApiError(parseApiError(body, resp.statusText || '请求失败')))
       return
     }
     const reader = resp.body?.getReader()

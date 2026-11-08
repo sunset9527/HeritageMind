@@ -195,7 +195,7 @@ class TestPlanNodeAndHelpers:
         state = dict(create_initial_state("景泰蓝和苏绣有何异同"))
         out = plan_question_node(state)
         assert out["plan"] is None
-        assert any("Planner" in e for e in out["errors"])
+        assert "Planner_failed" in out["errors"]
 
     def test_outline_text_render(self):
         state = {"plan": {"aspects": ["工艺", "历史"], "outline": "先工艺后历史"}}

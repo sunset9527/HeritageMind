@@ -1,6 +1,7 @@
 """阶段 1C/1D：高成本操作的进程内并发许可。"""
 
 import asyncio
+import time
 from types import SimpleNamespace
 
 import httpx
@@ -124,6 +125,69 @@ def test_busy_http_contract_contains_stable_code_retry_after_and_request_id(monk
         assert response.json()["detail"]["code"] == "busy"
         assert response.headers["retry-after"] == "1"
         assert response.headers["x-request-id"] == "concurrency-test"
+
+    asyncio.run(scenario())
+
+
+def test_real_query_route_rejects_a_concurrent_llm_request_without_blocking_event_loop(monkeypatch):
+    """The production query route must keep its permit while sync workflow work runs."""
+    import api
+    from src.services.concurrency import ConcurrencyLimiter, HighCostCapability
+    from src.workflow.state import QueryResponse
+
+    limits = _limits()
+    limits[HighCostCapability.SERVER_LLM] = 1
+    limiter = ConcurrencyLimiter(limits=limits, acquire_timeout_seconds=0.01)
+
+    def slow_query(**kwargs):
+        time.sleep(0.1)
+        return QueryResponse(
+            question=kwargs["question"],
+            answer="safe fallback",
+            user_profile=kwargs["user_profile"],
+            source_agents=[],
+            has_gaps=False,
+            gap_report="",
+            reading_time=1,
+            metadata={},
+        )
+
+    async def allow_rate_limit(*args, **kwargs):
+        return None
+
+    def fake_db():
+        yield object()
+
+    async def scenario():
+        monkeypatch.setattr("src.deps_concurrency.get_concurrency_limiter", lambda: limiter)
+        monkeypatch.setattr("src.deps_rate_limit.enforce_rate_limit", allow_rate_limit)
+        monkeypatch.setattr(api, "workflow", SimpleNamespace(query=slow_query))
+        monkeypatch.setattr(api, "load_configured_registry", lambda *args: object())
+        monkeypatch.setattr(api, "get_default_agent_registry", lambda: object())
+        monkeypatch.setattr(api.settings, "cache_enabled", False)
+        api.app.dependency_overrides[api.get_db] = fake_db
+        try:
+            transport = httpx.ASGITransport(app=api.app, client=("198.51.100.7", 1))
+            async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+                first, second = await asyncio.gather(
+                    client.post(
+                        "/query",
+                        json={"question": "第一个问题"},
+                        headers={"X-API-Key": "test-key-a"},
+                    ),
+                    client.post(
+                        "/query",
+                        json={"question": "第二个问题"},
+                        headers={"X-API-Key": "test-key-b"},
+                    ),
+                )
+        finally:
+            api.app.dependency_overrides.pop(api.get_db, None)
+
+        statuses = sorted((first.status_code, second.status_code))
+        assert statuses == [200, 503], (first.status_code, first.text, second.status_code, second.text)
+        busy = first if first.status_code == 503 else second
+        assert busy.json()["error"]["code"] == "busy"
 
     asyncio.run(scenario())
 

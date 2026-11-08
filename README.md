@@ -147,7 +147,8 @@ public_content_seed 从已审核资料清单创建缺失公开内容，可重复
 python -m uvicorn api:app --host 0.0.0.0 --port 8001 --reload
 ~~~
 
-- 健康检查：http://127.0.0.1:8001/health
+- 存活检查：http://127.0.0.1:8001/health/live（不访问外部依赖）
+- 就绪检查：http://127.0.0.1:8001/health/ready（MySQL 与检索器不可用时返回 503）
 - OpenAPI 文档：http://127.0.0.1:8001/docs
 
 确认 frontend/.env.development 的目标端口：
@@ -174,7 +175,7 @@ python -m src.workers.upload_worker
 
 API 进程不消费后台任务。文档、音频或索引任务显示 `failed` 时，应先查看管理员接口返回的错误字段，修复原因后再重试；部署迁移、健康检查与 rollback 步骤见 [deploy/README.md](deploy/README.md)。
 
-最小验收：访问 /health；打开百科和图谱确认前端代理可用；配置 LLM 和模型后提交一个有明确出处的问题，检查引用与知识缺口提示。
+最小验收：先访问 `/health/live`，再确认 `/health/ready` 返回 200；打开百科和图谱确认前端代理可用；配置 LLM 和模型后提交一个有明确出处的问题，检查引用与知识缺口提示。
 
 ## 3. 日常开发与验证
 
@@ -315,7 +316,7 @@ docker compose --profile production up --build mysql api vue-nginx
 
 **图书切换后旧测试失败**：旧资料证据 ID 和活动图书片段 ID 是两套契约。激活图书语料时使用图书题集和图书专属测试；回退后再验证旧资料测试。
 
-**MySQL 连不上**：检查 MySQL 服务、DATABASE_URL 的主机/端口/密码，以及 heritagemind 是否已创建。先访问 /health 区分 API 是否启动成功，再查看启动日志中的数据库异常。
+**MySQL 连不上**：检查 MySQL 服务、DATABASE_URL 的主机/端口/密码，以及 heritagemind 是否已创建。`/health/live` 为 200 而 `/health/ready` 为 503 时，说明 API 进程仍存活但核心依赖不可用；再查看已脱敏的启动日志。
 
 ## 8. 项目目录
 

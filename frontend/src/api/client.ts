@@ -20,7 +20,7 @@ client.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   }
 
   // Custom API key / model headers (user-provided)
-  const userApiKey = localStorage.getItem('hm_user_api_key')
+  const userApiKey = sessionStorage.getItem('hm_user_api_key')
   const userBaseUrl = localStorage.getItem('hm_user_base_url')
   const selectedModel = localStorage.getItem('hm_selected_model')
   if (userApiKey && config.headers) {

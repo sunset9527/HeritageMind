@@ -10,6 +10,7 @@ from pathlib import Path
 from config import settings
 from src.database import SessionLocal
 from src.models.upload import DocumentUpload, ProcessingStatus
+from src.services.error_sanitizer import redact_sensitive_text
 from src.services.document_parser import ParsedDocument, parse_document_path
 from src.services.task_state import claim_document, utcnow_naive
 from src.services.upload_security import resolve_under
@@ -113,7 +114,7 @@ async def process_document_job(
                 row.error_code = "file_missing"
             else:
                 row.error_code = getattr(exc, "code", "processing_error")
-            row.error_message = str(exc)[:1000]
+            row.error_message = redact_sensitive_text(exc, max_length=1000)
             row.finished_at = utcnow_naive()
             session.commit()
         return "failed"

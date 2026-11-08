@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from src.models.user import User
 from src.services.auth import hash_password
+from src.services.password_policy import PasswordPolicyError, validate_password
 
 
 @dataclass(frozen=True)
@@ -16,8 +17,12 @@ class BootstrapResult:
 
 def bootstrap_admin(db: Session, *, username: str, email: str, password: str) -> BootstrapResult:
     username, email = username.strip(), email.strip().lower()
-    if not username or not email or len(password) < 12:
-        raise ValueError("username, email and a password of at least 12 characters are required")
+    if not username or not email:
+        raise ValueError("username and email are required")
+    try:
+        validate_password(password, username=username, email=email, is_admin=True)
+    except PasswordPolicyError as exc:
+        raise ValueError(exc.public_message) from exc
     existing = db.query(User).filter((User.username == username) | (User.email == email)).first()
     if existing is not None:
         if existing.username != username or existing.email != email:

@@ -160,9 +160,9 @@ class HistoryExpertAgent:
             logger.error(f"历史文化Agent处理失败: {e}")
             return {
                 "success": False,
-                "answer": f"处理您的问题时出现错误：{str(e)}",
+                "answer": "处理您的问题时出现技术问题，请稍后重试。",
                 "source": "history_expert",
-                "error": str(e)
+                "error": "agent_execution_failed"
             }
     
     def _retrieve_documents(self, question: str) -> List[Dict[str, Any]]:
@@ -249,7 +249,7 @@ class HistoryExpertAgent:
             return answer
         except Exception as e:
             logger.error(f"LLM生成失败: {e}")
-            return f"抱歉，生成回答时遇到技术问题：{str(e)}"
+            return "抱歉，生成回答时遇到技术问题，请稍后重试。"
     
     def get_craft_history(self, craft_name: str) -> Optional[Dict[str, Any]]:
     # ⚠️ TODO(2026-08-15): 当前未接线，仅供后续功能扩展
@@ -300,4 +300,4 @@ class HistoryExpertAgent:
             return response.content if hasattr(response, 'content') else str(response)
         except Exception as e:
             logger.error(f"文化意义解读失败: {e}")
-            return f"抱歉，无法生成文化解读：{str(e)}"
+            return "抱歉，暂时无法生成文化解读，请稍后重试。"

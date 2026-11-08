@@ -246,9 +246,9 @@ class HeritageExpertAgent:
             logger.error(f"传承现状Agent处理失败: {e}")
             return {
                 "success": False,
-                "answer": f"处理您的问题时出现错误：{str(e)}",
+                "answer": "处理您的问题时出现技术问题，请稍后重试。",
                 "source": "heritage_expert",
-                "error": str(e)
+                "error": "agent_execution_failed"
             }
     
     def _retrieve_documents(self, question: str) -> List[Dict[str, Any]]:
@@ -346,7 +346,7 @@ class HeritageExpertAgent:
             return answer
         except Exception as e:
             logger.error(f"LLM生成失败: {e}")
-            return f"抱歉，生成回答时遇到技术问题：{str(e)}"
+            return "抱歉，生成回答时遇到技术问题，请稍后重试。"
     
     def get_heritage_info(self, craft_name: str) -> Optional[Dict[str, Any]]:
     # ⚠️ TODO(2026-08-15): 当前未接线，仅供后续功能扩展
@@ -431,4 +431,4 @@ class HeritageExpertAgent:
             return response.content if hasattr(response, 'content') else str(response)
         except Exception as e:
             logger.error(f"学习指南生成失败: {e}")
-            return f"抱歉，无法生成学习指南：{str(e)}"
+            return "抱歉，暂时无法生成学习指南，请稍后重试。"

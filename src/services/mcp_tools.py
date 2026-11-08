@@ -5,6 +5,17 @@ from typing import Any
 
 import httpx
 
+from src.services.dependency_health import DependencyHealthRegistry, dependency_health
+from src.services.resilience import CircuitBreaker, call_with_resilience
+
+
+_MCP_TIMEOUT_SECONDS = 5.0
+_MCP_BREAKERS = {
+    "mcp_wikipedia": CircuitBreaker(),
+    "mcp_github": CircuitBreaker(),
+    "mcp_web": CircuitBreaker(),
+}
+
 
 @dataclass(frozen=True)
 class McpToolResult:
@@ -19,19 +30,46 @@ async def _get_json(url: str, *, params: dict[str, Any], client: Any | None = No
         if response.status_code >= 400:
             raise RuntimeError(f"upstream returned {response.status_code}")
         return response.json()
-    timeout = httpx.Timeout(5.0)
+    timeout = httpx.Timeout(_MCP_TIMEOUT_SECONDS)
     async with httpx.AsyncClient(timeout=timeout, follow_redirects=False) as request_client:
         response = await request_client.get(url, params=params)
         response.raise_for_status()
         return response.json()
 
 
-async def search_wikipedia(query: str, *, client: Any | None = None, limit: int = 5) -> McpToolResult:
+async def _get_json_with_resilience(
+    dependency: str,
+    url: str,
+    *,
+    params: dict[str, Any],
+    client: Any | None,
+    registry: DependencyHealthRegistry,
+) -> Any:
+    return await call_with_resilience(
+        dependency,
+        lambda: _get_json(url, params=params, client=client),
+        timeout_seconds=_MCP_TIMEOUT_SECONDS,
+        max_retries=1,
+        retryable_exceptions=(TimeoutError, httpx.TimeoutException, httpx.NetworkError),
+        breaker=_MCP_BREAKERS[dependency],
+        registry=registry,
+    )
+
+
+async def search_wikipedia(
+    query: str,
+    *,
+    client: Any | None = None,
+    limit: int = 5,
+    registry: DependencyHealthRegistry = dependency_health,
+) -> McpToolResult:
     try:
-        payload = await _get_json(
+        payload = await _get_json_with_resilience(
+            "mcp_wikipedia",
             "https://zh.wikipedia.org/w/rest.php/v1/search/page",
             params={"q": query.strip(), "limit": min(max(limit, 1), 10)},
             client=client,
+            registry=registry,
         )
     except Exception:
         return McpToolResult(status="unavailable", message="Wikipedia temporarily unavailable")
@@ -47,11 +85,20 @@ async def search_wikipedia(query: str, *, client: Any | None = None, limit: int 
     return McpToolResult(status="ok", items=items)
 
 
-async def search_github(query: str, *, client: Any | None = None, limit: int = 5) -> McpToolResult:
+async def search_github(
+    query: str,
+    *,
+    client: Any | None = None,
+    limit: int = 5,
+    registry: DependencyHealthRegistry = dependency_health,
+) -> McpToolResult:
     try:
-        payload = await _get_json(
+        payload = await _get_json_with_resilience(
+            "mcp_github",
             "https://api.github.com/search/repositories",
-            params={"q": query.strip(), "per_page": min(max(limit, 1), 10)}, client=client,
+            params={"q": query.strip(), "per_page": min(max(limit, 1), 10)},
+            client=client,
+            registry=registry,
         )
     except Exception:
         return McpToolResult(status="unavailable", message="GitHub temporarily unavailable")
@@ -61,20 +108,46 @@ async def search_github(query: str, *, client: Any | None = None, limit: int = 5
     } for item in payload.get("items", [])[:limit]])
 
 
-async def search_web(query: str, *, endpoint: str, api_key: str, client: Any | None = None) -> McpToolResult:
+async def search_web(
+    query: str,
+    *,
+    endpoint: str,
+    api_key: str,
+    client: Any | None = None,
+    registry: DependencyHealthRegistry = dependency_health,
+) -> McpToolResult:
     if not endpoint.strip() or not api_key.strip():
         return McpToolResult(status="not_configured", message="Web search is not configured")
     if not endpoint.startswith("https://"):
         return McpToolResult(status="invalid_configuration", message="Web search endpoint must use HTTPS")
     try:
-        payload = await _get_json(endpoint, params={"q": query.strip()}, client=client)
+        payload = await _get_json_with_resilience(
+            "mcp_web",
+            endpoint,
+            params={"q": query.strip()},
+            client=client,
+            registry=registry,
+        )
     except Exception:
         return McpToolResult(status="unavailable", message="Web search temporarily unavailable")
     return McpToolResult(status="ok", items=list(payload.get("items", []))[:5])
 
 
-async def search_baidu_baike(query: str, *, endpoint: str, api_key: str, client: Any | None = None) -> McpToolResult:
-    return await search_web(query, endpoint=endpoint, api_key=api_key, client=client)
+async def search_baidu_baike(
+    query: str,
+    *,
+    endpoint: str,
+    api_key: str,
+    client: Any | None = None,
+    registry: DependencyHealthRegistry = dependency_health,
+) -> McpToolResult:
+    return await search_web(
+        query,
+        endpoint=endpoint,
+        api_key=api_key,
+        client=client,
+        registry=registry,
+    )
 
 
 def search_local_knowledge(query: str, *, retriever: Any) -> McpToolResult:

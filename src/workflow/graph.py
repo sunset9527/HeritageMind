@@ -184,13 +184,13 @@ class HeritageWorkflowGraph:
             logger.error(f"工作流执行失败: {e}")
             return QueryResponse(
                 question=question,
-                answer=f"处理过程中出现错误：{str(e)}",
+                answer="处理过程中出现技术问题，请稍后重试。",
                 user_profile=user_profile,
                 source_agents=[],
                 has_gaps=False,
                 gap_report="",
                 reading_time=1,
-                metadata={"error": str(e)}
+                metadata={"error_code": "workflow_execution_failed"}
             )
     
     def get_graph可视化(self) -> Dict[str, Any]:
@@ -311,13 +311,13 @@ class HeritageWorkflowGraph:
             logger.error(f"工作流执行失败: {e}")
             return QueryResponse(
                 question=question,
-                answer=f"处理过程中出现错误：{str(e)}",
+                answer="处理过程中出现技术问题，请稍后重试。",
                 user_profile=user_profile,
                 source_agents=[],
                 has_gaps=False,
                 gap_report="",
                 reading_time=1,
-                metadata={"error": str(e)}
+                metadata={"error_code": "workflow_execution_failed"}
             )
 
 
